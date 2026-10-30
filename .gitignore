@@ -1,0 +1,19 @@
+# 操作系统 / 编辑器
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 编辑器目录
+.idea/
+.vscode/
+*.swp
+*~
+
+# 临时 / 构建产物
+*.tmp
+*.bak
+*.log
+node_modules/
+dist/
+build/

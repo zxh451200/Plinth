@@ -503,7 +503,7 @@ Modules/Inventory/
 └─ Resources/                       # 模块 RESX
 ```
 
-模板的 `ViewLocator` 只按 `XxxViewModel → XxxView` 在**同一程序集**内反射解析；跨程序集模块页面的 View/VM 对应关系在模块注册代码里显式给出（`DataTemplate` 或导航项直接持有 View 工厂），不要依赖默认 ViewLocator 跨程序集查找。
+模板的 `ViewLocator` 只按 `XxxViewModel → XxxView` 在**同一程序集**内反射解析。v1 示例模块默认与 App 同程序集；真实项目把模块拆成独立程序集时，模块页面的 View/VM 对应关系在模块注册代码里显式给出（`DataTemplate` 或导航项直接持有 View 工厂），不要依赖默认 ViewLocator 跨程序集查找。
 
 #### 4.6.3 一个页面的主流实现路径
 
@@ -530,6 +530,7 @@ Modules/Inventory/
 - 让熟悉基本 C# / MVVM 的开发者快速找到入口、页面、服务和数据访问位置，是结构设计的目标。30 分钟运行样例、半天完成 CRUD 可作为上手测试目标，不是对每个开发者的硬性工时承诺。
 - 若新人经常找不到代码或需要学习大量私有概念，优先简化项目/目录/注册步骤，或补可运行示例；不能用“先学习我们的架构”回避问题。
 - `README.md` / `GETTING_STARTED.md` 必须写清官方模板来源、运行命令、项目入口和新增 CRUD 的文件位置；代码结构或关键命令变化时同步更新，不要求新人翻聊天记录找答案。
+- 最小上手路径固定写在 README：`dotnet restore` → `dotnet run --project src/Plinth.App` → 打开 `samples/Plinth.Sample/Modules/Inventory` 对照一个完整 CRUD → 按 §4.6.3 的 5 步新增页面。
 
 #### 4.6.6 成熟 .NET 开发者对照表（学习成本控制）
 
