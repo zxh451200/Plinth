@@ -1,7 +1,7 @@
 # Plinth Desktop Framework：通用原生桌面 Admin 框架
 
 > **品牌：** Plinth（柱础） — *One Foundation. Many Applications.（一个可靠底座，无限业务扩展。）*
-> **标识体系：** Plinth Core（必要共享类型） · Plinth UI（桌面外壳与通用控件） · Plinth Data（本地 SQLite/EF Core；为服务端 PostgreSQL/MySQL 预留可移植边界） · Plinth Modules（业务模块）
+> **标识体系：** Plinth Core（必要共享类型） · Plinth App（桌面外壳与唯一参考宿主） · Plinth Data（可选：跨应用共享的 SQLite/EF Core 层；为服务端 PostgreSQL/MySQL 预留边界） · Plinth UI（可选：确认跨项目复用的控件/主题） · Plinth Modules（业务模块，随宿主应用编译）
 > **文档版本：v4.0（架构基线与二开交付修订版）**
 > 最后更新：2026-10-31（依赖版本快照核验日：2026-10-29）
 > 首发目标：Windows 11 x64；Linux x64 从 Phase 0 开始持续构建并在正式发布前独立验收
@@ -24,7 +24,7 @@
 
 ## 修订说明：v4.0 架构基线变更（不占章节号）
 
-本版在 v3.9 基础上修正两项影响长期维护的决定，并同步清理相关章节：
+本版在上一版架构基线（v3.x；历史版本文件不在本仓库留档，追溯以 CHANGELOG 与 git 历史为准）基础上修正两项影响长期维护的决定，并同步清理相关章节：
 
 - **数据网格不再默认选用 `Avalonia.Controls.DataGrid`。** Avalonia 官方已将其标记为 Deprecated、只接收 Bug 修复；只读列表首选 Avalonia 12 的 `TableView`，记录编辑统一走普通表单。首版不承诺单元格内联编辑。
 - **不默认采用商业版 TreeDataGrid/Accelerate。** 旧版开源 TreeDataGrid 仓库已归档、不再维护，许可仍为 MIT 但不能把它当作有持续上游维护的默认方案。
@@ -32,6 +32,11 @@
 - 更新 Phase 0、依赖表、首版范围、风险表、ADR 和 Agent 指令，删除旧 DataGrid 默认决策残留。
 - 不因此自研完整网格、不提前建立通用控件适配框架，也不增加审批层级。常见 CRUD 通过列表选择记录、打开表单、保存/取消完成。
 - **2026-10-31 勘核修订（不影响 v4.0 决策本身）：** 对照本机 Avalonia.Templates 12.1.4 实际生成结果修正 MVVM 模板文件名（`ViewModels/MainViewModel.cs`，§4.6.1/§4.6.2），并补全模板生成文件清单、官方 DI 组合根与 `ServiceCollectionExtensions` 命名（§4.2/§4.3/§4.6）；统一“密度”档位口径（§3.4 与 §0.4/§2.3 对齐）；删除 `Delete` 快捷键表述中不存在的“撤销保护”（§2.2）；补充 `Serilog.Formatting.Compact` 依赖与 JSON formatter 选型（§0.1/§5）；修正 TableView 列可见性描述（`TableViewColumn.IsVisible` 存在，但没有内置列菜单，§6.2/§6.4）；补充 MySQL Provider 许可候选复核说明（§8.4）；新增成熟 .NET 开发者对照表（§4.6.6）。
+- **2026-10-31 第三轮（复查收尾）：** 曾明确 `samples/Plinth.Sample` 为独立可运行示例应用并进入最小上手路径（第四轮已撤销，改为 `Plinth.App` 内置 `Modules/Inventory`）；DI 示意补 provider 退出释放（§4.3）；统一 §0.1 发布交付形式表述与 §11.3 formatter 命名。
+- **2026-10-31 第四轮（外壳归属、导航注册与迁移口径）：** 统一桌面外壳归属——`Plinth.App` 是唯一参考宿主（官方模板 + Shell + Inventory 示例模块），删除独立 `samples/Plinth.Sample`，README 只保留单一入口，品牌标识行改为 Plinth App（外壳）/Plinth UI（可选控件），§16.3 明确外壳不走 NuGet；§4.6.3 补第 6 步"页面挂导航"并以示例模块注册类为权威形状（`NavigationItem` + 注入 `IEnumerable<NavigationItem>`，第五轮补 `Func<ViewModelBase>` 工厂，不新增 `IWorkspaceRegistry`）；§8.2/§3.9/§16.1 统一为单一宿主 `AppDbContext`（v1 在 `Plinth.App/Data`，`Plinth.Data` 为可选共享层）+ `IEntityTypeConfiguration` + 宿主集中迁移口径；§9.2 明确语言切换生效口径（重启生效）；§19 风险表补内联编辑与商业控件边界；§5 补 xUnit v3 起手步骤；模板命令补 `-f net10.0`；修订来源表述改为"上一版基线"。
+- **2026-10-31 第五轮（实现口径校正）：** 共享 context 统一为宿主 `AppDbContext`（v1 在 `Plinth.App/Data`，`Plinth.Data` 仅作可选共享层），明确 `ApplyConfigurationsFromAssembly` 纳管模块配置、`dotnet ef` 在 `Plinth.App` 生成迁移、`Plinth.Data` 默认不建且不含迁移；`NavigationItem` 改为携带 `Func<ViewModelBase>` 工厂并放在 `Plinth.App/Navigation`；同步把模块“迁移”旧表述改为“实体配置”，语言切换明确为重启生效，收尾发布/示例文案。
+- **2026-10-31 第六轮（按主流收口）：** v1 数据层简化为单一 `AppDbContext`（`Plinth.App/Data`）+ 同程序集实体配置 + 宿主迁移；`Plinth.Data` 降为可选的跨应用共享层，v1 不建；同步修正 §3.9/§4.6.2/§4.6.3/§4.6.6/§8.2/§16.1/§16.3。
+- **2026-10-31 第七轮（二开装配点）：** 新增 §4.6.7，明确单 `AppDbContext` 是宿主扩展点；列出页面/服务/表/权限/翻译/样式/任务/布局的装配位置与“是否改核心”；补充 §8.2 的模块配置/宿主迁移边界，以及模块作为独立类库时的显式装配方式。
 
 **版本原则：** 采用当前受支持、兼容且许可证合格的稳定版本，不追 Preview/RC。候选版本是锁包前的核验起点，不代表已经完成编译或实机验收。
 
@@ -65,7 +70,7 @@ Plinth 是一套**真正的桌面 Admin 框架**，用来反复开发进销存�
 | 图表 / 本地分析 | 不放入核心默认依赖 | 只有具体业务需要、且数据量与组件许可通过评估后，再作为可选模块引入一个实现。 |
 | 日志 | Microsoft.Extensions.Logging API + Serilog 实现 | `Serilog` + `Serilog.Extensions.Logging` + `Serilog.Sinks.File` + `Serilog.Formatting.Compact`；JSON 输出统一用 `CompactJsonFormatter`（NDJSON/CLEF）；业务代码统一使用 `ILogger<T>`，日志容量有上限。 |
 | 测试 | **xUnit v3 + Avalonia Headless**（用于适合的 UI 冒烟） | 用标准测试工具；真实窗口、IME、DPI、安装等仍要人工实测。测试栈的版本与「为什么不能用模板默认 v2」见 §5。 |
-| 发布 | self-contained 应用目录 + Windows 安装包（NSIS 候选）+ 便携 ZIP | v1 不做 NativeAOT、不主动裁剪、不做自研自动更新器；安装包/压缩模块许可须在发布前核查。MSIX 作为后续选项。 |
+| 发布 | self-contained 构建产物；对外两种交付形式：Windows 安装包（NSIS 候选）与便携 ZIP | v1 不做 NativeAOT、不主动裁剪、不做自研自动更新器；安装包/压缩模块许可须在发布前核查。MSIX 作为后续选项。 |
 | 许可证 | 默认 MIT / BSD / Apache-2.0 / SIL OFL 等已核验许可证 | 每次正式发布核对直接与传递依赖的许可正文；禁止默认引入需购买授权或有非商业/营收门槛的依赖。 |
 
 **版本管理规则（最新稳定版，不追预览版）：** “最新”指 2026-10-29 可核验、适配当前 LTS 且满足许可/兼容约束的最新稳定版，不是每个包各自追最高数字，更不是 Preview/RC。以本表为候选快照，实际合并前由 NuGet/上游发布页再次复核；随后通过 `Directory.Packages.props` 集中声明包版本、用 `global.json` 固定 SDK，并为使用 NuGet 的项目生成并提交各自的 `packages.lock.json`。所有直接依赖/传递依赖必须由构建与许可扫描确认，不得靠手工猜版本。每月至少检查一次安全补丁；有影响本项目的高危安全更新时提前处理。
@@ -134,7 +139,7 @@ Plinth 首版交付一个可运行、可二次开发的 Windows 桌面基础产�
 - SQLite 本地数据、EF Core 迁移、备份恢复和用户偏好。
 - CSV 导入导出、后台任务、进度/取消、可搜索的日志与错误中心。
 - 本地单机与远程 API 两种常见数据模式；远程模式接入 OIDC 和服务端权限。
-- 模块通过常规 C# 注册入口扩展菜单、页面、服务、翻译资源和迁移。
+- 模块通过常规 C# 注册入口扩展菜单、页面、服务、翻译资源和实体配置。
 - 深浅主题、双语、常见快捷键、清晰的帮助与版本信息。
 - 一个可运行示例模块和短教程，让新开发者不用读完整架构文档即可完成第一个 CRUD。
 - 安全默认值、关键回归测试、CI、依赖许可证清单、Windows 安装/升级/卸载验证。
@@ -299,7 +304,7 @@ Plinth 采用专业桌面软件的工作流，参考 IDE、CAD、数据管理工
 ### 3.9 模块与扩展
 
 - v1 只支持**编译期 C# 模块**，随应用构建；不做运行时发现、下载、热加载或插件商店。
-- 每个模块提供一个普通 C# 注册类/扩展方法，注册自己的服务、菜单/页面、翻译资源、权限点和 EF Core 迁移；不额外维护重复描述同一信息的 JSON Manifest。
+- 每个模块提供一个普通 C# 注册类/扩展方法，注册自己的服务、菜单/页面、翻译资源、权限点和实体配置；数据库迁移统一在宿主 `AppDbContext` 上维护（§8.2），不额外维护重复描述同一信息的 JSON Manifest。
 - 模块 ID、显示名称和注册入口在普通 C# 代码中明确写出，并配一个真实可运行的示例。不做反射扫描，也不要求另写一份 JSON Manifest。
 - 模块初始化失败时要显示哪个模块启动失败及诊断入口；如果该模块可以隔离，禁用它的菜单/页面并让其他模块继续启动。数据库迁移失败或核心依赖失败则应安全停止，不得假装全局可用。
 - 后续若确实要支持第三方运行时插件，单独设计进程隔离、签名、权限清单和 IPC；不在 v1 预建复杂协议。
@@ -376,6 +381,8 @@ v1 不公开泛型 Repository 框架、`IDataSourceRegistry`、全局事件总�
           {
               DataContext = provider.GetRequiredService<MainViewModel>(),
           };
+
+          desktop.Exit += (_, _) => provider.Dispose();
       }
 
       base.OnFrameworkInitializationCompleted();
@@ -412,7 +419,7 @@ UI 更新必须遵守单线程规则，但不应为普通异步代码增加多�
 - 基准命令（模板包与 Avalonia 版本都锁定，避免 `dotnet new install` 拉到未来版本）：
   ```bash
   dotnet new install Avalonia.Templates::12.1.4
-  dotnet new avalonia.mvvm -o src/Plinth.App -n Plinth.App -m CommunityToolkit -av 12.1.4
+  dotnet new avalonia.mvvm -o src/Plinth.App -n Plinth.App -m CommunityToolkit -av 12.1.4 -f net10.0
   ```
 - 12.1.4 模板实际生成的文件（2026-10-31 本机核验）：`Program.cs`、`App.axaml`、`App.axaml.cs`、`ViewLocator.cs`、`app.manifest`、`Assets/avalonia-logo.ico`、`Views/MainWindow.axaml`、`Views/MainWindow.axaml.cs`、`ViewModels/MainViewModel.cs`、`ViewModels/ViewModelBase.cs`、`Plinth.App.csproj`。**注意窗口叫 `MainWindow`，ViewModel 叫 `MainViewModel`；这是模板原样，不要为了对称改成 `MainWindowViewModel`。** 某个文件若当前官方模板不再生成，不要为了符合旧文档而硬加回去；以锁定版本实际生成结果为准。
 - 模板默认 `-m` 已是 `CommunityToolkit`，上面仍显式写出，避免模板升级后默认值变化；当前 `Avalonia.Templates` 包没有单独的控件库项目模板，`Plinth.UI` 需要时用 `dotnet new classlib` 加 Avalonia 包引用，不另造模板。
@@ -426,13 +433,17 @@ UI 更新必须遵守单线程规则，但不应为普通异步代码增加多�
 ```text
 Plinth.sln
 ├─ src/
-│  ├─ Plinth.App/                 # 官方 Avalonia MVVM 应用项目
+│  ├─ Plinth.App/                 # 唯一参考宿主：官方模板 + 桌面外壳 + Inventory 示例模块
+│  │  ├─ Modules/
+│  │  │  └─ Inventory/            # 示例模块（与 App 同程序集）：注册类 + Views/ViewModels/Services/Data/Resources
 │  │  ├─ Program.cs               # Avalonia 启动入口；模板原样
 │  │  ├─ App.axaml
 │  │  ├─ App.axaml.cs             # 建 ServiceProvider，解析主窗口 ViewModel
 │  │  ├─ ViewLocator.cs           # 模板生成；XxxViewModel → XxxView（同程序集）
 │  │  ├─ app.manifest
 │  │  ├─ ServiceCollectionExtensions.cs  # AddPlinthModules
+│  │  ├─ Navigation/
+│  │  │  └─ NavigationItem.cs     # Shell 导航契约：Id/TitleKey/VM 工厂/children
 │  │  ├─ Views/
 │  │  │  ├─ MainWindow.axaml
 │  │  │  └─ MainWindow.axaml.cs
@@ -441,20 +452,20 @@ Plinth.sln
 │  │  │  └─ ViewModelBase.cs      # 模板生成；ViewLocator 只匹配它
 │  │  ├─ Models/                  # 仅放应用层模型；不要复制数据库实体充数
 │  │  ├─ Services/                # 明确的应用服务/业务用例
-│  │  ├─ Data/                    # 仅当数据代码暂留应用项目时使用
+│  │  ├─ Data/
+│  │  │  ├─ AppDbContext.cs       # v1 唯一 context；纳管框架+模块配置
+│  │  │  ├─ Configurations/       # 框架实体配置 IEntityTypeConfiguration
+│  │  │  └─ Migrations/           # 宿主迁移（框架表+业务表）
 │  │  ├─ Assets/                  # 图标、图片等资源（替换模板 logo）
 │  │  ├─ Styles/                  # 应用样式和主题
 │  │  └─ Plinth.App.csproj
 │  ├─ Plinth.Core/                # 仅放确实需要跨项目共享的纯 C# 类型
-│  ├─ Plinth.Data/                # 数据访问、DbContext、配置、迁移
+│  ├─ Plinth.Data/                # 可选：跨应用共享数据层；v1 默认不建（AppDbContext 在 App/Data）
 │  └─ Plinth.UI/                  # 可复用 Avalonia 控件/主题；确认需要跨项目共享后保留
 ├─ tests/
 │  ├─ Plinth.App.Tests/
 │  ├─ Plinth.Core.Tests/          # 对应项目存在且有可测逻辑时才创建
-│  └─ Plinth.Data.Tests/          # 对应项目存在且有可测逻辑时才创建
-├─ samples/
-│  └─ Plinth.Sample/              # 一个可以实际运行的 CRUD 样例
-│     └─ Modules/Inventory/       # 示例模块：注册类 + Views/ViewModels/Services/Data/Resources
+│  └─ Plinth.Data.Tests/          # 抽到 Plinth.Data 时才需要
 ├─ docs/
 │  └─ adr/                        # 只放影响长期维护的简短决策记录
 ├─ .github/workflows/ci.yml       # ubuntu + windows 两个 job（§14.4）
@@ -474,11 +485,11 @@ Plinth.sln
 
 这棵树是**约定示例，不是要求一次性创建所有项目和目录**。项目边界按以下规则决定：
 
-- `Plinth.App`：桌面入口、Shell、Views、ViewModels、页面命令和组合根。保留官方模板可识别的结构。
+- `Plinth.App`：桌面入口、Shell、Views、ViewModels、页面命令和组合根，并内置 `Modules/Inventory` 示例模块——它是二开者整仓复制改造的唯一参考宿主。保留官方模板可识别的结构。
 - `Plinth.Core`：只放真正被多个项目共享的纯 C# 领域类型/公共契约，不引用 Avalonia、EF Core Provider 或操作系统 API；若没有真实共享内容就不建空项目。
-- `Plinth.Data`：当数据访问独立出来确实能隔离 EF Core、迁移和 Provider 时使用普通 .NET 类库；不得建立自研 ORM 或万能 Repository。
+- `Plinth.Data`：v1 默认不建；出现第二个应用真正共享数据层时，再抽成普通 .NET 类库（只放共享实体/配置，不含迁移）。v1 的 `AppDbContext` 留在 `Plinth.App/Data`；不得建立自研 ORM 或万能 Repository。
 - `Plinth.UI`：仅当通用控件、Design Tokens、主题资源确实要跨应用/项目复用时建立普通 Avalonia 控件库（控件主题放 `Themes/`，这是 Avalonia 控件库惯例）；否则先放在 `Plinth.App` 的 `Styles/` 与 `Views/Controls/` 中，避免无效拆分。
-- Tests 按被测项目和测试类型采用标准 xUnit v3 项目（见 §5）；不要求每个文件夹配一个测试项目。`samples` 必须是可运行的示例，而非只有片段的展示目录。
+- Tests 按被测项目和测试类型采用标准 xUnit v3 项目（见 §5）；不要求每个文件夹配一个测试项目。`Modules/` 下的示例模块必须可运行，而不是只有片段的展示目录。
 - 版本与编译设置集中在 `Directory.Build.props`（`TargetFramework`、`Nullable`、`ImplicitUsings`、`LangVersion`）、`Directory.Packages.props`（包版本）和 `global.json`（SDK），各 csproj 不重复；使用 NuGet 的项目提交 `packages.lock.json`。
 
 **模板落地偏差（除下表外保持官方模板原样）：**
@@ -491,19 +502,19 @@ Plinth.sln
 | `Assets/avalonia-logo.ico`、窗口标题 | 替换为 Plinth 品牌 | `BrandingConfig`；§2.3 |
 | `AvaloniaUI.DiagnosticsSupport`、`app.manifest` | 保留；DevTools 仅 Debug | 模板默认已是 Debug-only |
 
-**业务模块目录（示例模块与真实业务模块同一形状；真实模块放在业务应用仓库的 `Modules/` 下）：**
+**业务模块目录（v1 示例模块 `Modules/Inventory` 与 `Plinth.App` 同程序集；二开者整仓复制为业务应用后，在应用根下新增自己的 `Modules/<业务模块>/`，形状相同）：**
 
 ```text
 Modules/Inventory/
-├─ InventoryModuleRegistration.cs   # AddInventoryModule：服务、菜单/页面、资源、迁移
+├─ InventoryModuleRegistration.cs   # AddInventoryModule：服务、导航项、资源、实体配置
 ├─ Views/                           # 模块自己的 AXAML
 ├─ ViewModels/
 ├─ Services/
-├─ Data/                            # 模块的 DbContext/迁移（如需要）
+├─ Data/                            # 模块实体配置 IEntityTypeConfiguration（v1 由宿主 AppDbContext 纳管，不建模块独立 context，见 §8.2）
 └─ Resources/                       # 模块 RESX
 ```
 
-模板的 `ViewLocator` 只按 `XxxViewModel → XxxView` 在**同一程序集**内反射解析。v1 示例模块默认与 App 同程序集；真实项目把模块拆成独立程序集时，模块页面的 View/VM 对应关系在模块注册代码里显式给出（`DataTemplate` 或导航项直接持有 View 工厂），不要依赖默认 ViewLocator 跨程序集查找。
+模板的 `ViewLocator` 只按 `XxxViewModel → XxxView` 在**同一程序集**内反射解析。v1 示例模块与 App 同程序集，页面开箱可见；真实项目把模块拆成独立程序集时，模块页面的 View/VM 对应关系在模块注册代码里显式给出（`DataTemplate` 或导航项直接持有 View 工厂），不要依赖默认 ViewLocator 跨程序集查找。
 
 #### 4.6.3 一个页面的主流实现路径
 
@@ -512,8 +523,26 @@ Modules/Inventory/
 1. `Views/Customers/CustomerListView.axaml`：只负责布局、控件和数据绑定；必要的 UI 事件放少量 code-behind，不把业务/数据库逻辑写在里面。
 2. `ViewModels/Customers/CustomerListViewModel.cs`：继承模板生成的 `ViewModelBase`（ViewLocator 只匹配它），用 `[ObservableProperty]`、`[RelayCommand]` 管理可观察状态和用户命令；不要另建一套 BaseViewModel 层级。
 3. `Services/Customers/CustomerService.cs`：只在存在明确业务流程时增加；以普通构造函数注入依赖，不为每个方法生成一个 Handler/UseCase 类。
-4. 数据访问放在 `Plinth.Data` 的标准 EF Core 写法中（如 `DbContext`、配置类和迁移）；简单查询无需为了形式增加 Repository 接口。ViewModel 不直接拼 SQL 或持有 DbContext。
+4. 数据访问用 `AppDbContext`（`Plinth.App/Data`）和标准 EF Core 写法；框架实体配置放 `App/Data/Configurations`，模块实体用 `IEntityTypeConfiguration` 声明在模块 `Data/` 下；迁移在宿主生成（§8.2）。简单查询无需为了形式增加 Repository 接口；ViewModel 不直接拼 SQL 或持有 DbContext。
 5. 服务通过标准 `IServiceCollection` 在应用组合根显式注册；不使用反射扫描、自动注册魔法或私有注册 DSL。
+6. **在模块注册扩展方法里把页面挂进导航**：向 DI 注册一条 `NavigationItem`（记录类型：Id、TitleKey、`Func<ViewModelBase>` 创建页面 VM、可嵌套子项），Shell 的 `MainViewModel` 注入 `IEnumerable<NavigationItem>` 构建导航树——这是标准 DI 枚举模式，不新增 `IWorkspaceRegistry`。页面 VM 的创建放在注册工厂里，业务 ViewModel 不注入容器；`NavigationItem` 放 Shell 契约（`Plinth.App/Navigation`；模块拆独立程序集时放共享 UI 契约），不要放 `Plinth.Core`（它引用 `ViewModelBase`）。示例模块的注册类是唯一权威形状，新页面照抄即可：
+  ```csharp
+  // 以示例模块 Inventory 为例；步骤 1-3 的 Customers 按同一形状替换即可
+  // Modules/Inventory/InventoryModuleRegistration.cs（示意）
+  public static class InventoryModuleRegistration
+  {
+      public static IServiceCollection AddInventoryModule(this IServiceCollection services)
+      {
+          services.AddTransient<InventoryListViewModel>();
+          services.AddSingleton(sp => new NavigationItem(
+              "inventory.list",
+              "inventory.list.nav",
+              () => sp.GetRequiredService<InventoryListViewModel>()));
+          return services;
+      }
+  }
+  ```
+  菜单/工具栏命令同理：模块注册时向命令清单添加条目，Shell 按当前上下文渲染；不引入私有注册 DSL。做完第 6 步，页面在导航中立即可见——五步（缺此步）做完页面不可达。
 
 按需扩展时，可以在 `Views/Customers/`、`ViewModels/Customers/` 等标准层目录下增加一层业务子目录；不要同时叠加 `Features/Customers/Presentation/View/Application/UseCases/Handlers/Adapters/Infrastructure/Providers/Abstractions` 等多层结构。一个类型放在哪里，开发者应当能按文件名和标准目录直接找到。
 
@@ -530,11 +559,11 @@ Modules/Inventory/
 - 让熟悉基本 C# / MVVM 的开发者快速找到入口、页面、服务和数据访问位置，是结构设计的目标。30 分钟运行样例、半天完成 CRUD 可作为上手测试目标，不是对每个开发者的硬性工时承诺。
 - 若新人经常找不到代码或需要学习大量私有概念，优先简化项目/目录/注册步骤，或补可运行示例；不能用“先学习我们的架构”回避问题。
 - `README.md` / `GETTING_STARTED.md` 必须写清官方模板来源、运行命令、项目入口和新增 CRUD 的文件位置；代码结构或关键命令变化时同步更新，不要求新人翻聊天记录找答案。
-- 最小上手路径固定写在 README：`dotnet restore` → `dotnet run --project src/Plinth.App` → 打开 `samples/Plinth.Sample/Modules/Inventory` 对照一个完整 CRUD → 按 §4.6.3 的 5 步新增页面。
+- 最小上手路径固定写在 README（单一入口，不跑第二个应用）：`dotnet restore` → `dotnet run --project src/Plinth.App` 启动参考宿主，实跑 Inventory 完整 CRUD → 对照 `src/Plinth.App/Modules/Inventory` 读模块源码 → 按 §4.6.3 的 6 步新增页面。二开者整仓复制为业务应用后，在应用根新增自己的 `Modules/<模块>/`，删除示例模块即可，不需要在"外壳"和"示例"两个入口之间选择。
 
 #### 4.6.6 成熟 .NET 开发者对照表（学习成本控制）
 
-Plinth 不发明新架构、不要求先学一套概念再写业务。除最后 5 行外，下表左侧的写法在 Plinth 中原样成立；熟练的 C# 开发者（含有 ASP.NET Core / WPF 前后端经验的人）应按既有习惯直接开发，只有 Plinth 特有的少数概念需要查一处文档。
+Plinth 不发明新架构、不要求先学一套概念再写业务。除最后 6 行外，下表左侧的写法在 Plinth 中原样成立；熟练的 C# 开发者（含有 ASP.NET Core / WPF 前后端经验的人）应按既有习惯直接开发，只有 Plinth 特有的少数概念需要查一处文档。
 
 | 已经熟悉的写法 | 在 Plinth 中 | 位置 / 说明 |
 |---|---|---|
@@ -542,7 +571,7 @@ Plinth 不发明新架构、不要求先学一套概念再写业务。除最后 
 | Service 层 + 构造函数注入 | 完全相同 | `Services/` 下普通类 |
 | View + ViewModel + `x:DataType` 编译绑定 | 完全相同 | `Views/*.axaml` + `ViewModels/*.cs` |
 | `[ObservableProperty]` / `[RelayCommand]` | 完全相同 | CommunityToolkit.Mvvm |
-| EF Core `DbContext`、迁移、LINQ | 完全相同 | `Plinth.Data` |
+| EF Core `DbContext`、迁移、LINQ | 完全相同 | v1 `AppDbContext`/迁移在 `Plinth.App/Data`；共享数据层出现后再抽 `Plinth.Data` |
 | `appsettings.json` + Options 模式 | 完全相同 | 标准配置绑定（§3.4） |
 | `ILogger<T>` | 完全相同 | Serilog 仅是实现（§5） |
 | `.resx` + `ResourceManager` | 完全相同 | 按模块组织（§9.2） |
@@ -551,9 +580,31 @@ Plinth 不发明新架构、不要求先学一套概念再写业务。除最后 
 | **以下为 Plinth 特有概念，各读一节即可** | | |
 | 模块注册入口 | `ServiceCollectionExtensions.AddPlinthModules` | §4.2 |
 | 组合根 DI 落点 | `App.axaml.cs` 建 provider | §4.3 |
+| 页面挂导航 | `NavigationItem`（含 `Func<ViewModelBase>` 工厂）+ 注入 `IEnumerable<NavigationItem>` | §4.6.3 第 6 步 |
 | 长任务统一入口 | `ITaskService` | §4.2 / §3.5 |
 | 界面权限判断 | `IPermissionService` | §4.2 / §3.3 |
 | 布局持久化格式 | `WorkspaceLayoutV1` | §7.1 |
+
+#### 4.6.7 二开装配点：不改核心能加什么
+
+v1 的单 `AppDbContext` 是**宿主扩展点**，不是封闭核心。模块通过标准 C# 装配，不改 Shell、不改 `AppDbContext`、不碰其他模块：
+
+| 二开需求 | 放在哪里 | 接入方式 | 是否改核心 |
+|---|---|---|---|
+| 新页面 | `Modules/<X>/Views`、`ViewModels` | 模块注册方法里加 `NavigationItem` | 否 |
+| 新服务/用例 | `Modules/<X>/Services` | 模块注册方法里 `AddTransient/AddSingleton` | 否 |
+| 新表/实体 | `Modules/<X>/Data` + `IEntityTypeConfiguration<T>` | `AppDbContext` 用 `ApplyConfigurationsFromAssembly` 自动纳入；只在宿主加一次迁移 | 只加迁移 |
+| 新权限点 | 模块注册方法 | `IPermissionService` + 稳定权限 key | 否 |
+| 新翻译 | `Modules/<X>/Resources/*.resx` | 标准 RESX | 否 |
+| 新样式/控件 | 模块 `Styles/` 或 `Plinth.UI` | DesignTokens/ThemeVariant | 否 |
+| 新长任务 | 模块服务 | `ITaskService` | 否 |
+| 布局持久化 | 现有 `WorkspaceLayoutV1` | 不另建布局存储 | 否 |
+
+这条边界就是模块化单体的主流做法：**一个宿主 DbContext + 每个模块的 `IEntityTypeConfiguration` + 宿主集中迁移**；ASP.NET Core 的模块化项目也这么做。只有当第二个应用真正共享数据层时，才把共享实体/配置抽到 `Plinth.Data`，模块代码不需要改。若一开始就确定多应用共用同一套框架表，也可以直接建 `Plinth.Data`（只放共享实体/配置，不含迁移），由宿主 `AppDbContext` 显式应用。
+
+模块可以是同一 App 下的文件夹，也可以是独立类库；独立类库时，`AppDbContext` 显式应用其 `IEntityTypeConfiguration`，页面 View/VM 用 `DataTemplate` 或 View 工厂显式映射，不依赖默认 ViewLocator 的跨程序集反射。
+
+**模块不要做：** 直接改 `AppDbContext`/`MainWindow`/Shell；引用其他模块的私有类或表；自建第二套导航、任务中心或布局存储；把业务迁移塞进框架库。
 
 ### 4.7 需要从首版遵守的通用规则
 
@@ -589,7 +640,7 @@ Plinth 不发明新架构、不要求先学一套概念再写业务。除最后 
 | CSV | CsvHelper | `34.0.0`，MS-PL 或 Apache-2.0 双许可 | 已有稳定版发布（2026-10-28）；采用并归档 Apache-2.0 许可文本。锁定前跑中文编码、行级错误、长数字、取消、公式注入回归。 |
 | XLSX | ClosedXML | `0.105.1`，MIT | Should；当前候选稳定版；中文、长数字、日期/损坏文件、内存 POC 通过才启用。 |
 | 日志 | Microsoft.Extensions.Logging + Serilog | `Serilog 4.4.0`、`Serilog.Extensions.Logging 10.0.0`、`Serilog.Sinks.File 7.0.0`、`Serilog.Formatting.Compact`（候选，Apache-2.0） | `ILogger<T>` 是业务代码唯一日志 API；适配包负责桥接，File Sink 负责文件输出；JSON 统一用 `Serilog.Formatting.Compact` 的 `CompactJsonFormatter` 写 NDJSON/CLEF，不自写 formatter、不混用第二种 JSON 格式。只保留这一套日志管线。 |
-| 测试 | xUnit v3 + Avalonia.Headless.XUnit | `xunit.v3 3.2.2`、`Avalonia.Headless.XUnit 12.1.4`、`Microsoft.NET.Test.Sdk 17.14.1`（Apache-2.0 / MIT） | **测试栈统一用 xunit v3。** `Avalonia.Headless.XUnit 12.1.4` 传递引入 xunit.v3，而 `dotnet new xunit` 模板默认给 xunit 2.9.3；两者同时存在时 `FactAttribute` 同名冲突，直接 CS0433 编译失败（2026-10-31 在同一 SDK 实测：v2 混装失败，改用 xunit.v3 3.2.2 后无头用例通过）。运行方式固定为 `dotnet test -p:TestingPlatformDotnetTestSupport=true`。 |
+| 测试 | xUnit v3 + Avalonia.Headless.XUnit | `xunit.v3 3.2.2`、`Avalonia.Headless.XUnit 12.1.4`、`Microsoft.NET.Test.Sdk 17.14.1`（Apache-2.0 / MIT） | **测试栈统一用 xunit v3。** `Avalonia.Headless.XUnit 12.1.4` 传递引入 xunit.v3，而 `dotnet new xunit` 模板默认给 xunit 2.9.3；两者同时存在时 `FactAttribute` 同名冲突，直接 CS0433 编译失败（2026-10-31 在同一 SDK 实测：v2 混装失败，改用 xunit.v3 3.2.2 后无头用例通过）。从 `dotnet new xunit` 起手时，先删除模板自带的 `xunit` 2.9.3 引用（保留 `Microsoft.NET.Test.Sdk`）、换为 `xunit.v3`，再加入 `Avalonia.Headless.XUnit`，否则就是文档自己写的 CS0433。运行方式固定为 `dotnet test -p:TestingPlatformDotnetTestSupport=true`。 |
 | 安装器 | NSIS | 3.13 候选；主程序许可为 zlib/libpng，压缩模块需单独核验 | 只使用已批准的压缩模块；不引入复杂自更新逻辑。 |
 | 字体 | Noto Sans CJK（按需） | SIL OFL | 明确字体文件、子集和许可证；安装包体积先实测。 |
 | PDF/图表/条码/分析 | 不属于核心默认依赖 | 后续按需求评估 | 只为实际使用场景选择一个组件；不能仅因“未来可能会用”而引入。 |
@@ -681,11 +732,12 @@ Avalonia 官方将 `TableView` 定位为只读表格，并已将 `Avalonia.Contr
 
 - 数据库文件放系统用户数据目录，不放安装目录或网络共享盘。Windows 使用当前用户 ACL；Linux 正式支持时使用用户专属目录权限。
 - **v1 统一使用 EF Core + Microsoft.Data.Sqlite**：实体映射、LINQ 查询、迁移、事务用一套模式。不要把 EF Core 与 Dapper 同时当默认方案。
-- 使用短生命周期 `DbContext`：通过 `IDbContextFactory<T>` 创建每个操作/工作单元所需的 context，用完释放；禁止把 `DbContext` 注册成单例或跨线程共享。
+- 使用短生命周期 `DbContext`：通过 `IDbContextFactory<AppDbContext>`（T = 宿主 context）创建每个操作/工作单元所需的 context，用完释放；禁止把 `DbContext` 注册成单例或跨线程共享。
 - 数据库查询/写入应使用 async API 并通过后台服务执行；不要在 UI 线程同步等待数据库。
 - 写事务边界明确；批量导入分批提交并可取消。SQLite 写锁争用时配置合理的 busy timeout；有限重试只用于明确可重试的锁冲突，并给用户可见的排队/失败提示。
 - 按实测启用 WAL；不把 WAL 数据库放到不适合 SQLite 的网络文件系统。
-- EF Core Migrations 作为唯一默认迁移方式。模块新增表须有独立迁移并验证组合应用的升级顺序；失败时保留原库/备份并阻止启动，不做静默清空或自动反向 DDL。
+- EF Core Migrations 作为唯一默认迁移方式。**v1 使用单一 `AppDbContext`（`Plinth.App/Data`）**：框架实体配置放 `App/Data/Configurations`，模块实体通过 `IEntityTypeConfiguration` 声明在模块 `Data/` 下，统一由 `AppDbContext.OnModelCreating` 调 `ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly)` 纳管。模块新增表 = 在 `AppDbContext` 生成一次迁移（迁移名带模块前缀便于归属），并验证组合应用的升级顺序；`dotnet ef migrations add` 的 `--project`/`--startup-project` 都指向 `Plinth.App`，并在 `Plinth.App` 提供 `IDesignTimeDbContextFactory<AppDbContext>`（桌面应用启动入口不适合 EF 设计时直接运行）。v1 不建模块独立 context，也不预拆 `Plinth.Data`——多 context 会带来迁移顺序与跨 context 事务问题；出现第二个应用真正共享数据层时，再把共享实体/配置抽到 `Plinth.Data`，由宿主 context 显式引用，不扫描全部已加载程序集。v1 示例模块与 App 同程序集；模块拆独立程序集时，在 `AppDbContext` 里显式追加该程序集的配置（模块注册提供 assembly 或配置列表），不扫描全部已加载程序集。跨模块写操作在同一 context/事务内完成；失败时保留原库/备份并阻止启动，不做静默清空或自动反向 DDL。
+- **`AppDbContext` 是宿主扩展点，不是封闭核心：** 模块只加 `IEntityTypeConfiguration` + 注册，不改 context；新增表只在宿主加一次迁移。若一开始就确定多应用共享数据层，可直接建 `Plinth.Data`（只放共享实体/配置，不含迁移），由宿主 context 显式应用；模块代码不变。
 - 本地缓存可重建，不作为唯一事实来源；框架表和业务表命名清晰区分。
 - **从首版开始遵循 §8.6 数据库可移植性规则**。业务模型不使用 SQLite 专有字段/类型/函数作为业务契约，业务查询优先写标准 LINQ。该规则不意味着 v1 已支持其他数据库。
 
@@ -758,6 +810,7 @@ GA 正式支持 `zh-CN`、`en-US`，两种语言必须完成核心 UI、错误�
 - key 规则：`moduleId.section.action`，例如 `inventory.list.refresh`；禁止不同模块占用同一全局 key。
 - 核心资源编译期生成；不假设运行时能自动热加载任意外部模块翻译。
 - v1 的翻译资源随模块编译交付；不支持动态下载/热更新语言包。将来真有外部语言包需求时，再设计版本与完整性校验。
+- **语言切换生效口径：** v1 切换语言后重启应用生效；设置页明确提示用户。不做全 UI 无重启即时刷新（已加载 XAML 绑定编译期 RESX 的刷新需要额外机制，列入后续评估）。
 - **回退链：缺失时先回退到 `en-US` 基准，再占位并产生诊断记录；不直接回退到"模块默认语言"**（避免英文用户看到某中文模块默认文案）。冲突规则：核心命名空间不可被第三方覆盖；模块只能在自身 namespace 注册。
 - 日期、数字、货币、时区分别处理；时间点用 UTC 存储，显示按用户选定时区转换；用户语言不能推断其国家/货币。
 - **RTL：首版仅 LTR，不做 RTL，不实现不验收。** Avalonia 提供 `FlowDirection` 能力，仅作架构预留；将来接阿拉伯语/希伯来语客户再单开 ADR，不在首版付镜像布局成本。
@@ -821,7 +874,7 @@ Phase 0 保留一份简短的安全检查记录即可：列出凭据、本地数
 
 ### 11.3 存储和 UI
 
-- 使用 Serilog 文件 Sink + JSON formatter 写入滚动 NDJSON 文件；按大小/日期轮转，有总量上限和保留策略。业务代码只依赖 `ILogger<T>`，启动时集中配置一次日志适配。
+- 使用 Serilog 文件 Sink + `CompactJsonFormatter`（§5）写入滚动 NDJSON 文件；按大小/日期轮转，有总量上限和保留策略。业务代码只依赖 `ILogger<T>`，启动时集中配置一次日志适配。
 - 索引按需存于 SQLite，查询采用流式/分页，不把全部日志文件一次加载到内存。
 - 日志中心可按时间、级别、模块、任务、错误码、关联 ID 过滤；提供堆栈详情、复制 ID、打开日志目录、诊断包预览。
 - **异常捕获（本地落盘，不自动上报）：** 在锁定的 .NET 10 + Avalonia 12.1.4 上，三个钩子的名称与签名已实测存在且可编译（2026-10-31，0 警告 0 错误）：`Dispatcher.UIThread.UnhandledException`（UI 线程未处理异常，`e.Handled` 可写回）、`TaskScheduler.UnobservedTaskException`（未观察到的 Task 异常，`e.SetObserved()`）、`AppDomain.CurrentDomain.UnhandledException`（AppDomain 级），各自落盘。**本轮只验证了 API 名称与标志位可写，各异常来源的实际覆盖仍须用真实故障样例逐个验证**；换 Avalonia/.NET 版本后必须重新对照实际引用核验，不得复制未经编译验证的 API 名称。**原生（engine/运行时）崩溃尽力而为**（如依赖 .NET 运行时崩溃报告/本地 dump），其覆盖范围限制**如实写入文档**，不承诺"单 handler 全覆盖原生层"。**不引入 Sentry/自动上传**；崩溃文件随诊断包在用户确认后导出。
@@ -974,10 +1027,10 @@ Phase 0 保留一份简短的安全检查记录即可：列出凭据、本地数
 
 ### 16.1 首版扩展机制
 
-- 业务模块是普通 C# 项目/程序集，使用明确的注册类或 `IServiceCollection` 扩展方法注册服务、页面/菜单、资源和迁移。
+- 业务模块是普通 C# 项目/程序集，使用明确的注册类或 `IServiceCollection` 扩展方法注册服务、页面/菜单、资源和实体配置；数据库迁移统一在宿主 `AppDbContext` 上维护（§8.2）。
 - 共享分页类型和任务/权限能力仅在模块实际需要时使用；日志直接用 `ILogger<T>`，翻译使用 `RESX`/`ResourceManager`。模块内部按普通 C# 方式组织服务与数据访问。
 - v1 不要求 JSON Manifest，不运行时发现模块，不建立插件商店，也不强制模块支持任意卸载/热加载。新增模块只需在应用的注册入口添加服务和菜单/页面。
-- CI 检查模块引用边界、重复资源 key、迁移与权限声明；只检查确实会造成跨模块耦合的规则。
+- CI 检查模块引用边界、重复资源 key、实体配置与权限声明；只检查确实会造成跨模块耦合的规则。
 
 ### 16.2 后续路线（按扩展触发条件排序）
 
@@ -1002,7 +1055,7 @@ Phase 0 保留一份简短的安全检查记录即可：列出凭据、本地数
 
 - **源码仓库是权威来源。** 提供可直接运行的应用模板、核心实现源码和完整 CRUD 示例；开发者可以调试、阅读和 fork，不要求先接受黑盒框架。
 - **NuGet 是可选的便利分发方式，不是唯一开发方式。** 当某个共享库的边界稳定、公开 API 有测试、版本策略明确后，可从同一源码构建并发布 NuGet 包。初期不为了发布包而提前拆分项目。
-- **两种用法并存：** 普通业务项目可以引用稳定 NuGet；需要深入调试或定制底层的团队可以使用源码项目引用或 fork。包版本、标签源码和样例必须一一对应，不能出现“包能用但找不到对应源码”的情况。
+- **两种用法并存：** 普通业务项目可以引用稳定 NuGet；需要深入调试或定制底层的团队可以使用源码项目引用或 fork。包版本、标签源码和样例必须一一对应，不能出现“包能用但找不到对应源码”的情况。**桌面外壳（`Plinth.App`）不走 NuGet，始终以源码参考宿主形式交付**——外壳是二开者复制改造的起点；NuGet 只用于 `Plinth.Core`/`Plinth.UI` 等边界稳定后的共享库。`Plinth.Data` 在 v1 默认不建，出现跨应用共享数据层时再抽；抽出的包只含共享实体/配置，不含迁移。框架表和业务表的迁移都随宿主 `AppDbContext` 源码维护。
 - **业务代码默认独立于框架核心。** 菜单、页面和业务 Service 按标准 C# 写法添加；需要改核心时可以 fork，但文档要说明后续跟进上游更新的成本。不得用“禁止改源码”限制开源使用者的自由。
 - 是否提供独立二进制分发、源码开放范围和支持承诺属于产品发布决策；在核心 API 尚未稳定前，先把源码、模板和示例做好。
 ### 16.4 兼容策略
@@ -1076,7 +1129,7 @@ ADR 只需记录背景、最终选择、为什么不选其他方案、影响、�
 
 | 风险 | 处理方式 |
 |---|---|
-| TableView 的列表能力不足，或业务后来要求单元格编辑 | v1 以 TableView + 表单编辑为默认；列出具体缺口后评估维护活跃、许可证合格的成熟控件。不默认使用 Deprecated DataGrid/归档 TreeDataGrid，也不自研完整网格。 |
+| TableView 的列表能力不足，或业务后来要求单元格编辑 | v1 以 TableView + 表单编辑为默认；列出具体缺口后评估维护活跃、许可证合格的成熟控件。不默认使用 Deprecated DataGrid/归档 TreeDataGrid，也不自研完整网格。若客户把内联编辑/冻结列当刚需：默认答复是表单编辑；官方推荐的 TreeDataGrid 属商业组件（Avalonia Pro/Accelerate），按 §5.1 需单独许可批准并记 ADR，v1 不预留商业授权、不把"未来可能购买"写进基线。 |
 | 依赖升级带来兼容或许可变化 | 统一管理版本；升级时核查上游发布、许可证和关键回归。 |
 | 查询/导入导出阻塞 UI 或内存持续增长 | 分页、流式处理、取消与真实数据剖析；不要提前自建性能框架。 |
 | 数据迁移/恢复造成数据丢失 | 迁移前备份、恢复演练、失败保留原数据；不自动反向 DDL。 |
