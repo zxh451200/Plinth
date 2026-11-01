@@ -23,6 +23,8 @@ dotnet test
 
 `tests/Plinth.App.Tests` 用 Avalonia headless 平台起真实 App:断言打在真实的可视树、真实的指针点击和真实按键上(拖分隔条、关标签、F5/F1/Ctrl+W、绑定是否解析得出 View),不开窗口也不弹界面。改 Shell 布局或导航注册后先跑它。
 
+CI 在 `.github/workflows/ci.yml`:`gate`(Windows,Release 构建 + `dotnet test`)阻塞合并;`linux-probe` 是观察位,`continue-on-error` 开着——开发机没有 WSL/Docker,Linux 那条没在本地验证过,连续绿几次再升成正式门禁。
+
 ## 项目结构
 
 ```text
@@ -30,6 +32,7 @@ Plinth.sln
 ├─ global.json                  固定 SDK 版本
 ├─ Directory.Build.props        所有项目共用的编译设置(版本号也在这里)
 ├─ Directory.Packages.props     所有 NuGet 包版本(只在这里改)
+├─ .github/workflows/ci.yml     门禁:Windows 阻塞 + Linux 观察位
 ├─ src/Plinth.App/
    ├─ Program.cs                程序入口:Serilog 配置、启动 Avalonia
    ├─ App.axaml / App.axaml.cs  建 DI 容器、注册异常钩子、打开主窗口
@@ -88,5 +91,5 @@ Plinth.sln
 - 可运行的 Inventory CRUD 示例模块
 - 主题切换 UI(令牌已备浅/深两套,界面跟随系统)
 - 中英文资源(RESX)
-- 单实例运行、安装包/便携包、CI、`nuget.config` 与包锁文件
+- 单实例运行、安装包/便携包、`nuget.config` 与包锁文件(CI 已有 Windows 门禁 + Linux 观察位)
 - 应用图标仍是 Avalonia 模板默认图标(`Assets/avalonia-logo.ico`),待品牌资源替换
