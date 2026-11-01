@@ -32,12 +32,18 @@ public partial class MainViewModel : ViewModelBase
         _logger = logger;
 
         NavigationItems = new ObservableCollection<NavigationItem>(navigationItems);
+        MenuItems = new ObservableCollection<NavigationItem>(
+            NavigationItems.Where(item => item.ShowInMenu));
         Tabs.CollectionChanged += (_, _) => OnTabsChanged();
 
-        SelectedNavigationItem = NavigationItems.FirstOrDefault();
+        SelectedNavigationItem = MenuItems.FirstOrDefault();
     }
 
+    /// <summary>全部已注册页面,按 Id 找页面时用这份。</summary>
     public ObservableCollection<NavigationItem> NavigationItems { get; }
+
+    /// <summary>侧栏只渲染 ShowInMenu 的页面(关于页这类不进菜单)。</summary>
+    public ObservableCollection<NavigationItem> MenuItems { get; }
 
     public ObservableCollection<WorkspaceTabViewModel> Tabs { get; } = [];
 

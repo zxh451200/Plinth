@@ -25,10 +25,12 @@ public static class ServiceCollectionExtensions
             "概览",
             () => provider.GetRequiredService<OverviewViewModel>()));
 
+        // 关于页照常注册,但不占侧栏一行:入口在「帮助」菜单和 F1
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             ShellNavigation.AboutId,
             "关于",
-            () => provider.GetRequiredService<AboutViewModel>()));
+            () => provider.GetRequiredService<AboutViewModel>(),
+            ShowInMenu: false));
 
         return services;
     }

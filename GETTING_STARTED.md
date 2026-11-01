@@ -15,14 +15,22 @@ dotnet run --project src/Plinth.App
 
 运行后会看到带菜单、左侧导航、标签页和状态栏的主窗口,启动时自动打开「概览」页。
 
+## 测试
+
+```bash
+dotnet test
+```
+
+`tests/Plinth.App.Tests` 用 Avalonia headless 平台起真实 App:断言打在真实的可视树、真实的指针点击和真实按键上(拖分隔条、关标签、F5/F1/Ctrl+W、绑定是否解析得出 View),不开窗口也不弹界面。改 Shell 布局或导航注册后先跑它。
+
 ## 项目结构
 
 ```text
 Plinth.sln
 ├─ global.json                  固定 SDK 版本
-├─ Directory.Build.props        所有项目共用的编译设置
+├─ Directory.Build.props        所有项目共用的编译设置(版本号也在这里)
 ├─ Directory.Packages.props     所有 NuGet 包版本(只在这里改)
-└─ src/Plinth.App/
+├─ src/Plinth.App/
    ├─ Program.cs                程序入口:Serilog 配置、启动 Avalonia
    ├─ App.axaml / App.axaml.cs  建 DI 容器、注册异常钩子、打开主窗口
    ├─ ServiceCollectionExtensions.cs   组合根:AddPlinthModules 注册服务和导航项
@@ -39,6 +47,10 @@ Plinth.sln
    ├─ Diagnostics/              AvaloniaSerilogSink(Avalonia 日志转发到 Serilog)
    ├─ Styles/DesignTokens.axaml 浅色/深色主题色令牌
    └─ Assets/                   图标等资源
+└─ tests/Plinth.App.Tests/
+   ├─ TestAppBuilder.cs         headless 平台起真实 App
+   ├─ Shell.cs                  摆好主窗口 + 真指针/真键盘输入的夹具
+   └─ ShellTests.cs             布局、导航、快捷键、日志桥接断言
 ```
 
 ## 新增一个页面
@@ -55,6 +67,7 @@ Plinth.sln
        () => provider.GetRequiredService<XxxViewModel>()));
    ```
    然后在本文件的「项目结构」和 `MainViewModel` 都不用改——Shell 注入 `IEnumerable<NavigationItem>` 自动生成导航。
+   页面注册了但不想占侧栏一行(比如只能从菜单或快捷键进的「关于」),再加一个 `ShowInMenu: false`。
 
 ## 键盘快捷键
 

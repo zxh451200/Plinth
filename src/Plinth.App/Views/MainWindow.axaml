@@ -124,7 +124,7 @@
                      FontSize="11"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
           <ListBox x:Name="NavigationList"
-                   ItemsSource="{Binding NavigationItems}"
+                   ItemsSource="{Binding MenuItems}"
                    SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
                    Background="Transparent"
                    BorderThickness="0"
