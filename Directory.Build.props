@@ -5,5 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- 发版只改这一行:状态栏/概览页/关于页/日志里的版本都取自它 -->
+    <Version>0.1.0</Version>
   </PropertyGroup>
 </Project>

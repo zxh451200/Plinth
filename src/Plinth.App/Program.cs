@@ -19,6 +19,11 @@ internal static class Program
     {
         AppPaths.EnsureCreated();
         Log.Logger = CreateLogger();
+
+        // 替代模板的 .LogToTrace():Avalonia 自家日志也进 Serilog(§4.6.1、§11.3)。
+        // 必须在 Log.Logger 就位之后装,且不能放进 BuildAvaloniaApp:设计器会直接调那个方法。
+        Logger.Sink = new AvaloniaSerilogSink();
+
         Log.Information("应用启动,版本 {Version},运行时 {Framework}", AppInfo.Version, AppInfo.FrameworkDescription);
 
         try
@@ -37,18 +42,12 @@ internal static class Program
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp()
-    {
-        // 替代模板的 .LogToTrace():Avalonia 自家日志也进 Serilog(§4.6.1、§11.3)
-        Logger.Sink = new AvaloniaSerilogSink(Log.Logger);
-
-        return AppBuilder.Configure<App>()
-            .UsePlatformDetect()
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+        .UsePlatformDetect()
 #if DEBUG
-            .WithDeveloperTools()
+        .WithDeveloperTools()
 #endif
-            ;
-    }
+        ;
 
     private static Serilog.ILogger CreateLogger() => new LoggerConfiguration()
         .MinimumLevel.Information()

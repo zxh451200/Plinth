@@ -17,12 +17,18 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<MainViewModel>();
         services.AddTransient<OverviewViewModel>();
+        services.AddTransient<AboutViewModel>();
 
         // 导航项就是页面注册入口:加一个页面 = 加一条 NavigationItem(§4.6.3 第 6 步)
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
-            "shell.overview",
+            ShellNavigation.OverviewId,
             "概览",
             () => provider.GetRequiredService<OverviewViewModel>()));
+
+        services.AddSingleton<NavigationItem>(provider => new NavigationItem(
+            ShellNavigation.AboutId,
+            "关于",
+            () => provider.GetRequiredService<AboutViewModel>()));
 
         return services;
     }

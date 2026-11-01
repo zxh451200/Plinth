@@ -8,8 +8,9 @@ namespace Plinth.App.Diagnostics;
 /// <summary>
 /// 把 Avalonia 自身日志转发给 Serilog(§11.3 启动时集中配置一次适配)。
 /// 只放行 Warning 及以上:预览层 Debug 日志量很大,写进文件没有价值。
+/// 每次写时现取 <see cref="Log.Logger"/>,不快照,这样换 logger 也不用重装 sink。
 /// </summary>
-internal sealed class AvaloniaSerilogSink(ILogger logger) : ILogSink
+internal sealed class AvaloniaSerilogSink : ILogSink
 {
     public bool IsEnabled(AvaloniaLevel level, string area) => level >= AvaloniaLevel.Warning;
 
@@ -26,7 +27,7 @@ internal sealed class AvaloniaSerilogSink(ILogger logger) : ILogSink
             return;
         }
 
-        logger
+        Serilog.Log.Logger
             .ForContext("AvaloniaArea", area)
             .ForContext("AvaloniaSource", source?.GetType().Name ?? "unknown")
             .Write(ToSerilogLevel(level), messageTemplate, propertyValues);

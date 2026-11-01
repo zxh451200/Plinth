@@ -34,11 +34,18 @@ public partial class OverviewViewModel : ViewModelBase, IRefreshable
     [ObservableProperty]
     public partial string LogSummary { get; set; }
 
-    [RelayCommand]
-    private void OpenDataFolder() => _folderService.TryOpen(AppPaths.DataDirectory);
+    /// <summary>页面自己的操作反馈;为空时不占位。</summary>
+    [ObservableProperty]
+    public partial string ActionHint { get; set; } = string.Empty;
 
     [RelayCommand]
-    private void OpenLogFolder() => _folderService.TryOpen(AppPaths.LogDirectory);
+    private void OpenDataFolder() => OpenFolder(AppPaths.DataDirectory, "数据目录");
+
+    [RelayCommand]
+    private void OpenLogFolder() => OpenFolder(AppPaths.LogDirectory, "日志目录");
+
+    private void OpenFolder(string path, string displayName) =>
+        ActionHint = _folderService.TryOpen(path) ? $"已打开{displayName}" : $"无法打开{displayName},请检查日志";
 
     public void Refresh() => LogSummary = ReadLogSummary();
 

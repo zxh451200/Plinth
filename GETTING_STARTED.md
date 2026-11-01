@@ -31,6 +31,7 @@ Plinth.sln
    ├─ ViewLocator.cs            XxxViewModel 自动对应 XxxView(同程序集)
    ├─ Navigation/
    │  ├─ NavigationItem.cs      Shell 导航契约:Id / Title / VM 工厂
+   │  ├─ ShellNavigation.cs     Shell 自带页面的 Id 常量(注册处与 Shell 命令共用)
    │  └─ IRefreshable.cs        页面支持 F5 刷新时实现
    ├─ Views/                    MainWindow、OverviewView、AboutView(.axaml)
    ├─ ViewModels/               MainViewModel、WorkspaceTabViewModel、OverviewViewModel、AboutViewModel

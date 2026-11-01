@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Plinth.App;
@@ -8,8 +7,9 @@ public static class AppInfo
 {
     public const string ProductName = "Plinth";
 
+    /// <summary>取本框架所在程序集,不是入口程序集:宿主/测试宿主里 GetEntryAssembly() 会读到别人的版本。</summary>
     public static string Version { get; } =
-        Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.0.0";
+        typeof(AppInfo).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
     public static string FrameworkDescription => RuntimeInformation.FrameworkDescription;
 

@@ -143,8 +143,16 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenLogFolder() => OpenFolder(AppPaths.LogDirectory, "日志目录");
 
+    /// <summary>关于页和其余页面走同一条注册路径:从注入的导航项里按 Id 找,不在 Shell 里造页面。</summary>
     [RelayCommand]
-    private void ShowAbout() => OpenTab(new NavigationItem("shell.about", "关于", () => new AboutViewModel()));
+    private void ShowAbout()
+    {
+        var about = NavigationItems.FirstOrDefault(item => item.Id == ShellNavigation.AboutId);
+        if (about is not null)
+        {
+            OpenTab(about);
+        }
+    }
 
     [RelayCommand]
     private void Exit() => _lifetime.TryShutdown();

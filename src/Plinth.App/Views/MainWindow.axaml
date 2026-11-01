@@ -104,16 +104,15 @@
       </Grid>
     </Border>
 
-    <!-- 导航 + 工作区 -->
-    <Grid>
+    <!-- 导航 + 工作区:侧栏宽度由第 0 列持有,分隔条直接改列宽;隐藏时整列归零(见 code-behind) -->
+    <Grid x:Name="ShellGrid">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="260" MinWidth="180" MaxWidth="420" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0"
-              Width="260"
               IsVisible="{Binding IsSidebarVisible}"
               Background="{DynamicResource PlinthPanelBrush}"
               BorderBrush="{DynamicResource PlinthBorderBrush}"
@@ -144,6 +143,7 @@
                     Width="4"
                     IsVisible="{Binding IsSidebarVisible}"
                     ResizeDirection="Columns"
+                    ResizeBehavior="PreviousAndNext"
                     Background="Transparent" />
 
       <Panel Grid.Column="2">

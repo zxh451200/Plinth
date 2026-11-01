@@ -64,6 +64,11 @@
         <Button Content="打开数据目录" Command="{Binding OpenDataFolderCommand}" />
         <Button Content="打开日志目录" Command="{Binding OpenLogFolderCommand}" />
       </StackPanel>
+
+      <TextBlock Text="{Binding ActionHint}"
+                 IsVisible="{Binding ActionHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 FontSize="12"
+                 Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>
