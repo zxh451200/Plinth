@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="Plinth.App.Views.AboutView"
+             x:DataType="vm:AboutViewModel">
+
+  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+    <TextBlock Text="Plinth" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
+    <TextBlock Text="{Binding Version, StringFormat='版本 {0}'}"
+               HorizontalAlignment="Center"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <TextBlock Text="通用原生桌面 Admin 框架(Avalonia + .NET 10)"
+               HorizontalAlignment="Center"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <TextBlock Text="{Binding Framework}"
+               Margin="0,12,0,0"
+               HorizontalAlignment="Center"
+               FontSize="11"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <TextBlock Text="{Binding OperatingSystem}"
+               HorizontalAlignment="Center"
+               FontSize="11"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+  </StackPanel>
+</UserControl>

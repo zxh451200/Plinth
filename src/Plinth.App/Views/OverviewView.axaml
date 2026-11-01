@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="Plinth.App.Views.OverviewView"
+             x:DataType="vm:OverviewViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+      <Setter Property="Margin" Value="0,0,12,10" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="Margin" Value="0,0,0,10" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="24,20" Spacing="14" HorizontalAlignment="Left">
+      <TextBlock Text="概览" FontSize="19" FontWeight="SemiBold" />
+      <TextBlock MaxWidth="760"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
+                 Text="这里是 Plinth 桌面骨架的运行状态。左侧导航的页面由各模块注册的 NavigationItem 提供,新增页面按 GETTING_STARTED 的步骤加一条注册即可。" />
+
+      <Border MaxWidth="760"
+              HorizontalAlignment="Left"
+              Background="{DynamicResource PlinthPanelBrush}"
+              BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="16,14">
+        <Grid ColumnDefinitions="150,*"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="版本" />
+          <TextBlock Grid.Row="0" Grid.Column="1" Classes="value" Text="{Binding Version}" />
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Classes="label" Text=".NET 运行时" />
+          <TextBlock Grid.Row="1" Grid.Column="1" Classes="value" Text="{Binding Framework}" />
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Classes="label" Text="操作系统" />
+          <TextBlock Grid.Row="2" Grid.Column="1" Classes="value" Text="{Binding OperatingSystem}" />
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Classes="label" Text="进程架构" />
+          <TextBlock Grid.Row="3" Grid.Column="1" Classes="value" Text="{Binding Architecture}" />
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Classes="label" Text="数据目录" />
+          <TextBlock Grid.Row="4" Grid.Column="1" Classes="value" Text="{Binding DataDirectory}" />
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Classes="label" Text="日志目录" />
+          <TextBlock Grid.Row="5" Grid.Column="1" Classes="value" Text="{Binding LogDirectory}" />
+
+          <TextBlock Grid.Row="6" Grid.Column="0" Classes="label" Text="日志文件" />
+          <TextBlock Grid.Row="6" Grid.Column="1" Classes="value" Text="{Binding LogSummary}" />
+        </Grid>
+      </Border>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="打开数据目录" Command="{Binding OpenDataFolderCommand}" />
+        <Button Content="打开日志目录" Command="{Binding OpenLogFolderCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

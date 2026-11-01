@@ -17,3 +17,10 @@ Desktop.ini
 node_modules/
 dist/
 build/
+
+# .NET 构建产物
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+TestResults/
