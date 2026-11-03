@@ -87,12 +87,14 @@
           <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
             <TextBlock Text="{loc:T logs.from}" FontSize="11"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-            <controls:DateField SelectedDate="{Binding From}" Label="{loc:T logs.from}" />
+            <CalendarDatePicker SelectedDate="{Binding From}" Width="160"
+                                AutomationProperties.Name="{loc:T logs.from}" />
           </StackPanel>
           <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
             <TextBlock Text="{loc:T logs.to}" FontSize="11"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-            <controls:DateField SelectedDate="{Binding To}" Label="{loc:T logs.to}" />
+            <CalendarDatePicker SelectedDate="{Binding To}" Width="160"
+                                AutomationProperties.Name="{loc:T logs.to}" />
           </StackPanel>
           <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4">
             <TextBlock Text="{loc:T logs.col.level}" FontSize="11"
