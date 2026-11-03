@@ -41,6 +41,50 @@ public sealed class RedactingLogSinkTests
     }
 
     [Fact]
+    public void Dropped_properties_become_redacted_placeholders_in_the_written_template()
+    {
+        using var output = new StringWriter();
+        using (var logger = new LoggerConfiguration()
+            .WriteTo.Sink(new RedactingLogSink(new LoggerConfiguration()
+                .WriteTo.Sink(new FormattedSink(output)).CreateLogger())).CreateLogger())
+        {
+            logger.ForContext("Module", "Demo")
+                .Information("Executed DbCommand ({elapsed}ms) [Parameters=[{parameters}], CommandType='{commandType}']",
+                    12, "user@example.com", "Text");
+        }
+
+        var raw = output.ToString();
+        Assert.DoesNotContain("{elapsed}", raw);
+        Assert.DoesNotContain("{parameters}", raw);
+        Assert.DoesNotContain("user@example.com", raw);
+        var entry = Assert.IsType<LogEntry>(LogReader.Parse(raw));
+        Assert.Equal("Demo", entry.Module);
+        Assert.Contains("[redacted]ms", entry.Message);
+        Assert.DoesNotContain("{", entry.Message);
+    }
+
+    [Fact]
+    public void Ef_core_command_information_is_dropped_but_warnings_are_kept()
+    {
+        using var output = new StringWriter();
+        using (var logger = new LoggerConfiguration()
+            .WriteTo.Sink(new RedactingLogSink(new LoggerConfiguration()
+                .WriteTo.Sink(new FormattedSink(output)).CreateLogger())).CreateLogger())
+        {
+            var ef = logger.ForContext("SourceContext", "Microsoft.EntityFrameworkCore.Database.Command");
+            ef.Information("Executed DbCommand ({elapsed}ms) [Parameters=[{parameters}]]", 12, "user@example.com");
+            ef.Warning("Command failed");
+            logger.Information("Other category information");
+        }
+
+        var lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(2, lines.Length);
+        Assert.DoesNotContain("Executed DbCommand", output.ToString());
+        Assert.Contains("Command failed", output.ToString());
+        Assert.Contains("Other category information", output.ToString());
+    }
+
+    [Fact]
     public void Binding_warnings_keep_the_failing_property_and_expression()
     {
         using var output = new StringWriter();

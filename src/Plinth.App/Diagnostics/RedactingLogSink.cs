@@ -19,6 +19,9 @@ internal sealed partial class RedactingLogSink(
     {
         // 技术阈值过滤普通事件；安全审计不受较高阈值抑制。
         if (logEvent.Level < minimumLevel && !IsAudit(logEvent)) return;
+        // EF Core 每执行一条 SQL 都记 Information,而参数与命令文本按白名单全部脱敏,
+        // 留下的一行没有任何诊断价值;命令失败等 Warning 及以上仍保留。
+        if (logEvent.Level < LogEventLevel.Warning && IsEfCommand(logEvent)) return;
         // 固定白名单：分类和 ID 不受任意业务属性数量挤占。
         var properties = new List<LogEventProperty>();
         foreach (var name in new[] { "EventKind", "Module", "SourceContext", "TaskId", "RetryOf",
@@ -60,8 +63,17 @@ internal sealed partial class RedactingLogSink(
             properties.Add(new LogEventProperty("ExceptionStack",
                 new ScalarValue(DiagnosticRedactor.Redact(stack))));
         }
+        // 白名单外的属性会被丢弃;对应占位符也要收掉,否则日志页会显示字面量 {elapsed}。
+        var kept = properties.Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+        var tokens = logEvent.MessageTemplate.Tokens.Select(token => token switch
+        {
+            PropertyToken property when !kept.Contains(property.PropertyName) => new TextToken("[redacted]"),
+            PropertyToken => token,
+            TextToken text => new TextToken(DiagnosticRedactor.Redact(text.Text)),
+            _ => token
+        }).ToArray();
         var safe = new LogEvent(logEvent.Timestamp, logEvent.Level, null,
-            new MessageTemplateParser().Parse(DiagnosticRedactor.Redact(logEvent.MessageTemplate.Text)),
+            new MessageTemplate(tokens),
             properties, logEvent.TraceId ?? default, logEvent.SpanId ?? default);
         destination.Write(safe);
     }
@@ -113,6 +125,10 @@ internal sealed partial class RedactingLogSink(
         value is ScalarValue { Value: string text }
             ? new ScalarValue(DiagnosticRedactor.Redact(text.Length > 256 ? text[..256] : text))
             : new ScalarValue("[redacted]");
+
+    private static bool IsEfCommand(LogEvent entry) =>
+        entry.Properties.TryGetValue("SourceContext", out var context)
+        && context is ScalarValue { Value: "Microsoft.EntityFrameworkCore.Database.Command" };
 
     private static bool IsAudit(LogEvent entry) =>
         entry.MessageTemplate.Text.StartsWith("SecurityAudit ", StringComparison.Ordinal)

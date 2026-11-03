@@ -30,6 +30,17 @@ public sealed class LogReaderTests : IDisposable
     }
 
     [Fact]
+    public void Parse_shows_redacted_for_placeholders_without_values()
+    {
+        var entry = LogReader.Parse(
+            """{"@t":"2026-11-01T08:00:00Z","@mt":"Executed DbCommand ({elapsed}ms) [Parameters=[{parameters}], CommandType='{commandType}']"}""");
+
+        Assert.NotNull(entry);
+        Assert.DoesNotContain("{", entry.Message);
+        Assert.Contains("[redacted]ms", entry.Message);
+    }
+
+    [Fact]
     public void Parse_keeps_level_and_appends_the_exception()
     {
         var entry = LogReader.Parse("""{"@t":"2026-11-01T08:00:00.0000000Z","@mt":"Failed","@l":"Error","@x":"System.Exception: boom"}""");

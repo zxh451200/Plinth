@@ -3,120 +3,158 @@
              xmlns:vm="using:Plinth.App.ViewModels"
              xmlns:svc="using:Plinth.App.Services"
              xmlns:loc="using:Plinth.App.Localization"
+             xmlns:controls="using:Plinth.App.Views.Controls"
              x:Class="Plinth.App.Views.TaskDiagnosticsView"
              x:DataType="vm:TaskDiagnosticsViewModel">
-  <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,2*,Auto,Auto,Auto,1*,Auto,Auto" RowSpacing="{DynamicResource PlinthSectionSpacing}">
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <TextBlock Text="{loc:T tasks.title}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <Button Content="{loc:T tasks.cancel}" Command="{Binding CancelTaskCommand}" IsEnabled="{Binding CanCancelSelected}" />
-      <Button x:Name="RetryTaskButton" Content="{loc:T tasks.retry}" Command="{Binding RetryTaskCommand}" />
-      <Button Content="{loc:T tasks.retry.previous}" Command="{Binding OpenPreviousAttemptCommand}"
-              IsVisible="{Binding SelectedItem?.RetryOf, Converter={x:Static ObjectConverters.IsNotNull}}" />
-      <Button Content="{loc:T tasks.retry.next}" Command="{Binding OpenNextAttemptCommand}"
-              IsVisible="{Binding SelectedItem?.RetriedAs, Converter={x:Static ObjectConverters.IsNotNull}}" />
-    </StackPanel>
-    <Border Grid.Row="1" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
-            BorderThickness="1" CornerRadius="6" Padding="1" MinHeight="90" BoxShadow="0 1 3 0 #1A000000">
-      <Grid>
-        <TableView ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
-                   AutomationProperties.Name="{loc:T tasks.title}">
-          <TableView.Columns>
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.name}" Binding="{Binding Title}" Width="180" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T logs.module}" Binding="{Binding Module}" Width="120" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.status}" Binding="{Binding StatusText}" Width="100" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.progress}" Binding="{Binding ProgressText}" Width="90" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.elapsed}" Binding="{Binding Elapsed}" Width="130" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.result.title}" Binding="{Binding ResultText}" />
-            <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T logs.taskId}" Binding="{Binding Id}" Width="250" />
-          </TableView.Columns>
-        </TableView>
-        <TextBlock Text="{loc:T tasks.list.empty}" IsVisible="{Binding IsTaskListEmpty}" HorizontalAlignment="Center"
-                   VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+  <!-- 页面内容高于窗口时整体滚动,避免底部导出区被裁掉 -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}">
+      <!-- 页头:标题在左,任务操作靠右,和日志页保持同一节奏 -->
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{loc:T tasks.title}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <WrapPanel.Styles>
+            <Style Selector="Button"><Setter Property="Margin" Value="8,0,0,0" /></Style>
+          </WrapPanel.Styles>
+          <Button Content="{loc:T tasks.cancel}" Command="{Binding CancelTaskCommand}" IsEnabled="{Binding CanCancelSelected}" />
+          <Button x:Name="RetryTaskButton" Content="{loc:T tasks.retry}" Command="{Binding RetryTaskCommand}" />
+          <Button Content="{loc:T tasks.retry.previous}" Command="{Binding OpenPreviousAttemptCommand}"
+                  IsVisible="{Binding SelectedItem?.RetryOf, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <Button Content="{loc:T tasks.retry.next}" Command="{Binding OpenNextAttemptCommand}"
+                  IsVisible="{Binding SelectedItem?.RetriedAs, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </WrapPanel>
       </Grid>
-    </Border>
-    <!-- 选中任务的结果与错误;未选中时整块收起 -->
-    <Border Grid.Row="2" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
-            BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
-            BoxShadow="0 1 3 0 #1A000000"
-            IsVisible="{Binding SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{Binding SelectedItem?.ResultText}" TextWrapping="Wrap"
-                   AutomationProperties.Name="{loc:T tasks.result.title}" />
-        <TextBlock Text="{Binding SelectedItem?.Error?.Code}" FontWeight="SemiBold" />
-        <TextBlock Text="{Binding SelectedItem?.Error?.Message}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource PlinthErrorBrush}" />
-        <TextBlock Text="{Binding SelectedItem?.Error?.NextStep}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-        <TextBlock Text="{Binding SelectedItem?.RetryText}" />
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBlock Text="{loc:T logs.correlationId}" VerticalAlignment="Center"
+
+      <!-- 任务列表:任务名吃剩余宽度,任务 ID 保留完整;结果明细放在详情卡里,不在列表重复占列 -->
+      <Border Height="200" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="1" BoxShadow="0 1 3 0 #1A000000">
+        <Grid>
+          <TableView ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     AutomationProperties.Name="{loc:T tasks.title}">
+            <TableView.Columns>
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.name}" Binding="{Binding Title}" />
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T logs.module}" Binding="{Binding Module}" Width="110" />
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.status}" Binding="{Binding StatusText}" Width="90" />
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.progress}" Binding="{Binding ProgressText}" Width="80" />
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T tasks.elapsed}" Binding="{Binding Elapsed}" Width="110" />
+              <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T logs.taskId}" Binding="{Binding Id}" Width="230" />
+            </TableView.Columns>
+          </TableView>
+          <TextBlock Text="{loc:T tasks.list.empty}" IsVisible="{Binding IsTaskListEmpty}" HorizontalAlignment="Center"
+                     VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+        </Grid>
+      </Border>
+
+      <!-- 选中任务的结果与错误;未选中时整块收起 -->
+      <Border Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
+              BoxShadow="0 1 3 0 #1A000000"
+              IsVisible="{Binding SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding SelectedItem?.ResultText}" TextWrapping="Wrap"
+                     AutomationProperties.Name="{loc:T tasks.result.title}" />
+          <TextBlock Text="{Binding SelectedItem?.Error?.Code}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectedItem?.Error?.Message}" TextWrapping="Wrap"
+                     Foreground="{DynamicResource PlinthErrorBrush}" />
+          <TextBlock Text="{Binding SelectedItem?.Error?.NextStep}" TextWrapping="Wrap"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBox Text="{Binding SelectedItem?.Error?.CorrelationId, Mode=OneWay}" IsReadOnly="True" MinWidth="280"
-                   MaxWidth="420" HorizontalAlignment="Left" AutomationProperties.Name="{loc:T logs.correlationId}" />
+          <TextBlock Text="{Binding SelectedItem?.RetryText}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{loc:T logs.correlationId}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+            <TextBox Text="{Binding SelectedItem?.Error?.CorrelationId, Mode=OneWay}" IsReadOnly="True" MinWidth="280"
+                     MaxWidth="420" HorizontalAlignment="Left" AutomationProperties.Name="{loc:T logs.correlationId}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{loc:T help.title}"
+                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowHelpCommand}"
+                    CommandParameter="{Binding SelectedItem?.Error?.Code}" />
+            <Button Content="{loc:T logs.viewTask}"
+                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowTaskLogsCommand}"
+                    CommandParameter="{Binding SelectedItem}" />
+          </StackPanel>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Content="{loc:T help.title}"
-                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowHelpCommand}"
-                  CommandParameter="{Binding SelectedItem?.Error?.Code}" />
-          <Button Content="{loc:T logs.viewTask}"
-                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowTaskLogsCommand}"
-                  CommandParameter="{Binding SelectedItem}" />
-        </StackPanel>
-      </StackPanel>
-    </Border>
-    <TextBlock Grid.Row="3" Text="{loc:T diagnostics.title}" FontSize="19" FontWeight="SemiBold" />
-    <!-- 诊断条件成组:三列网格,按钮不再被挤到第二行单独一个 -->
-    <Border Grid.Row="4" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
-            BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
-            BoxShadow="0 1 3 0 #1A000000">
-      <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="12">
-        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <TextBlock Text="{loc:T logs.from}" VerticalAlignment="Center" />
-          <CalendarDatePicker SelectedDate="{Binding From}" Width="140" VerticalAlignment="Center"
-                              AutomationProperties.Name="{loc:T logs.from}" />
-        </StackPanel>
-        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <TextBlock Text="{loc:T logs.to}" VerticalAlignment="Center" />
-          <CalendarDatePicker SelectedDate="{Binding To}" Width="140" VerticalAlignment="Center"
-                              AutomationProperties.Name="{loc:T logs.to}" />
-        </StackPanel>
-        <ComboBox Grid.Row="0" Grid.Column="2" ItemsSource="{Binding LevelOptions}" SelectedIndex="{Binding LevelIndex}"
-                  VerticalAlignment="Center" AutomationProperties.Name="{loc:T logs.col.level}" />
-        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="12">
-          <CheckBox Content="{loc:T diagnostics.logs}" IsChecked="{Binding IncludeLogs}" VerticalAlignment="Center" />
-          <CheckBox Content="{loc:T diagnostics.runtime}" IsChecked="{Binding IncludeRuntime}" VerticalAlignment="Center" />
-          <Button Content="{loc:T diagnostics.preview}" Command="{Binding PreviewCommand}" VerticalAlignment="Center" />
-          <Button Content="{loc:T diagnostics.cancelPreview}" Command="{Binding CancelPreviewCommand}" VerticalAlignment="Center" />
-        </StackPanel>
-      </Grid>
-    </Border>
-    <Border Grid.Row="5" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
-            BorderThickness="1" CornerRadius="6" Padding="1" MinHeight="90" BoxShadow="0 1 3 0 #1A000000">
-      <Grid>
-        <TableView ItemsSource="{Binding Files}" AutomationProperties.Name="{loc:T diagnostics.preview}">
+      </Border>
+
+      <TextBlock Text="{loc:T diagnostics.title}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0" />
+
+      <!-- 诊断条件:标签在控件上方,选项与执行按钮分列左右 -->
+      <Border Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
+              BoxShadow="0 1 3 0 #1A000000">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="16">
+          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+            <TextBlock Text="{loc:T logs.from}" FontSize="11"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+            <controls:DateField SelectedDate="{Binding From}" Label="{loc:T logs.from}" />
+          </StackPanel>
+          <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+            <TextBlock Text="{loc:T logs.to}" FontSize="11"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+            <controls:DateField SelectedDate="{Binding To}" Label="{loc:T logs.to}" />
+          </StackPanel>
+          <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4">
+            <TextBlock Text="{loc:T logs.col.level}" FontSize="11"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+            <ComboBox ItemsSource="{Binding LevelOptions}" SelectedIndex="{Binding LevelIndex}" Width="160"
+                      AutomationProperties.Name="{loc:T logs.col.level}" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="16"
+                      VerticalAlignment="Center">
+            <CheckBox Content="{loc:T diagnostics.logs}" IsChecked="{Binding IncludeLogs}" />
+            <CheckBox Content="{loc:T diagnostics.runtime}" IsChecked="{Binding IncludeRuntime}" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="8"
+                      HorizontalAlignment="Right" VerticalAlignment="Center">
+            <ProgressBar Width="80" IsIndeterminate="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                         VerticalAlignment="Center" />
+            <Button Content="{loc:T diagnostics.preview}" Command="{Binding PreviewCommand}" />
+            <Button Content="{loc:T diagnostics.cancelPreview}" Command="{Binding CancelPreviewCommand}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- 未预览时只留一行提示,避免空表格占满首屏 -->
+      <TextBlock Text="{loc:T diagnostics.preview.empty}" IsVisible="{Binding !HasPreview}"
+                 TextWrapping="Wrap" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+
+      <!-- 预览清单:文件与状态列定宽,包含字段吃剩余宽度 -->
+      <Border Height="150" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="1" BoxShadow="0 1 3 0 #1A000000"
+              IsVisible="{Binding HasPreview}">
+        <TableView ItemsSource="{Binding Files}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                   AutomationProperties.Name="{loc:T diagnostics.preview}">
           <TableView.Columns>
-            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.file}" Binding="{Binding Name}" Width="140" />
+            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.file}" Binding="{Binding Name}" Width="170" />
             <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.bytes}" Binding="{Binding Bytes}" Width="100" />
-            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.fields}" Binding="{Binding Fields}" Width="330" />
-            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.redaction}" Binding="{Binding Redaction}" />
+            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.redaction}" Binding="{Binding Redaction}" Width="150" />
+            <TableViewColumn x:DataType="svc:DiagnosticFile" Header="{loc:T diagnostics.fields}" Binding="{Binding Fields}" />
           </TableView.Columns>
         </TableView>
-        <TextBlock Text="{loc:T diagnostics.preview.empty}" IsVisible="{Binding !HasPreview}" HorizontalAlignment="Center"
-                   VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-      </Grid>
-    </Border>
-    <StackPanel Grid.Row="6" Spacing="6">
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Text="{loc:T diagnostics.excluded}" FontWeight="SemiBold" />
-        <TextBlock Text="{Binding ExcludedText}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <CheckBox Content="{loc:T diagnostics.confirm}" IsChecked="{Binding Confirmed}" IsEnabled="{Binding HasPreview}" />
-        <Button Content="{loc:T diagnostics.export}" Click="ExportClick" IsEnabled="{Binding Confirmed}" />
-      </StackPanel>
+      </Border>
+
+      <!-- 导出:预览生成后才出现,排除说明与确认动作收在同一张卡片里 -->
+      <Border Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
+              BoxShadow="0 1 3 0 #1A000000" IsVisible="{Binding HasPreview}">
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:T diagnostics.excluded}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding ExcludedText}" TextWrapping="Wrap"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+          </StackPanel>
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+            <CheckBox Content="{loc:T diagnostics.confirm}" IsChecked="{Binding Confirmed}"
+                      IsEnabled="{Binding HasPreview}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="{loc:T diagnostics.export}" Click="ExportClick"
+                    IsEnabled="{Binding Confirmed}" VerticalAlignment="Center" />
+          </Grid>
+        </Grid>
+      </Border>
+
+      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
+                 Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
     </StackPanel>
-    <TextBlock Grid.Row="7" Text="{Binding StatusText}" TextWrapping="Wrap"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-  </Grid>
+  </ScrollViewer>
 </UserControl>

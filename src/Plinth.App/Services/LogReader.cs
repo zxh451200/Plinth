@@ -258,9 +258,10 @@ public static partial class LogReader
             var name = match.Groups[1].Value;
             if (Regex.IsMatch(name, "password|token|secret|authorization|cookie|body", RegexOptions.IgnoreCase))
                 return "[redacted]";
+            // 写盘时被白名单丢弃的属性在模板里已折成 [redacted];旧文件里的缺值占位符也按同样方式显示。
             return root.TryGetProperty(name, out var value)
                 ? (value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.ToString())
-                : match.Value;
+                : "[redacted]";
         });
 
     [GeneratedRegex(@"\{@?\$?([A-Za-z0-9_]+)(?:[:,][^}]*)?\}")]
