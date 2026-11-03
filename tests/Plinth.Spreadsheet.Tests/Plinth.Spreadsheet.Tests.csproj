@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <DefineConstants>$(DefineConstants);PLINTH_XLSX</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" />
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Plinth.App/Modules/Demo/Services/SpreadsheetService.cs" Link="SpreadsheetService.cs" />
+    <Compile Include="../../src/Plinth.App/Data/CodeIdentity.cs" Link="CodeIdentity.cs" />
+    <Compile Include="../../src/Plinth.App/Modules/Demo/Services/CsvReader.cs" Link="CsvReader.cs" />
+    <Compile Include="../../src/Plinth.App/Modules/Demo/Services/CsvWriter.cs" Link="CsvWriter.cs" />
+  </ItemGroup>
+</Project>

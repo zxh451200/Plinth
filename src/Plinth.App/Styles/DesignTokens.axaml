@@ -1,6 +1,15 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- 设计令牌(§2.3):浅色/深色都是正式主题,界面统一用 DynamicResource 引用 -->
+  <Thickness x:Key="PlinthPageMargin">16</Thickness>
+  <Thickness x:Key="PlinthPanelPadding">16</Thickness>
+  <x:Double x:Key="PlinthSectionSpacing">12</x:Double>
+  <x:Double x:Key="PlinthControlHeight">32</x:Double>
+  <Thickness x:Key="PlinthControlPadding">12,5</Thickness>
+  <x:Double x:Key="PlinthRowHeight">34</x:Double>
+  <Thickness x:Key="PlinthRowPadding">8,4</Thickness>
+  <Thickness x:Key="PlinthToolbarPadding">8,6</Thickness>
+  <Thickness x:Key="PlinthNavigationPadding">10,7</Thickness>
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
       <SolidColorBrush x:Key="PlinthBackgroundBrush" Color="#F4F5F7" />
@@ -8,6 +17,10 @@
       <SolidColorBrush x:Key="PlinthBorderBrush" Color="#E3E6EA" />
       <SolidColorBrush x:Key="PlinthForegroundBrush" Color="#1F2328" />
       <SolidColorBrush x:Key="PlinthSubtleForegroundBrush" Color="#6B7280" />
+      <SolidColorBrush x:Key="PlinthErrorBrush" Color="#B91C1C" />
+      <SolidColorBrush x:Key="PlinthAccentBrush" Color="#2563EB" />
+      <SolidColorBrush x:Key="PlinthNavHoverBrush" Color="#F0F2F5" />
+      <SolidColorBrush x:Key="PlinthNavSelectedBrush" Color="#E8F0FE" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="PlinthBackgroundBrush" Color="#1B1D21" />
@@ -15,6 +28,10 @@
       <SolidColorBrush x:Key="PlinthBorderBrush" Color="#33373D" />
       <SolidColorBrush x:Key="PlinthForegroundBrush" Color="#E6E8EB" />
       <SolidColorBrush x:Key="PlinthSubtleForegroundBrush" Color="#9AA1A9" />
+      <SolidColorBrush x:Key="PlinthErrorBrush" Color="#F87171" />
+      <SolidColorBrush x:Key="PlinthAccentBrush" Color="#60A5FA" />
+      <SolidColorBrush x:Key="PlinthNavHoverBrush" Color="#2C2F34" />
+      <SolidColorBrush x:Key="PlinthNavSelectedBrush" Color="#2B3A55" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

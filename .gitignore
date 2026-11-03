@@ -24,3 +24,10 @@ build/
 .vs/
 *.user
 TestResults/
+
+# 发布产物
+artifacts/
+
+# Python 缓存
+__pycache__/
+*.pyc

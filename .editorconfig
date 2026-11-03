@@ -13,3 +13,10 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+# xUnit 建议类分析器:保留 IDE 提示,不作为格式门禁
+[tests/**/*.cs]
+dotnet_diagnostic.xUnit1051.severity = suggestion
+dotnet_diagnostic.xUnit2031.severity = suggestion
+dotnet_diagnostic.xUnit2017.severity = suggestion
+dotnet_diagnostic.xUnit1031.severity = suggestion

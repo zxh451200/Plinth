@@ -11,7 +11,16 @@ public static class AppPaths
 {
     public const string ProductName = "Plinth";
 
-    public static string DataDirectory { get; } = Path.Combine(StateRoot("XDG_DATA_HOME", "share"), ProductName);
+    /// <summary>环境变量:设了它,数据目录就用它(自动化测试用来隔离数据,也可以用来做便携使用)。</summary>
+    public const string DataDirectoryVariable = "PLINTH_DATA_DIR";
+
+    public static string DataDirectory { get; } = ResolveDataDirectory();
+
+    /// <summary>SQLite 数据库文件。</summary>
+    public static string DatabasePath => Path.Combine(DataDirectory, "plinth.db");
+
+    /// <summary>导出文件(CSV 等)默认放这里。</summary>
+    public static string ExportDirectory => Path.Combine(DataDirectory, "exports");
 
     public static string LogDirectory { get; } = Path.Combine(StateRoot("XDG_STATE_HOME", "state"), ProductName, "logs");
 
@@ -22,6 +31,14 @@ public static class AppPaths
     {
         Directory.CreateDirectory(DataDirectory);
         Directory.CreateDirectory(LogDirectory);
+    }
+
+    private static string ResolveDataDirectory()
+    {
+        var custom = Environment.GetEnvironmentVariable(DataDirectoryVariable);
+        return string.IsNullOrWhiteSpace(custom)
+            ? Path.Combine(StateRoot("XDG_DATA_HOME", "share"), ProductName)
+            : Path.GetFullPath(custom);
     }
 
     private static string StateRoot(string xdgVariable, string xdgFallback)

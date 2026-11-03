@@ -3,7 +3,7 @@
 > **品牌：** Plinth（柱础） — *One Foundation. Many Applications.（一个可靠底座，无限业务扩展。）*
 > **标识体系：** Plinth Core（必要共享类型） · Plinth App（桌面外壳与唯一参考宿主） · Plinth Data（可选：跨应用共享的 SQLite/EF Core 层；为服务端 PostgreSQL/MySQL 预留边界） · Plinth UI（可选：确认跨项目复用的控件/主题） · Plinth Modules（业务模块，随宿主应用编译）
 > **文档版本：v4.0（架构基线与二开交付修订版）**
-> 最后更新：2026-10-31（依赖版本快照核验日：2026-10-29）
+> 最后更新：2026-11-03（依赖版本快照核验日：2026-10-29）
 > 首发目标：Windows 11 x64；Linux x64 从 Phase 0 开始持续构建并在正式发布前独立验收
 > 目标读者：项目负责人、架构师、AI 编码 Agent、后续二次开发者
 > 文档地位：**本文件是当前实施基线。以 Avalonia 官方模板和标准 .NET 写法为起点，只为真实需要增加清楚、易理解的扩展；不自创框架，不为未来堆叠空接口、空项目或审批流程。版本快照见 §5，正式锁包前仍需复核。
@@ -32,11 +32,12 @@
 - 更新 Phase 0、依赖表、首版范围、风险表、ADR 和 Agent 指令，删除旧 DataGrid 默认决策残留。
 - 不因此自研完整网格、不提前建立通用控件适配框架，也不增加审批层级。常见 CRUD 通过列表选择记录、打开表单、保存/取消完成。
 - **2026-10-31 勘核修订（不影响 v4.0 决策本身）：** 对照本机 Avalonia.Templates 12.1.4 实际生成结果修正 MVVM 模板文件名（`ViewModels/MainViewModel.cs`，§4.6.1/§4.6.2），并补全模板生成文件清单、官方 DI 组合根与 `ServiceCollectionExtensions` 命名（§4.2/§4.3/§4.6）；统一“密度”档位口径（§3.4 与 §0.4/§2.3 对齐）；删除 `Delete` 快捷键表述中不存在的“撤销保护”（§2.2）；补充 `Serilog.Formatting.Compact` 依赖与 JSON formatter 选型（§0.1/§5）；修正 TableView 列可见性描述（`TableViewColumn.IsVisible` 存在，但没有内置列菜单，§6.2/§6.4）；补充 MySQL Provider 许可候选复核说明（§8.4）；新增成熟 .NET 开发者对照表（§4.6.6）。
-- **2026-10-31 第三轮（复查收尾）：** 曾明确 `samples/Plinth.Sample` 为独立可运行示例应用并进入最小上手路径（第四轮已撤销，改为 `Plinth.App` 内置 `Modules/Inventory`）；DI 示意补 provider 退出释放（§4.3）；统一 §0.1 发布交付形式表述与 §11.3 formatter 命名。
-- **2026-10-31 第四轮（外壳归属、导航注册与迁移口径）：** 统一桌面外壳归属——`Plinth.App` 是唯一参考宿主（官方模板 + Shell + Inventory 示例模块），删除独立 `samples/Plinth.Sample`，README 只保留单一入口，品牌标识行改为 Plinth App（外壳）/Plinth UI（可选控件），§16.3 明确外壳不走 NuGet；§4.6.3 补第 6 步"页面挂导航"并以示例模块注册类为权威形状（`NavigationItem` + 注入 `IEnumerable<NavigationItem>`，第五轮补 `Func<ViewModelBase>` 工厂，不新增 `IWorkspaceRegistry`）；§8.2/§3.9/§16.1 统一为单一宿主 `AppDbContext`（v1 在 `Plinth.App/Data`，`Plinth.Data` 为可选共享层）+ `IEntityTypeConfiguration` + 宿主集中迁移口径；§9.2 明确语言切换生效口径（重启生效）；§19 风险表补内联编辑与商业控件边界；§5 补 xUnit v3 起手步骤；模板命令补 `-f net10.0`；修订来源表述改为"上一版基线"。
+- **2026-10-31 第三轮（复查收尾）：** 曾明确 `samples/Plinth.Sample` 为独立可运行示例应用并进入最小上手路径（第四轮已撤销，改为 `Plinth.App` 内置 `Modules/Demo`）；DI 示意补 provider 退出释放（§4.3）；统一 §0.1 发布交付形式表述与 §11.3 formatter 命名。
+- **2026-10-31 第四轮（外壳归属、导航注册与迁移口径）：** 统一桌面外壳归属——`Plinth.App` 是唯一参考宿主（官方模板 + Shell + Demo 示例模块），删除独立 `samples/Plinth.Sample`，README 只保留单一入口，品牌标识行改为 Plinth App（外壳）/Plinth UI（可选控件），§16.3 明确外壳不走 NuGet；§4.6.3 补第 6 步"页面挂导航"并以示例模块注册类为权威形状（`NavigationItem` + 注入 `IEnumerable<NavigationItem>`，第五轮补 `Func<ViewModelBase>` 工厂，不新增 `IWorkspaceRegistry`）；§8.2/§3.9/§16.1 统一为单一宿主 `AppDbContext`（v1 在 `Plinth.App/Data`，`Plinth.Data` 为可选共享层）+ `IEntityTypeConfiguration` + 宿主集中迁移口径；§9.2 明确语言切换生效口径（重启生效）；§19 风险表补内联编辑与商业控件边界；§5 补 xUnit v3 起手步骤；模板命令补 `-f net10.0`；修订来源表述改为"上一版基线"。
 - **2026-10-31 第五轮（实现口径校正）：** 共享 context 统一为宿主 `AppDbContext`（v1 在 `Plinth.App/Data`，`Plinth.Data` 仅作可选共享层），明确 `ApplyConfigurationsFromAssembly` 纳管模块配置、`dotnet ef` 在 `Plinth.App` 生成迁移、`Plinth.Data` 默认不建且不含迁移；`NavigationItem` 改为携带 `Func<ViewModelBase>` 工厂并放在 `Plinth.App/Navigation`；同步把模块“迁移”旧表述改为“实体配置”，语言切换明确为重启生效，收尾发布/示例文案。
 - **2026-10-31 第六轮（按主流收口）：** v1 数据层简化为单一 `AppDbContext`（`Plinth.App/Data`）+ 同程序集实体配置 + 宿主迁移；`Plinth.Data` 降为可选的跨应用共享层，v1 不建；同步修正 §3.9/§4.6.2/§4.6.3/§4.6.6/§8.2/§16.1/§16.3。
 - **2026-10-31 第七轮（二开装配点）：** 新增 §4.6.7，明确单 `AppDbContext` 是宿主扩展点；列出页面/服务/表/权限/翻译/样式/任务/布局的装配位置与“是否改核心”；补充 §8.2 的模块配置/宿主迁移边界，以及模块作为独立类库时的显式装配方式。
+- **2026-11-01 实现对齐：** 示例模块为 `Modules/Demo`，不含具体业务；`NavigationItem` 使用 Id/Title/VM 工厂/ShowInMenu，页面命令通过普通 DI 集合贡献。本文保留架构与验收基线，使用方法见 GETTING_STARTED，当前实现和未验收项见 `docs/IMPLEMENTATION_STATUS.md`。源码、静态检查与真实构建/桌面验收分别记录，不以实现现状降低规范要求。
 
 **版本原则：** 采用当前受支持、兼容且许可证合格的稳定版本，不追 Preview/RC。候选版本是锁包前的核验起点，不代表已经完成编译或实机验收。
 
@@ -342,7 +343,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPlinthModules(this IServiceCollection services)
     {
         services.AddTransient<MainViewModel>();
-        services.AddInventoryModule();   // 业务模块的标准 IServiceCollection 扩展方法（§3.9）
+        services.AddDemoModule();   // 业务模块的标准 IServiceCollection 扩展方法（§3.9）
         return services;
     }
 }
@@ -433,9 +434,9 @@ UI 更新必须遵守单线程规则，但不应为普通异步代码增加多�
 ```text
 Plinth.sln
 ├─ src/
-│  ├─ Plinth.App/                 # 唯一参考宿主：官方模板 + 桌面外壳 + Inventory 示例模块
+│  ├─ Plinth.App/                 # 唯一参考宿主：官方模板 + 桌面外壳 + Demo 示例模块
 │  │  ├─ Modules/
-│  │  │  └─ Inventory/            # 示例模块（与 App 同程序集）：注册类 + Views/ViewModels/Services/Data/Resources
+│  │  │  └─ Demo/            # 示例模块（与 App 同程序集）：注册类 + Views/ViewModels/Services/Data/Resources
 │  │  ├─ Program.cs               # Avalonia 启动入口；模板原样
 │  │  ├─ App.axaml
 │  │  ├─ App.axaml.cs             # 建 ServiceProvider，解析主窗口 ViewModel
@@ -443,31 +444,31 @@ Plinth.sln
 │  │  ├─ app.manifest
 │  │  ├─ ServiceCollectionExtensions.cs  # AddPlinthModules
 │  │  ├─ Navigation/
-│  │  │  └─ NavigationItem.cs     # Shell 导航契约：Id/TitleKey/VM 工厂/children
+│  │  │  └─ NavigationItem.cs     # Shell 导航契约：Id/Title/VM 工厂/ShowInMenu
 │  │  ├─ Views/
 │  │  │  ├─ MainWindow.axaml
 │  │  │  └─ MainWindow.axaml.cs
 │  │  ├─ ViewModels/
 │  │  │  ├─ MainViewModel.cs      # 模板生成名
 │  │  │  └─ ViewModelBase.cs      # 模板生成；ViewLocator 只匹配它
-│  │  ├─ Models/                  # 仅放应用层模型；不要复制数据库实体充数
+│  │  ├─ Models/                  # （未实现，需要时再建）仅放应用层模型；不要复制数据库实体充数
 │  │  ├─ Services/                # 明确的应用服务/业务用例
 │  │  ├─ Data/
-│  │  │  ├─ AppDbContext.cs       # v1 唯一 context；纳管框架+模块配置
-│  │  │  ├─ Configurations/       # 框架实体配置 IEntityTypeConfiguration
-│  │  │  └─ Migrations/           # 宿主迁移（框架表+业务表）
+│  │  │  ├─ AppDbContext.cs       # v1 唯一 context；纳管框架+模块配置（已实现）
+│  │  │  └─ Configurations/       # （按需）框架实体配置 IEntityTypeConfiguration
+│  │  ├─ Migrations/              # 当前宿主迁移与固定快照；手写初始迁移待 EF 工具及运行验证
 │  │  ├─ Assets/                  # 图标、图片等资源（替换模板 logo）
 │  │  ├─ Styles/                  # 应用样式和主题
 │  │  └─ Plinth.App.csproj
-│  ├─ Plinth.Core/                # 仅放确实需要跨项目共享的纯 C# 类型
+│  ├─ Plinth.Core/                # （未实现，按需）仅放确实需要跨项目共享的纯 C# 类型
 │  ├─ Plinth.Data/                # 可选：跨应用共享数据层；v1 默认不建（AppDbContext 在 App/Data）
-│  └─ Plinth.UI/                  # 可复用 Avalonia 控件/主题；确认需要跨项目共享后保留
+│  └─ Plinth.UI/                  # （未实现，按需）可复用 Avalonia 控件/主题；确认需要跨项目共享后保留
 ├─ tests/
 │  ├─ Plinth.App.Tests/
 │  ├─ Plinth.Core.Tests/          # 对应项目存在且有可测逻辑时才创建
 │  └─ Plinth.Data.Tests/          # 抽到 Plinth.Data 时才需要
 ├─ docs/
-│  └─ adr/                        # 只放影响长期维护的简短决策记录
+│  └─ adr/                        # （未实现）只放影响长期维护的简短决策记录
 ├─ .github/workflows/ci.yml       # ubuntu + windows 两个 job（§14.4）
 ├─ .editorconfig                  # 换行/缩进/格式基线（§14.4）
 ├─ .gitattributes                 # 统一 LF 换行
@@ -475,17 +476,17 @@ Plinth.sln
 ├─ Directory.Build.props
 ├─ Directory.Packages.props
 ├─ global.json                    # SDK 10.0.403，rollForward latestPatch
-├─ nuget.config                   # 固定包源/镜像策略（§19）
+├─ scripts/nuget.config            # 当前固定包源；CI/发布显式传 --configfile（§19）
 ├─ GETTING_STARTED.md             # 30 分钟跑通 + 新增 CRUD 文件位置
-├─ THIRD_PARTY_NOTICES.md
-├─ SECURITY_MODEL.md
-├─ CHANGELOG.md
+├─ THIRD_PARTY_NOTICES.md         # 发布工具从真实还原依赖生成到包中；尚未完成真实生成与合规验收
+├─ SECURITY_MODEL.md              # 身份、权限、数据与诊断边界及当前验证限制
+├─ CHANGELOG.md                   # （未实现）
 └─ README.md
 ```
 
 这棵树是**约定示例，不是要求一次性创建所有项目和目录**。项目边界按以下规则决定：
 
-- `Plinth.App`：桌面入口、Shell、Views、ViewModels、页面命令和组合根，并内置 `Modules/Inventory` 示例模块——它是二开者整仓复制改造的唯一参考宿主。保留官方模板可识别的结构。
+- `Plinth.App`：桌面入口、Shell、Views、ViewModels、页面命令和组合根，并内置 `Modules/Demo` 示例模块——它是二开者整仓复制改造的唯一参考宿主。保留官方模板可识别的结构。
 - `Plinth.Core`：只放真正被多个项目共享的纯 C# 领域类型/公共契约，不引用 Avalonia、EF Core Provider 或操作系统 API；若没有真实共享内容就不建空项目。
 - `Plinth.Data`：v1 默认不建；出现第二个应用真正共享数据层时，再抽成普通 .NET 类库（只放共享实体/配置，不含迁移）。v1 的 `AppDbContext` 留在 `Plinth.App/Data`；不得建立自研 ORM 或万能 Repository。
 - `Plinth.UI`：仅当通用控件、Design Tokens、主题资源确实要跨应用/项目复用时建立普通 Avalonia 控件库（控件主题放 `Themes/`，这是 Avalonia 控件库惯例）；否则先放在 `Plinth.App` 的 `Styles/` 与 `Views/Controls/` 中，避免无效拆分。
@@ -502,16 +503,16 @@ Plinth.sln
 | `Assets/avalonia-logo.ico`、窗口标题 | 替换为 Plinth 品牌 | `BrandingConfig`；§2.3 |
 | `AvaloniaUI.DiagnosticsSupport`、`app.manifest` | 保留；DevTools 仅 Debug | 模板默认已是 Debug-only |
 
-**业务模块目录（v1 示例模块 `Modules/Inventory` 与 `Plinth.App` 同程序集；二开者整仓复制为业务应用后，在应用根下新增自己的 `Modules/<业务模块>/`，形状相同）：**
+**业务模块目录（v1 示例模块 `Modules/Demo` 与 `Plinth.App` 同程序集；二开者整仓复制为业务应用后，在应用根下新增自己的 `Modules/<业务模块>/`，形状相同）：**
 
 ```text
-Modules/Inventory/
-├─ InventoryModuleRegistration.cs   # AddInventoryModule：服务、导航项、资源、实体配置
+Modules/Demo/
+├─ DemoModuleRegistration.cs   # AddDemoModule：服务、导航项、资源、实体配置
 ├─ Views/                           # 模块自己的 AXAML
 ├─ ViewModels/
 ├─ Services/
 ├─ Data/                            # 模块实体配置 IEntityTypeConfiguration（v1 由宿主 AppDbContext 纳管，不建模块独立 context，见 §8.2）
-└─ Resources/                       # 模块 RESX
+└─ Resources/                       # XLSX 页面模块 RESX；CRUD 示例目前复用宿主 Strings RESX
 ```
 
 模板的 `ViewLocator` 只按 `XxxViewModel → XxxView` 在**同一程序集**内反射解析。v1 示例模块与 App 同程序集，页面开箱可见；真实项目把模块拆成独立程序集时，模块页面的 View/VM 对应关系在模块注册代码里显式给出（`DataTemplate` 或导航项直接持有 View 工厂），不要依赖默认 ViewLocator 跨程序集查找。
@@ -525,19 +526,19 @@ Modules/Inventory/
 3. `Services/Customers/CustomerService.cs`：只在存在明确业务流程时增加；以普通构造函数注入依赖，不为每个方法生成一个 Handler/UseCase 类。
 4. 数据访问用 `AppDbContext`（`Plinth.App/Data`）和标准 EF Core 写法；框架实体配置放 `App/Data/Configurations`，模块实体用 `IEntityTypeConfiguration` 声明在模块 `Data/` 下；迁移在宿主生成（§8.2）。简单查询无需为了形式增加 Repository 接口；ViewModel 不直接拼 SQL 或持有 DbContext。
 5. 服务通过标准 `IServiceCollection` 在应用组合根显式注册；不使用反射扫描、自动注册魔法或私有注册 DSL。
-6. **在模块注册扩展方法里把页面挂进导航**：向 DI 注册一条 `NavigationItem`（记录类型：Id、TitleKey、`Func<ViewModelBase>` 创建页面 VM、可嵌套子项），Shell 的 `MainViewModel` 注入 `IEnumerable<NavigationItem>` 构建导航树——这是标准 DI 枚举模式，不新增 `IWorkspaceRegistry`。页面 VM 的创建放在注册工厂里，业务 ViewModel 不注入容器；`NavigationItem` 放 Shell 契约（`Plinth.App/Navigation`；模块拆独立程序集时放共享 UI 契约），不要放 `Plinth.Core`（它引用 `ViewModelBase`）。示例模块的注册类是唯一权威形状，新页面照抄即可：
+6. **在模块注册扩展方法里把页面挂进导航**：向 DI 注册一条 `NavigationItem`（记录类型：Id、Title、`Func<ViewModelBase>` 创建页面 VM、ShowInMenu；多语言接入后 Title 换成资源 key，嵌套子项（未实现）按需再加），Shell 的 `MainViewModel` 注入 `IEnumerable<NavigationItem>` 构建导航树——这是标准 DI 枚举模式，不新增 `IWorkspaceRegistry`。页面 VM 的创建放在注册工厂里，业务 ViewModel 不注入容器；`NavigationItem` 放 Shell 契约（`Plinth.App/Navigation`；模块拆独立程序集时放共享 UI 契约），不要放 `Plinth.Core`（它引用 `ViewModelBase`）。示例模块的注册类是唯一权威形状，新页面照抄即可：
   ```csharp
-  // 以示例模块 Inventory 为例；步骤 1-3 的 Customers 按同一形状替换即可
-  // Modules/Inventory/InventoryModuleRegistration.cs（示意）
-  public static class InventoryModuleRegistration
+  // 以示例模块 Demo 为例；步骤 1-3 的 Customers 按同一形状替换即可
+  // Modules/Demo/DemoModuleRegistration.cs（示意）
+  public static class DemoModuleRegistration
   {
-      public static IServiceCollection AddInventoryModule(this IServiceCollection services)
+      public static IServiceCollection AddDemoModule(this IServiceCollection services)
       {
-          services.AddTransient<InventoryListViewModel>();
+          services.AddTransient<DemoListViewModel>();
           services.AddSingleton(sp => new NavigationItem(
-              "inventory.list",
-              "inventory.list.nav",
-              () => sp.GetRequiredService<InventoryListViewModel>()));
+              "demo.list",
+              "示例数据",
+              () => sp.GetRequiredService<DemoListViewModel>()));
           return services;
       }
   }
@@ -559,7 +560,7 @@ Modules/Inventory/
 - 让熟悉基本 C# / MVVM 的开发者快速找到入口、页面、服务和数据访问位置，是结构设计的目标。30 分钟运行样例、半天完成 CRUD 可作为上手测试目标，不是对每个开发者的硬性工时承诺。
 - 若新人经常找不到代码或需要学习大量私有概念，优先简化项目/目录/注册步骤，或补可运行示例；不能用“先学习我们的架构”回避问题。
 - `README.md` / `GETTING_STARTED.md` 必须写清官方模板来源、运行命令、项目入口和新增 CRUD 的文件位置；代码结构或关键命令变化时同步更新，不要求新人翻聊天记录找答案。
-- 最小上手路径固定写在 README（单一入口，不跑第二个应用）：`dotnet restore` → `dotnet run --project src/Plinth.App` 启动参考宿主，实跑 Inventory 完整 CRUD → 对照 `src/Plinth.App/Modules/Inventory` 读模块源码 → 按 §4.6.3 的 6 步新增页面。二开者整仓复制为业务应用后，在应用根新增自己的 `Modules/<模块>/`，删除示例模块即可，不需要在"外壳"和"示例"两个入口之间选择。
+- 最小上手路径固定写在 README（单一入口，不跑第二个应用）：`dotnet restore` → `dotnet run --project src/Plinth.App` 启动参考宿主，实跑 Demo 完整 CRUD → 对照 `src/Plinth.App/Modules/Demo` 读模块源码 → 按 §4.6.3 的 6 步新增页面。二开者整仓复制为业务应用后，在应用根新增自己的 `Modules/<模块>/`，删除示例模块即可，不需要在"外壳"和"示例"两个入口之间选择。
 
 #### 4.6.6 成熟 .NET 开发者对照表（学习成本控制）
 
@@ -807,7 +808,7 @@ GA 正式支持 `zh-CN`、`en-US`，两种语言必须完成核心 UI、错误�
 ### 9.2 技术实现
 
 - 使用 .NET `RESX`/`ResourceManager` 与标准 `CultureInfo`；按模块组织资源。复杂语言数据格式使用 .NET/系统能力，不额外建立一套国际化运行时。
-- key 规则：`moduleId.section.action`，例如 `inventory.list.refresh`；禁止不同模块占用同一全局 key。
+- key 规则：`moduleId.section.action`，例如 `demo.list.refresh`；禁止不同模块占用同一全局 key。
 - 核心资源编译期生成；不假设运行时能自动热加载任意外部模块翻译。
 - v1 的翻译资源随模块编译交付；不支持动态下载/热更新语言包。将来真有外部语言包需求时，再设计版本与完整性校验。
 - **语言切换生效口径：** v1 切换语言后重启应用生效；设置页明确提示用户。不做全 UI 无重启即时刷新（已加载 XAML 绑定编译期 RESX 的刷新需要额外机制，列入后续评估）。
@@ -969,6 +970,8 @@ Phase 0 保留一份简短的安全检查记录即可：列出凭据、本地数
 - 真机人工清单：真实窗口、IME、键盘快捷键、DPI/多显示器、安装升级卸载；Phase 0 与每个 GA 候选执行。
 - 用户任务可用性检查：建议邀请未参与设计的目标用户完成 §2.2 的任务并记录卡点；可用性检查不代替编译、数据安全和真实桌面验证。
 
+Windows 首发验收按仓库中的 [Windows 完整测试方案](docs/WINDOWS_TEST_PLAN.md) 执行。该方案固定测试环境、工具门禁、locked restore、Release 编译、C# 测试、性能 POC、可选 XLSX 变体、Windows UI、安装升级卸载和证据归档顺序；没有实际命令输出、测试报告或 Windows 证据的项目保持“未执行”，不能按源码或 workflow 配置记为通过。
+
 ### 14.2 UI 回归基线
 
 首版最多维护 6–10 个最有价值的页面状态截图/快照，优先主窗口、列表、表单、日志中心。字体和系统环境造成的不稳定差异先人工判断；不为追求全矩阵截图而使 CI 常常误报。
@@ -993,6 +996,7 @@ Phase 0 保留一份简短的安全检查记录即可：列出凭据、本地数
 - 许可证正文、第三方声明和 SBOM 齐全。
 - Windows 安装/卸载、数据保留、备份恢复和签名/文件校验通过。
 - 真机人工清单和用户任务检查完成；Linux 只有独立平台验收通过后才能标记正式支持。
+- 发布验收必须区分三类结果：`dotnet build Plinth.sln -c Release` 是解决方案编译结果；`dotnet publish src/Plinth.App/Plinth.App.csproj -c Release -r win-x64 --self-contained true` 是 Windows 发布目录；由发布目录生成的候选 ZIP 和 NSIS EXE 才是便携包及安装包验收对象。`bin/Release`、`obj` 或测试输出目录不能代替交付物。命令、检查项和证据格式见 [Windows 完整测试方案](docs/WINDOWS_TEST_PLAN.md) 与 [CI、依赖与发布交接](docs/release/RELEASE.md)。
 
 ## 15. 安装、更新与系统集成
 
@@ -1145,6 +1149,7 @@ ADR 只需记录背景、最终选择、为什么不选其他方案、影响、�
 
 以下清单聚焦首版必须正确的事项。Should/Could 能力如未交付，应在发布说明中如实列出，不额外阻断 GA。
 
+- [ ] 按 [Windows 完整测试方案](docs/WINDOWS_TEST_PLAN.md) 完成工具／锁包／格式门禁、Release 编译、全量 C# 测试、性能与可选构建、Windows UI、安装升级卸载和证据归档；未执行项单独标记。
 - [ ] Windows 11 x64 正常运行；菜单、工具栏、标签、列表和表单符合常见桌面使用习惯；键盘、中文 IME 和常见 DPI 流程经过实机检查。
 - [ ] 新增、查看、编辑、删除、保存/取消、字段错误和失败后保留输入行为正确；常见操作有清晰可见入口。
 - [ ] 深浅主题、`zh-CN`/`en-US` 核心 UI 和关键错误文案完整；未完成语言不宣称正式支持。
@@ -1154,7 +1159,7 @@ ADR 只需记录背景、最终选择、为什么不选其他方案、影响、�
 - [ ] 远程模式启用时，OIDC/凭据存储与服务端权限校验通过；服务端不得信任客户端传来的租户标识作为授权依据。
 - [ ] 日志/诊断包有容量限制、字段白名单、导出前预览和导出后脱敏检查；模拟敏感数据不会泄漏。
 - [ ] 页面关闭会取消页面查询、释放订阅和局部资源；长任务有状态和错误反馈。
-- [ ] 安装包与便携 ZIP 可运行；升级/卸载不静默删除用户数据；数据备份和恢复路径经过实测。
+- [ ] `dotnet build` 的 Release 编译、应用项目的 `win-x64` self-contained publish、候选 ZIP 和 NSIS 安装器分别完成对应检查；安装包与便携 ZIP 可运行，升级/卸载不静默删除用户数据，数据备份和恢复路径经过实测。
 - [ ] 构建、关键自动化测试、依赖许可证和 SBOM 检查结果真实可复现；未执行的测试明确标记。
 - [ ] 有可运行的 CRUD 示例和简短开发指南。新人上手时间、用户任务完成率作为持续改进指标；若核心任务无法完成或有误删/误覆盖风险，必须先修正。
 

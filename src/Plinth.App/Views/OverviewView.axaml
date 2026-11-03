@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:loc="using:Plinth.App.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
@@ -21,12 +22,12 @@
   </UserControl.Styles>
 
   <ScrollViewer>
-    <StackPanel Margin="24,20" Spacing="14" HorizontalAlignment="Left">
-      <TextBlock Text="概览" FontSize="19" FontWeight="SemiBold" />
+    <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:T overview.title}" FontSize="19" FontWeight="SemiBold" />
       <TextBlock MaxWidth="760"
                  TextWrapping="Wrap"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
-                 Text="这里是 Plinth 桌面骨架的运行状态。左侧导航的页面由各模块注册的 NavigationItem 提供,新增页面按 GETTING_STARTED 的步骤加一条注册即可。" />
+                 Text="{loc:T overview.intro}" />
 
       <Border MaxWidth="760"
               HorizontalAlignment="Left"
@@ -34,35 +35,36 @@
               BorderBrush="{DynamicResource PlinthBorderBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Padding="16,14">
+              Padding="16,14"
+              BoxShadow="0 1 3 0 #1A000000">
         <Grid ColumnDefinitions="150,*"
               RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-          <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="版本" />
+          <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="{loc:T overview.version}" />
           <TextBlock Grid.Row="0" Grid.Column="1" Classes="value" Text="{Binding Version}" />
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Classes="label" Text=".NET 运行时" />
+          <TextBlock Grid.Row="1" Grid.Column="0" Classes="label" Text="{loc:T overview.runtime}" />
           <TextBlock Grid.Row="1" Grid.Column="1" Classes="value" Text="{Binding Framework}" />
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Classes="label" Text="操作系统" />
+          <TextBlock Grid.Row="2" Grid.Column="0" Classes="label" Text="{loc:T overview.os}" />
           <TextBlock Grid.Row="2" Grid.Column="1" Classes="value" Text="{Binding OperatingSystem}" />
 
-          <TextBlock Grid.Row="3" Grid.Column="0" Classes="label" Text="进程架构" />
+          <TextBlock Grid.Row="3" Grid.Column="0" Classes="label" Text="{loc:T overview.arch}" />
           <TextBlock Grid.Row="3" Grid.Column="1" Classes="value" Text="{Binding Architecture}" />
 
-          <TextBlock Grid.Row="4" Grid.Column="0" Classes="label" Text="数据目录" />
+          <TextBlock Grid.Row="4" Grid.Column="0" Classes="label" Text="{loc:T overview.dataDir}" />
           <TextBlock Grid.Row="4" Grid.Column="1" Classes="value" Text="{Binding DataDirectory}" />
 
-          <TextBlock Grid.Row="5" Grid.Column="0" Classes="label" Text="日志目录" />
+          <TextBlock Grid.Row="5" Grid.Column="0" Classes="label" Text="{loc:T overview.logDir}" />
           <TextBlock Grid.Row="5" Grid.Column="1" Classes="value" Text="{Binding LogDirectory}" />
 
-          <TextBlock Grid.Row="6" Grid.Column="0" Classes="label" Text="日志文件" />
+          <TextBlock Grid.Row="6" Grid.Column="0" Classes="label" Text="{loc:T overview.logFiles}" />
           <TextBlock Grid.Row="6" Grid.Column="1" Classes="value" Text="{Binding LogSummary}" />
         </Grid>
       </Border>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="打开数据目录" Command="{Binding OpenDataFolderCommand}" />
-        <Button Content="打开日志目录" Command="{Binding OpenLogFolderCommand}" />
+        <Button Content="{loc:T overview.openData}" Command="{Binding OpenDataFolderCommand}" />
+        <Button Content="{loc:T overview.openLogs}" Command="{Binding OpenLogFolderCommand}" />
       </StackPanel>
 
       <TextBlock Text="{Binding ActionHint}"

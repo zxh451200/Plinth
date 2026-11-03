@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 文字资源。key 规则:模块.位置.动作,例如 demo.col.code。英文是默认(找不到语言时用它),中文在 Strings.zh-CN.resx。
+       两个文件的 key 必须一一对应、{0} 占位符也要一致,tests/Plinth.App.Tests/LocalizationTests.cs 会检查。 -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="menu.file" xml:space="preserve"><value>文件(_F)</value></data>
+  <data name="menu.file.new"><value>新增</value></data>
+  <data name="menu.file.save"><value>保存</value></data>
+  <data name="menu.edit"><value>编辑(_E)</value></data>
+  <data name="menu.edit.find"><value>查找</value></data>
+  <data name="menu.edit.delete"><value>删除</value></data>
+  <data name="menu.edit.cancel"><value>取消编辑</value></data>
+  <data name="menu.window"><value>窗口(_W)</value></data>
+  <data name="menu.window.openPages"><value>已打开页面</value></data>
+  <data name="menu.data.pageCommands"><value>页面命令</value></data>
+  <data name="menu.file.closeTab" xml:space="preserve"><value>关闭当前标签</value></data>
+  <data name="menu.file.closeAll" xml:space="preserve"><value>关闭全部标签</value></data>
+  <data name="menu.file.exit" xml:space="preserve"><value>退出</value></data>
+  <data name="menu.view.quickOpen" xml:space="preserve"><value>快速打开 (Ctrl+K)</value></data>
+  <data name="menu.view" xml:space="preserve"><value>查看(_V)</value></data>
+  <data name="menu.view.sidebar" xml:space="preserve"><value>导航面板</value></data>
+  <data name="menu.view.sidebarCompact" xml:space="preserve"><value>折叠导航</value></data>
+  <data name="menu.view.sidebarExpand" xml:space="preserve"><value>展开导航</value></data>
+  <data name="menu.data" xml:space="preserve"><value>数据(_D)</value></data>
+  <data name="menu.data.refresh" xml:space="preserve"><value>刷新</value></data>
+  <data name="menu.tools" xml:space="preserve"><value>工具(_T)</value></data>
+  <data name="menu.tools.openData" xml:space="preserve"><value>打开数据目录</value></data>
+  <data name="menu.tools.openLogs" xml:space="preserve"><value>打开日志目录</value></data>
+  <data name="menu.help" xml:space="preserve"><value>帮助(_H)</value></data>
+  <data name="menu.help.about" xml:space="preserve"><value>关于 Plinth</value></data>
+  <data name="toolbar.refresh" xml:space="preserve"><value>刷新</value></data>
+  <data name="toolbar.refresh.tip" xml:space="preserve"><value>刷新当前页面 (F5)</value></data>
+  <data name="toolbar.closeTab" xml:space="preserve"><value>关闭标签</value></data>
+  <data name="toolbar.closeTab.tip" xml:space="preserve"><value>关闭当前标签 (Ctrl+W)</value></data>
+  <data name="toolbar.logs" xml:space="preserve"><value>日志与错误</value></data>
+  <data name="toolbar.logs.tip" xml:space="preserve"><value>打开日志与错误中心</value></data>
+  <data name="shell.nav.title" xml:space="preserve"><value>导航</value></data>
+  <data name="shell.empty.hint" xml:space="preserve"><value>从左侧导航打开一个页面</value></data>
+  <data name="shell.empty.keys" xml:space="preserve"><value>Ctrl+W 关闭标签 · F5 刷新 · F1 帮助</value></data>
+  <data name="shell.tab.close" xml:space="preserve"><value>关闭标签</value></data>
+  <data name="shell.status.ready" xml:space="preserve"><value>就绪</value></data>
+  <data name="shell.status.tabCount" xml:space="preserve"><value>{0} 个标签</value></data>
+  <data name="shell.status.opened" xml:space="preserve"><value>已打开:{0}</value></data>
+  <data name="shell.status.closed" xml:space="preserve"><value>已关闭:{0}</value></data>
+  <data name="shell.status.closedAll" xml:space="preserve"><value>已关闭全部标签({0})</value></data>
+  <data name="shell.status.refreshed" xml:space="preserve"><value>已刷新:{0}</value></data>
+  <data name="shell.status.nothingToRefresh" xml:space="preserve"><value>当前页面没有可刷新的内容</value></data>
+  <data name="folder.data" xml:space="preserve"><value>数据目录</value></data>
+  <data name="folder.log" xml:space="preserve"><value>日志目录</value></data>
+  <data name="folder.opened" xml:space="preserve"><value>已打开{0}</value></data>
+  <data name="folder.failed" xml:space="preserve"><value>无法打开{0},请检查日志</value></data>
+  <data name="nav.overview" xml:space="preserve"><value>概览</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>设置</value></data>
+  <data name="nav.about" xml:space="preserve"><value>关于</value></data>
+  <data name="nav.demo" xml:space="preserve"><value>示例数据</value></data>
+  <data name="nav.group.business" xml:space="preserve"><value>业务</value></data>
+  <data name="nav.group.system" xml:space="preserve"><value>系统</value></data>
+  <data name="overview.title" xml:space="preserve"><value>概览</value></data>
+  <data name="overview.intro" xml:space="preserve"><value>这里是 Plinth 桌面骨架的运行状态。左侧导航的页面由各模块注册的 NavigationItem 提供,新增页面按 GETTING_STARTED 的步骤加一条注册即可。</value></data>
+  <data name="overview.version" xml:space="preserve"><value>版本</value></data>
+  <data name="overview.runtime" xml:space="preserve"><value>.NET 运行时</value></data>
+  <data name="overview.os" xml:space="preserve"><value>操作系统</value></data>
+  <data name="overview.arch" xml:space="preserve"><value>进程架构</value></data>
+  <data name="overview.dataDir" xml:space="preserve"><value>数据目录</value></data>
+  <data name="overview.logDir" xml:space="preserve"><value>日志目录</value></data>
+  <data name="overview.logFiles" xml:space="preserve"><value>日志文件</value></data>
+  <data name="overview.openData" xml:space="preserve"><value>打开数据目录</value></data>
+  <data name="overview.openLogs" xml:space="preserve"><value>打开日志目录</value></data>
+  <data name="overview.log.noFolder" xml:space="preserve"><value>日志目录尚未创建</value></data>
+  <data name="overview.log.empty" xml:space="preserve"><value>暂无日志文件</value></data>
+  <data name="overview.log.summary" xml:space="preserve"><value>{0} 个文件,共 {1}</value></data>
+  <data name="overview.log.ioError" xml:space="preserve"><value>无法读取日志目录</value></data>
+  <data name="overview.log.denied" xml:space="preserve"><value>无权限读取日志目录</value></data>
+  <data name="about.version" xml:space="preserve"><value>版本 {0}</value></data>
+  <data name="about.description" xml:space="preserve"><value>通用原生桌面 Admin 框架(Avalonia + .NET 10)</value></data>
+  <data name="settings.title" xml:space="preserve"><value>设置</value></data>
+  <data name="settings.theme" xml:space="preserve"><value>主题</value></data>
+  <data name="settings.theme.system" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="settings.theme.light" xml:space="preserve"><value>浅色</value></data>
+  <data name="settings.theme.dark" xml:space="preserve"><value>深色</value></data>
+  <data name="settings.theme.hint" xml:space="preserve"><value>改了立即生效。「跟随系统」会随系统的浅色/深色切换。</value></data>
+  <data name="settings.saved" xml:space="preserve"><value>已保存</value></data>
+  <data name="settings.language" xml:space="preserve"><value>语言</value></data>
+  <data name="settings.language.hint" xml:space="preserve"><value>改了语言要重启程序才生效。</value></data>
+  <data name="settings.language.saved" xml:space="preserve"><value>已保存,重启程序后生效。</value></data>
+  <data name="demo.new" xml:space="preserve"><value>新增</value></data>
+  <data name="demo.search.placeholder" xml:space="preserve"><value>按编码或名称搜索</value></data>
+  <data name="demo.search.name" xml:space="preserve"><value>搜索</value></data>
+  <data name="demo.list.name" xml:space="preserve"><value>示例数据列表</value></data>
+  <data name="demo.col.code" xml:space="preserve"><value>编码</value></data>
+  <data name="demo.col.name" xml:space="preserve"><value>名称</value></data>
+  <data name="demo.col.remark" xml:space="preserve"><value>备注</value></data>
+  <data name="demo.form.title" xml:space="preserve"><value>编辑</value></data>
+  <data name="demo.save" xml:space="preserve"><value>保存</value></data>
+  <data name="demo.cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="demo.delete" xml:space="preserve"><value>删除</value></data>
+  <data name="demo.delete.confirm" xml:space="preserve"><value>确认删除这条记录?删除后无法恢复。</value></data>
+  <data name="demo.delete.keep" xml:space="preserve"><value>保留</value></data>
+  <data name="demo.export" xml:space="preserve"><value>导出 CSV</value></data>
+  <data name="demo.status.exported" xml:space="preserve"><value>已导出到 {0}</value></data>
+  <data name="demo.status.exportFailed" xml:space="preserve"><value>导出失败,详细原因已写入日志。</value></data>
+  <data name="demo.status.count" xml:space="preserve"><value>共 {0} 条</value></data>
+  <data name="demo.status.loadFailed" xml:space="preserve"><value>加载失败,详细原因已写入日志。</value></data>
+  <data name="demo.err.codeRequired" xml:space="preserve"><value>请填写编码。</value></data>
+  <data name="demo.err.codeTooLong" xml:space="preserve"><value>编码最多 {0} 个字符。</value></data>
+  <data name="demo.err.nameRequired" xml:space="preserve"><value>请填写名称。</value></data>
+  <data name="demo.err.nameTooLong" xml:space="preserve"><value>名称最多 {0} 个字符。</value></data>
+  <data name="demo.err.remarkTooLong" xml:space="preserve"><value>备注最多 {0} 个字符。</value></data>
+  <data name="demo.err.duplicate" xml:space="preserve"><value>编码 {0} 已经存在,请换一个。</value></data>
+  <data name="demo.err.conflict" xml:space="preserve"><value>这条记录在你编辑期间被修改或删除了。请先保留输入，再取消并刷新列表。</value></data>
+  <data name="demo.err.saveFailed" xml:space="preserve"><value>保存失败,请稍后再试。详细原因已写入日志。</value></data>
+  <data name="demo.err.gone" xml:space="preserve"><value>这条记录已经不存在了。</value></data>
+  <data name="nav.logs" xml:space="preserve"><value>日志与错误中心</value></data>
+  <data name="logs.title" xml:space="preserve"><value>日志与错误中心</value></data>
+  <data name="logs.reload" xml:space="preserve"><value>刷新</value></data>
+  <data name="logs.openFolder" xml:space="preserve"><value>打开日志目录</value></data>
+  <data name="logs.onlyProblems" xml:space="preserve"><value>只看警告和错误</value></data>
+  <data name="logs.col.time" xml:space="preserve"><value>时间</value></data>
+  <data name="logs.col.level" xml:space="preserve"><value>级别</value></data>
+  <data name="logs.level.all"><value>全部级别</value></data>
+  <data name="logs.col.message" xml:space="preserve"><value>内容</value></data>
+  <data name="logs.status.count" xml:space="preserve"><value>最近 {0} 条</value></data>
+  <data name="logs.status.empty" xml:space="preserve"><value>没有可显示的日志。</value></data>
+  <data name="logs.status.failed" xml:space="preserve"><value>读取日志文件失败。</value></data>
+  <data name="logs.cleanOld" xml:space="preserve"><value>按配置的保留期清理日志</value></data>
+  <data name="logs.status.cleaned" xml:space="preserve"><value>已删除 {0} 个旧日志文件</value></data>
+  <data name="demo.import" xml:space="preserve"><value>导入 CSV</value></data>
+  <data name="demo.import.pickTitle" xml:space="preserve"><value>选择 CSV 文件</value></data>
+  <data name="demo.import.tooBig" xml:space="preserve"><value>文件超过 {0} MB。</value></data>
+  <data name="demo.import.empty" xml:space="preserve"><value>文件里没有数据行(第一行必须是表头)。</value></data>
+  <data name="demo.import.tooMany" xml:space="preserve"><value>数据行超过 {0} 行。</value></data>
+  <data name="demo.import.dupInFile" xml:space="preserve"><value>编码 "{0}" 在文件里出现了多次。</value></data>
+  <data name="demo.import.rowError" xml:space="preserve"><value>第 {0} 行:{1}</value></data>
+  <data name="demo.status.imported" xml:space="preserve"><value>已导入:新增 {0} 条,更新 {1} 条</value></data>
+  <data name="demo.status.importRejected" xml:space="preserve"><value>没有导入任何数据。{0}</value></data>
+  <data name="demo.status.importFailed" xml:space="preserve"><value>导入失败,详细原因已写入日志。</value></data>
+  <data name="nav.backup" xml:space="preserve"><value>备份</value></data>
+  <data name="backup.title" xml:space="preserve"><value>备份与恢复</value></data>
+  <data name="backup.intro" xml:space="preserve"><value>ZIP 备份包含一致的数据库副本、设置和 SHA-256 清单。请预览并确认后安排下次启动恢复；当前数据库和设置会保留安全副本。</value></data>
+  <data name="backup.create" xml:space="preserve"><value>立即备份...</value></data>
+  <data name="backup.restore" xml:space="preserve"><value>从备份恢复...</value></data>
+  <data name="backup.pickSave" xml:space="preserve"><value>备份另存为</value></data>
+  <data name="backup.pickOpen" xml:space="preserve"><value>选择备份文件</value></data>
+  <data name="backup.fileType" xml:space="preserve"><value>ZIP 备份</value></data>
+  <data name="backup.status.done" xml:space="preserve"><value>备份已保存到 {0}</value></data>
+  <data name="backup.status.failed" xml:space="preserve"><value>备份失败,详细原因已写入日志。</value></data>
+  <data name="backup.status.staged" xml:space="preserve"><value>备份文件已就绪。重启程序后完成恢复,在此之前当前数据不变。</value></data>
+  <data name="backup.status.pending" xml:space="preserve"><value>有一次恢复在等待下次重启。</value></data>
+  <data name="backup.err.notDatabase" xml:space="preserve"><value>这个文件不是数据库备份。</value></data>
+  <data name="backup.err.corrupt" xml:space="preserve"><value>这个备份没通过完整性检查,没有使用。</value></data>
+  <data name="backup.err.stageFailed" xml:space="preserve"><value>准备恢复失败,详细原因已写入日志。</value></data>
+  <data name="demo.col.updatedAt" xml:space="preserve"><value>修改时间</value></data>
+  <data name="demo.col.updatedBy" xml:space="preserve"><value>修改人</value></data>
+  <data name="error.title" xml:space="preserve"><value>出错了</value></data>
+  <data name="error.body" xml:space="preserve"><value>程序遇到了一个意外错误,详细原因已写入日志。你可以继续使用;如果问题反复出现,请重启程序。</value></data>
+  <data name="error.logPath" xml:space="preserve"><value>日志目录:{0}</value></data>
+  <data name="error.ok" xml:space="preserve"><value>确定</value></data>
+  <data name="about.update.check" xml:space="preserve"><value>检查更新</value></data>
+  <data name="about.update.open" xml:space="preserve"><value>打开下载地址</value></data>
+  <data name="about.update.openFailed" xml:space="preserve"><value>无法打开下载地址，请检查默认浏览器或联系支持。</value></data>
+  <data name="about.update.checking" xml:space="preserve"><value>正在检查...</value></data>
+  <data name="about.update.notConfigured" xml:space="preserve"><value>检查更新功能未开启。管理员在 settings.json 里填写 UpdateFeedUrl 后即可启用。</value></data>
+  <data name="about.update.upToDate" xml:space="preserve"><value>已经是最新版本。</value></data>
+  <data name="about.update.available" xml:space="preserve"><value>有新版本 {0}:{1}</value></data>
+  <data name="about.update.failed" xml:space="preserve"><value>检查更新失败,详细原因已写入日志。</value></data>
+  <data name="tray.show" xml:space="preserve"><value>显示窗口</value></data>
+  <data name="tray.exit" xml:space="preserve"><value>退出</value></data>
+  <data name="settings.paths" xml:space="preserve"><value>目录位置</value></data>
+  <data name="settings.dataPath" xml:space="preserve"><value>数据目录</value></data>
+  <data name="settings.logPath" xml:space="preserve"><value>日志目录</value></data>
+  <data name="settings.openDataPath" xml:space="preserve"><value>打开数据目录</value></data>
+  <data name="settings.openLogPath" xml:space="preserve"><value>打开日志目录</value></data>
+  <data name="remote.title"><value>远程连接</value></data>
+  <data name="remote.enabled"><value>启用连接检查</value></data>
+  <data name="remote.baseUrl"><value>服务地址（HTTPS）</value></data>
+  <data name="remote.healthPath"><value>健康检查路径</value></data>
+  <data name="remote.check"><value>检查连接</value></data>
+  <data name="remote.status.disabled"><value>连接检查未启用。</value></data>
+  <data name="remote.status.connected"><value>健康检查接口响应成功。</value></data>
+  <data name="remote.status.invalid"><value>请填写有效的 HTTPS 地址和同一服务器上的健康检查路径。</value></data>
+  <data name="remote.status.failed"><value>健康检查失败或超时。</value></data>
+  <data name="remote.status.unavailable"><value>连接服务不可用。</value></data>
+  <data name="shell.layout.reset"><value>重置工作区布局</value></data>
+  <data name="shell.layout.saveFailed"><value>工作区布局保存失败。</value></data>
+  <data name="shell.unsaved.title"><value>未保存的更改</value></data>
+  <data name="shell.unsaved.message"><value>是否保存当前编辑的更改？</value></data>
+  <data name="shell.unsaved.save"><value>保存</value></data>
+  <data name="shell.unsaved.discard"><value>丢弃</value></data>
+  <data name="shell.unsaved.cancel"><value>取消</value></data>
+  <data name="shell.unsaved.failed"><value>无法检查关闭条件，请重试并查看日志。</value></data>
+  <data name="demo.form.unsaved"><value>有未保存的更改</value></data>
+  <data name="demo.list.sort"><value>排序</value></data>
+  <data name="demo.list.descending"><value>降序</value></data>
+  <data name="demo.list.copy"><value>复制所选记录</value></data>
+  <data name="demo.list.edit"><value>编辑所选记录</value></data>
+  <data name="demo.list.copyFailed"><value>无法将所选记录复制到剪贴板。</value></data>
+  <data name="demo.list.columns"><value>显示列</value></data>
+  <data name="demo.list.reset"><value>恢复列表默认值</value></data>
+  <data name="demo.list.previous"><value>上一页</value></data>
+  <data name="demo.list.next"><value>下一页</value></data>
+  <data name="demo.list.pageSize"><value>每页条数</value></data>
+  <data name="demo.list.preferencesFailed"><value>列表设置保存失败。</value></data>
+  <data name="demo.list.empty"><value>没有匹配的记录</value></data>
+  <data name="nav.taskDiagnostics"><value>任务与诊断</value></data>
+  <data name="logs.search"><value>搜索</value></data>
+  <data name="logs.module"><value>模块</value></data>
+  <data name="logs.taskId"><value>任务 ID</value></data>
+  <data name="logs.errorCode"><value>错误码</value></data>
+  <data name="logs.correlationId"><value>关联 ID</value></data>
+  <data name="logs.from"><value>起始日期</value></data>
+  <data name="logs.to"><value>截止日期</value></data>
+  <data name="logs.range.invalid"><value>起始日期不能晚于截止日期。</value></data>
+  <data name="logs.scan.summary"><value>无效行：{0}；结果受限：{1}。</value></data>
+  <data name="logs.copyDetails"><value>复制详情</value></data>
+  <data name="logs.copyId"><value>复制关联 ID</value></data>
+  <data name="logs.copy.failed"><value>无法复制到剪贴板。</value></data>
+  <data name="logs.details.empty"><value>选中一条日志查看完整详情。</value></data>
+  <data name="tasks.title"><value>任务中心</value></data>
+  <data name="tasks.cancel"><value>请求取消</value></data>
+  <data name="tasks.name"><value>任务</value></data>
+  <data name="tasks.status"><value>状态</value></data>
+  <data name="tasks.progress"><value>进度</value></data>
+  <data name="tasks.elapsed"><value>耗时</value></data>
+  <data name="tasks.indeterminate"><value>未知</value></data>
+  <data name="tasks.retry.allowed"><value>可以重试。</value></data>
+  <data name="tasks.retry.manual"><value>请检查处理结果后再重新发起。</value></data>
+  <data name="tasks.error.failed"><value>任务执行失败。</value></data>
+  <data name="tasks.error.next"><value>使用关联 ID 查看日志，确认处理结果后再操作。</value></data>
+  <data name="tasks.status.Waiting"><value>等待</value></data>
+  <data name="tasks.status.Running"><value>运行</value></data>
+  <data name="tasks.status.Succeeded"><value>成功</value></data>
+  <data name="tasks.status.Failed"><value>失败</value></data>
+  <data name="tasks.status.Cancelled"><value>已取消</value></data>
+  <data name="tasks.status.Cancelling"><value>正在取消</value></data>
+  <data name="tasks.queued"><value>已加入任务中心，请在“任务与诊断”查看进度和结果；CSV 错误报告保存在导出目录，完成后请刷新数据列表。</value></data>
+  <data name="diagnostics.title"><value>诊断包</value></data>
+  <data name="diagnostics.logs"><value>日志元数据</value></data>
+  <data name="diagnostics.runtime"><value>运行时元数据</value></data>
+  <data name="diagnostics.preview"><value>预览</value></data>
+  <data name="diagnostics.cancelPreview"><value>取消预览</value></data>
+  <data name="diagnostics.file"><value>文件</value></data>
+  <data name="diagnostics.bytes"><value>字节数</value></data>
+  <data name="diagnostics.fields"><value>包含字段</value></data>
+  <data name="diagnostics.redaction"><value>脱敏状态</value></data>
+  <data name="diagnostics.excluded"><value>已排除内容</value></data>
+  <data name="diagnostics.confirm"><value>我已核对文件和字段清单，同意导出。</value></data>
+  <data name="diagnostics.export"><value>导出诊断包</value></data>
+  <data name="diagnostics.preview.summary"><value>内容：{0} 字节；无效行：{1}；结果受限：{2}。</value></data>
+  <data name="diagnostics.confirmRequired"><value>请先预览并确认内容。</value></data>
+  <data name="diagnostics.cancelled"><value>已取消，未保存诊断包。</value></data>
+  <data name="diagnostics.failed"><value>操作失败，请检查权限、剩余空间和目标文件是否已存在。</value></data>
+  <data name="diagnostics.exported"><value>已导出，包内容通过二次扫描。</value></data>
+  <data name="tasks.list.empty"><value>暂无后台任务。</value></data>
+  <data name="diagnostics.preview.empty"><value>尚未预览。点击「预览」查看将导出的文件与字段清单。</value></data>
+  <data name="auth.title"><value>远程身份</value></data>
+  <data name="auth.login"><value>通过浏览器登录</value></data>
+  <data name="auth.refresh"><value>刷新会话</value></data>
+  <data name="auth.logout"><value>退出登录</value></data>
+  <data name="auth.signedIn"><value>已登录</value></data>
+  <data name="auth.signedOut"><value>未登录</value></data>
+  <data name="auth.completed"><value>会话操作已完成。</value></data>
+  <data name="auth.failed"><value>会话操作失败，请检查身份配置、网络和系统凭据库；必要时重新登录。</value></data>
+  <data name="profile.title"><value>运行环境</value></data>
+  <data name="profile.production"><value>生产环境</value></data>
+  <data name="profile.confirm"><value>此操作作用于生产环境，是否继续？</value></data>
+  <data name="common.confirm"><value>确认</value></data>
+  <data name="settings.restart"><value>已保存，重启后应用日志保留设置。</value></data>
+  <data name="settings.logRetentionDays"><value>日志保留天数（1–365）</value></data>
+  <data name="settings.logRetainedFiles"><value>日志文件数量上限（1–100，每份 10 MB）</value></data>
+  <data name="about.support"><value>打开支持页面</value></data>
+  <data name="backup.preview.summary"><value>应用版本：{0}；结构版本：{1}；创建时间（UTC）：{2}。已校验文件：</value></data>
+  <data name="backup.confirm"><value>我已核对 ZIP 内容。恢复将在下次启动替换数据库和设置，并保留安全副本；缺少工作区偏好时将恢复默认布局。</value></data>
+  <data name="backup.confirmRestore"><value>确认下次启动恢复</value></data>
+  <data name="csv.preview"><value>预览 CSV</value></data>
+  <data name="csv.encoding"><value>编码（无 BOM 也需核对预览）</value></data>
+  <data name="csv.delimiter"><value>分隔符</value></data>
+  <data name="csv.mapping"><value>源列序号（从 1 开始）：编码 / 名称 / 备注</value></data>
+  <data name="csv.confirm"><value>我已核对编码及映射预览（最多 20 行），同意导入完整文件。</value></data>
+  <data name="csv.failed"><value>无法预览此 CSV，请检查编码、分隔符和列映射。</value></data>
+  <data name="csv.errorReport"><value>CSV 错误报告：{0}</value></data>
+  <data name="remote.invalid_address.message"><value>服务地址无效。</value></data>
+  <data name="remote.authentication_required.message"><value>请先登录再访问此服务。</value></data>
+  <data name="remote.credential_unavailable.message"><value>系统凭据库不可用。</value></data>
+  <data name="remote.timeout.message"><value>请求超时。</value></data>
+  <data name="remote.network_error.message"><value>网络请求失败。</value></data>
+  <data name="remote.unauthorized.message"><value>服务需要有效的登录会话。</value></data>
+  <data name="remote.forbidden.message"><value>你没有此操作的权限。</value></data>
+  <data name="remote.not_found.message"><value>请求的资源不存在。</value></data>
+  <data name="remote.conflict.message"><value>资源已发生变化，请刷新后再操作。</value></data>
+  <data name="remote.rate_limited.message"><value>服务正在限制请求频率。</value></data>
+  <data name="remote.http_error.message"><value>服务返回错误。</value></data>
+  <data name="auth.suggestion.login"><value>请重新登录。</value></data>
+  <data name="security.suggestion.request_access"><value>请联系管理员申请权限。</value></data>
+  <data name="remote.suggestion.reload"><value>请重新加载最新数据。</value></data>
+  <data name="credential.suggestion.unlock"><value>请解锁或启用系统凭据库。</value></data>
+  <data name="remote.suggestion.verify_result"><value>重试前请先核对操作结果。</value></data>
+  <data name="remote.suggestion.retry"><value>检查连接后重试。</value></data>
+  <data name="remote.suggestion.check_configuration"><value>请检查服务配置。</value></data>
+  <data name="csv.exportErrors"><value>导出预览错误报告</value></data>
+  <data name="settings.saveFailed"><value>设置未保存，请检查权限和数据目录访问权限；原有设置继续生效。</value></data>
+  <data name="settings.cancelled"><value>已取消修改，原有设置继续生效。</value></data>
+  <data name="settings.region"><value>地区格式</value></data>
+  <data name="settings.timeZone"><value>时区</value></data>
+  <data name="settings.format.system"><value>跟随系统</value></data>
+  <data name="settings.format.hint"><value>地区格式独立于界面语言；更改后重启生效，不自动推断货币。</value></data>
+  <data name="settings.format.saved"><value>已保存，重启后应用地区和时区设置。</value></data>
+  <data name="notes.title"><value>示例便笺</value></data>
+  <data name="notes.hint"><value>保存在本机的共用便笺，最多 2000 字；关闭前请保存。</value></data>
+  <data name="notes.reload"><value>重新加载便笺</value></data>
+  <data name="notes.failed"><value>无法读取或保存便笺，请检查权限及日志。</value></data>
+  <data name="notes.conflict"><value>便笺已变更或无法写入。请先保留输入内容，再重新加载后重试。</value></data>
+  <data name="settings.density"><value>界面密度</value></data>
+  <data name="settings.interface"><value>界面</value></data>
+  <data name="settings.regionTime"><value>区域与时间</value></data>
+  <data name="settings.density.standard"><value>标准</value></data>
+  <data name="settings.density.compact"><value>紧凑</value></data>
+  <data name="settings.density.comfortable"><value>舒适</value></data>
+  <data name="settings.density.hint"><value>立即调整间距和控件尺寸；字体大小及已保存的窗口布局独立保留。</value></data>
+  <data name="tasks.notification"><value>{0}：{1}。全部结果可在任务中心查看。</value></data>
+  <data name="tasks.notification.view"><value>查看任务</value></data>
+  <data name="tasks.notification.dismiss"><value>关闭提示</value></data>
+  <data name="shell.sidePanel"><value>详情与任务面板</value></data>
+  <data name="shell.sidePanel.hide"><value>隐藏面板</value></data>
+  <data name="shell.details"><value>详情</value></data>
+  <data name="shell.details.empty"><value>暂无详情，请在支持详情的页面选中记录。</value></data>
+  <data name="shell.tasks.empty"><value>暂无后台任务。</value></data>
+  <data name="shell.navigation.recent"><value>最近页面</value></data>
+  <data name="shell.navigation.clearRecent"><value>清空最近页面</value></data>
+  <data name="shell.navigation.favorites"><value>收藏页面</value></data>
+  <data name="shell.navigation.toggleFavorite"><value>收藏当前页面</value></data>
+  <data name="shell.navigation.saveFailed"><value>页面快捷入口保存失败，已保存的收藏和历史未改变。</value></data>
+  <data name="help.title"><value>帮助中心</value></data>
+  <data name="help.search"><value>搜索帮助、主题键或错误码</value></data>
+  <data name="help.topics"><value>帮助主题</value></data>
+  <data name="help.content"><value>帮助正文</value></data>
+  <data name="help.noResults"><value>没有匹配的主题，请缩短关键词或清空搜索。</value></data>
+  <data name="help.start.title"><value>入门与工作区</value></data>
+  <data name="help.start.body"><value>从左侧导航打开页面，再次打开会切回已有标签。Ctrl+W 关闭当前标签；F5 刷新支持刷新的页面；Ctrl+F 聚焦页面搜索；F1 打开当前页帮助。&#10;&#10;文件菜单提供最近页面，窗口菜单可收藏当前页面。查看菜单可显示或隐藏导航、详情与任务面板，也可重置布局。重置布局保留已打开页面和收藏。&#10;&#10;关闭有未保存内容的页面时，需要选择保存、丢弃或取消。保存失败会保留输入，不要通过删除数据库解决报错。</value></data>
+  <data name="help.settings.title"><value>设置、语言与外观</value></data>
+  <data name="help.settings.body"><value>主题和界面密度保存后立即生效。语言、地区格式、时区和日志保留设置需要重启。地区格式独立于界面语言，存储的时间点仍使用 UTC。&#10;&#10;修改可能需要权限或生产确认；保存失败或取消时恢复原设置。远程健康检查默认关闭，检查成功只说明配置的健康接口正常响应。登录需要管理员配置身份服务，并确保系统凭据库可用。</value></data>
+  <data name="help.backup.title"><value>备份、恢复与升级</value></data>
+  <data name="help.backup.body"><value>升级或重要修改前先创建 ZIP 备份。备份包含一致的本地数据库副本、用户设置、工作区偏好和 SHA-256 清单，不包含部署身份配置与凭据。&#10;&#10;预览并确认清单后才能安排恢复。恢复在下次启动时替换数据库和偏好，并保留安全副本。旧包缺少工作区偏好时恢复默认布局；不接受裸数据库文件。&#10;&#10;升级或恢复失败时，保留原文件和日志，不要删除迁移历史或手工覆盖数据库。请管理员按随项目提供的升级说明处理。</value></data>
+  <data name="help.diagnostics.title"><value>任务与常见错误</value></data>
+  <data name="help.diagnostics.body"><value>打开任务面板，可以在保留业务页的同时查看导入导出。取消是一项请求，已经提交成功的任务仍算成功。“查看任务”进入完整诊断记录。关闭页面不会停止它的全局任务。&#10;&#10;TASK_FAILED：使用任务结果中的关联 ID 查看日志，确认处理结果后再重试，避免重复执行结果不明确的操作。&#10;&#10;UI_UNEXPECTED：界面发生意外错误，详细原因已记入日志。保留错误码和关联 ID；反复出现时安全重启并联系支持。弹窗不会显示原始异常。&#10;&#10;导出诊断包需要预览并明确确认，只包含清单中已脱敏的元数据，不会自动上传。</value></data>
+  <data name="help.logs.title"><value>日志与错误排查</value></data>
+  <data name="help.logs.body"><value>先选择技术、任务或安全审计类别，再按时间、等级、模块、任务 ID、错误码和关联 ID 筛选。“查看警告和错误”包含技术与任务事件，清空筛选回到技术日志。使用复制按钮获取详情或关联 ID。&#10;&#10;启用认证后，技术／任务要求 logs:read，审计要求 audit:read；打开共用日志目录要求两者兼有，清理另需 settings:manage 和生产确认。换号或失权后清除旧结果，恢复权限后请重新加载。&#10;&#10;清理使用已配置保留期。诊断包排除审计事件，要求 diagnostics:export，包含日志时另需 logs:read。分享前核对导出内容，不要发送整个数据目录。</value></data>
+  <data name="help.version.title"><value>版本、更新与许可证</value></data>
+  <data name="help.version.body"><value>帮助页顶部和关于页显示当前应用版本。关于页可检查管理员配置的 HTTPS 更新源。发现新版本后，请核对版本和地址，点击“打开下载地址”交给默认浏览器；程序不会自动安装更新。重新检查会清除旧下载入口，关闭关于页会取消本页检查。&#10;&#10;“帮助 → 第三方许可证声明”显示此构建随包携带的 THIRD_PARTY_NOTICES.md，关于页也有同一入口。开发构建可能没有此文件；缺少文件不代表没有第三方依赖，也不代表发布合规检查已经通过。</value></data>
+  <data name="help.demo.title"><value>示例记录与 CSV</value></data>
+  <data name="help.demo.body"><value>选中记录后在标准表单编辑。Ctrl+N 新增，Ctrl+S 保存；取消编辑会经过未保存确认。编码和名称必填。发生版本冲突时，先保留输入，再重新加载当前记录。&#10;&#10;CSV 导入需选择编码、分隔符和源列映射，核对预览后确认。预览最多显示 20 条数据，正式提交前仍会完整校验；输入上限为 5000 行、5 MiB。文件变化后需重新预览。校验失败时整批不导入，可导出错误报告。&#10;&#10;导出采用当前搜索条件。导入导出进入全局任务中心，关闭页面仍会继续；完成后请刷新列表。</value></data>
+  <data name="help.spreadsheet.title"><value>文本电子表格交换</value></data>
+  <data name="help.spreadsheet.body"><value>可选 XLSX 页面处理有上限的纯文本表格，导入最多 5000 行、5 MiB。请先预览并确认已校验内容；公式、宏、外部关系和非文本单元格会被拒绝。&#10;&#10;取消预览或关闭页面会停止本地预览；已启动的导入导出归全局任务中心管理。重试前请确认最终结果。Office 兼容与性能仍需针对实际部署另行验证。</value></data>
+  <data name="help.notes.title"><value>本机共用便笺</value></data>
+  <data name="help.notes.body"><value>此示例保存一份最多 2000 字的本机共用便笺，不是个人私密笔记或跨设备同步服务。使用保存按钮或 Ctrl+S 保存；详情面板展示已保存文本，不展示未提交输入。&#10;&#10;重新加载会先询问未保存修改。保存失败会保留文本；如便笺已在其他地方变更，先备份输入，再重新加载后重试。保存期间请等待完成后再关闭页面。便笺随应用数据库一起备份。</value></data>
+  <data name="license.title"><value>第三方许可证声明</value></data>
+  <data name="license.reload"><value>重新加载</value></data>
+  <data name="license.status.loading"><value>正在读取许可证声明…</value></data>
+  <data name="license.status.loaded"><value>已加载许可证声明。</value></data>
+  <data name="license.status.missing"><value>此构建未附带许可证声明文件，开发构建可能省略此文件；本页面不能据此确认发布合规。</value></data>
+  <data name="license.status.tooLarge"><value>许可证声明超过 2 MiB，无法在此显示，请查看安装目录随包提供的声明文件。</value></data>
+  <data name="license.status.unreadable"><value>无法读取许可证声明，请检查应用安装和文件访问权限。</value></data>
+  <data name="license.status.cancelled"><value>已取消读取。</value></data>
+  <data name="shell.status.user"><value>用户：{0}</value></data>
+  <data name="shell.status.environment"><value>环境：{0}</value></data>
+  <data name="shell.status.activeTasks"><value>活动任务：{0}</value></data>
+  <data name="shell.health.disabled"><value>远程检查已关闭</value></data>
+  <data name="shell.health.passed"><value>健康检查通过</value></data>
+  <data name="shell.health.failed"><value>健康检查失败</value></data>
+  <data name="shell.health.invalid"><value>服务地址无效</value></data>
+  <data name="shell.health.unchecked"><value>尚未检查健康状态</value></data>
+  <data name="shell.health.hint"><value>仅显示当前配置最近一次手动健康检查结果，不代表持续在线或业务接口可用；点击打开设置后可重新检查。</value></data>
+  <data name="shell.health.checkedAt"><value>最近检查：{0}。</value></data>
+  <data name="logs.clearFilters"><value>清空筛选</value></data>
+  <data name="logs.showErrors"><value>查看警告和错误</value></data>
+  <data name="logs.viewRelated"><value>查看关联日志</value></data>
+  <data name="logs.viewTask"><value>查看任务日志</value></data>
+  <data name="cli.invalidArguments"><value>不支持这些命令行参数。请不带参数启动桌面，或使用 --version 查看版本。</value></data>
+  <data name="tasks.retry"><value>重试任务</value></data>
+  <data name="tasks.retry.started"><value>已创建新的尝试，本记录保留原始失败结果。</value></data>
+  <data name="tasks.retry.queued"><value>重试已排队，已选中新任务；权限与确认会重新检查。</value></data>
+  <data name="tasks.retry.unavailable"><value>当前无法重试此任务，可能已创建新的尝试，或应用正在退出。</value></data>
+  <data name="tasks.retry.previous"><value>上一次尝试</value></data>
+  <data name="tasks.retry.next"><value>下一次尝试</value></data>
+  <data name="tasks.retry.historyMissing"><value>此尝试已不在当前进程的任务历史中，可使用其任务 ID 查看保留的日志。</value></data>
+  <data name="demo.batch.toggle"><value>切换批量选择</value></data>
+  <data name="demo.batch.active"><value>批量模式：选择当前页记录，编辑表单已关闭。</value></data>
+  <data name="demo.batch.count"><value>仅当前页已选择 {0} 条</value></data>
+  <data name="demo.batch.selectPage"><value>全选当前页（Ctrl+A）</value></data>
+  <data name="demo.batch.clear"><value>清空选择</value></data>
+  <data name="demo.batch.copy"><value>复制所选记录为 CSV（Ctrl+C）</value></data>
+  <data name="logs.kind"><value>事件类别</value></data>
+  <data name="logs.kind.operational"><value>技术与任务日志</value></data>
+  <data name="logs.kind.technical"><value>技术日志</value></data>
+  <data name="logs.kind.audit"><value>安全审计</value></data>
+  <data name="logs.kind.task"><value>任务日志</value></data>
+  <data name="logs.accessDenied"><value>没有查看权限或账号已变化，请选择有权查看的类别后重新加载。</value></data>
+  <data name="installation.unavailable"><value>程序正在安装，或安装文件不可用。请等待安装完成后重试；如仍失败，请重新安装完整程序包。尚未打开用户数据。</value></data>
+  <data name="demo.err.codeInvalid"><value>编码包含无效的 Unicode 字符。</value></data>
+  <data name="remoteDemo.title"><value>远程示例数据</value></data>
+  <data name="remoteDemo.search"><value>应用搜索和排序</value></data>
+  <data name="remoteDemo.refresh"><value>刷新远程记录</value></data>
+  <data name="remoteDemo.actorChanged.message"><value>登录状态或账号已变化。登录后请刷新；重试前先核对正在处理的写入结果。</value></data>
+  <data name="remoteDemo.invalidQuery.message"><value>请检查搜索内容、每页条数和排序字段。</value></data>
+  <data name="remoteDemo.invalidResponse.message"><value>服务返回的数据不符合约定格式。如涉及写入，请先核对服务端结果再重试。</value></data>
+  <data name="remoteDemo.operationFailed.message"><value>远程操作失败，请保留输入，核对处理结果后再重试。</value></data>
+  <data name="remoteDemo.writeCancelled.message"><value>已在发送前取消写入。</value></data>
+  <data name="remoteDemo.writeUncertain.message"><value>写入已中断，但服务端可能已经提交；重试前请先核对处理结果。</value></data>
+  <data name="remoteDemo.invalidText.message"><value>字段包含无效的 Unicode 字符或空字符。</value></data>
+  <data name="help.remoteDemo.title"><value>远程示例记录</value></data>
+  <data name="help.remoteDemo.body"><value>此页面读写部署时配置的远程 API，搜索、排序和分页在服务端执行；与本机示例记录和本机备份独立。修改搜索或排序条件后，点击“应用搜索和排序”。&#10;&#10;编码和名称必填，保存和删除需要相应权限，生产环境另需确认。版本冲突会保留输入：请先自行保留内容，再取消、刷新并选择最新记录。超时或换号不代表写入已回滚，重试前请核对服务端结果。&#10;&#10;退出登录或换号会清除旧远程数据，登录后刷新可加载当前账号的数据。服务端必须独立落实权限、唯一性和并发控制。</value></data>
+  <data name="backup.confirmCreate"><value>确认创建备份</value></data>
+  <data name="backup.createPreview.summary"><value>目标：{0}&#10;源文件总大小：约 {1} 字节&#10;包含项：</value></data>
+  <data name="backup.createPreview.estimateNote"><value>大小仅供估算。备份会包含已提交的数据库变更；设置规范化、压缩及预览后的变化都会影响最终大小。</value></data>
+  <data name="backup.createPreview.excluded"><value>排除：日志、独立凭据文件、设置契约之外的字段、待恢复备份及其他文件。数据库日志文件不单独归档。</value></data>
+  <data name="backup.status.cancelled"><value>备份已取消。</value></data>
+  <data name="tasks.result.title"><value>处理结果</value></data>
+  <data name="tasks.result.import"><value>已导入：新增 {0} 行，更新 {1} 行，失败 0 行。</value></data>
+  <data name="tasks.result.export"><value>已导出 {0} 条数据行。</value></data>
+  <data name="tasks.result.report"><value>已保存含 {0} 条问题的报告。</value></data>
+  <data name="tasks.result.rejected"><value>成功导入 0 行；已发现错误的数据行：{0}。本次整批未导入。</value></data>
+  <data name="tasks.result.atLeast"><value>至少 {0}</value></data>
+  <data name="tasks.result.unknown"><value>尚未确定</value></data>
+  <data name="tasks.result.path"><value>输出文件：{0}</value></data>
+  <data name="shell.module.failed"><value>{0} 初始化失败，本次运行已禁用。其他模块仍可使用。请打开相关日志或联系支持。关联 ID：{1}</value></data>
+</root>

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -23,18 +24,23 @@ internal sealed class Shell : IDisposable
     private const double Width = 1200;
     private const double Height = 720;
 
-    public Shell()
+    public Shell(Action<IServiceCollection>? configure = null)
     {
+        // 用例共享同一临时数据目录；清掉上一个用例保存的工作区，保证默认标签存在。
+        try { File.Delete(Path.Combine(AppPaths.DataDirectory, "workspace-preferences.json")); }
+        catch (IOException) { }
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IClassicDesktopStyleApplicationLifetime>(
             new ClassicDesktopStyleApplicationLifetime { Args = Array.Empty<string>() });
         services.AddPlinthModules();
+        configure?.Invoke(services);
         Provider = services.BuildServiceProvider();
 
         ViewModel = Provider.GetRequiredService<MainViewModel>();
         Window = new MainWindow { DataContext = ViewModel };
         Window.Show();
+        Window.Activate();
         Layout();
     }
 
@@ -44,11 +50,17 @@ internal sealed class Shell : IDisposable
 
     public MainViewModel ViewModel { get; }
 
-    public ListBox NavList => Window.GetVisualDescendants().OfType<ListBox>().Single();
+    public ListBox NavList => Window.FindControl<ListBox>("NavigationList")!;
 
-    public TabControl TabHost => Window.GetVisualDescendants().OfType<TabControl>().Single();
+    public ListBox NavFooter => Window.FindControl<ListBox>("NavigationFooter")!;
 
-    public GridSplitter Splitter => Window.GetVisualDescendants().OfType<GridSplitter>().Single();
+    public Button NavToggle => Window.FindControl<Button>("NavigationToggle")!;
+
+    public TextBlock NavigationTitle => Window.FindControl<TextBlock>("NavigationTitle")!;
+
+    public TabControl TabHost => Window.FindControl<TabControl>("WorkspaceTabs")!;
+
+    public GridSplitter Splitter => Window.FindControl<GridSplitter>("SidebarSplitter")!;
 
     public Grid ShellGrid => (Grid)Splitter.Parent!;
 
@@ -104,7 +116,7 @@ internal sealed class Shell : IDisposable
             .Single(b => (b.Content as string)?.Contains("✕", StringComparison.Ordinal) == true);
     }
 
-    /// <summary>真按键:快捷键定义在 Window.KeyBindings 上,只有走输入才测得出它有没有生效。</summary>
+    /// <summary>真按键:通过窗口输入验证 AppShortcuts 与冒泡分发是否生效。</summary>
     public void Press(Key key, PhysicalKey physicalKey, RawInputModifiers modifiers = RawInputModifiers.None)
     {
         Window.KeyPress(key, modifiers, physicalKey, key.ToString());

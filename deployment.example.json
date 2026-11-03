@@ -1,0 +1,17 @@
+{
+  "Profile": "Development",
+  "MinimumLogLevel": "Information",
+  "IncludeSampleModules": true,
+  "DemoApiBaseUrl": "",
+  "Authentication": {
+    "Enabled": false,
+    "Authority": "https://identity.example.com",
+    "ClientId": "plinth-desktop",
+    "Scope": "openid profile offline_access",
+    "RedirectUri": "http://127.0.0.1:7890/callback/",
+    "RoleClaimType": "role",
+    "PermissionClaimType": "permission",
+    "RefreshSkew": "00:01:00",
+    "BrowserTimeout": "00:03:00"
+  }
+}

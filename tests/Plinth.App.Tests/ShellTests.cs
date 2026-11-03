@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -81,6 +84,79 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Compact_toggle_uses_48px_rail_and_restores_previous_width()
+    {
+        using var shell = new Shell();
+        Assert.Equal(260, shell.SidebarColumn.Width.Value);
+        Assert.True(shell.Splitter.IsVisible);
+        Assert.True(shell.NavigationTitle.IsVisible);
+
+        shell.ViewModel.ToggleSidebarCompactCommand.Execute(null);
+        shell.Layout();
+
+        Assert.True(shell.ViewModel.IsSidebarCompact);
+        Assert.Equal(48, shell.SidebarColumn.Width.Value);
+        Assert.False(shell.ViewModel.IsSidebarSplitterVisible);
+        Assert.False(shell.Splitter.IsVisible);
+        Assert.False(shell.NavigationTitle.IsVisible);
+        Assert.DoesNotContain(
+            shell.NavList.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "概览" && text.IsVisible);
+
+        // 图标轨道要保留图标、无障碍名称和悬停提示,否则折叠后只剩空按钮。
+        var first = (NavigationItem)shell.NavList.Items[0]!;
+        Assert.Contains(
+            shell.NavList.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == first.Icon && text.IsVisible);
+        var row = shell.NavList.GetVisualDescendants().OfType<ListBoxItem>().First();
+        Assert.Contains(RowControls(row), control => AutomationProperties.GetName(control) == first.Title);
+        Assert.Contains(RowControls(row), control => ToolTip.GetTip(control) as string == first.Title);
+
+        shell.ViewModel.ToggleSidebarCompactCommand.Execute(null);
+        shell.Layout();
+
+        Assert.False(shell.ViewModel.IsSidebarCompact);
+        Assert.Equal(260, shell.SidebarColumn.Width.Value);
+        Assert.True(shell.Splitter.IsVisible);
+        Assert.True(shell.NavigationTitle.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void Compact_state_survives_reopening_workspace()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "plinth-compact-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "workspace.json");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // Shell 只清默认工作区文件,自定义路径要留给第二个实例读回。
+            using (var first = new Shell(services => services.AddSingleton(new WorkspacePreferencesService(path))))
+            {
+                Assert.False(first.ViewModel.IsSidebarCompact);
+                first.ViewModel.ToggleSidebarCompactCommand.Execute(null);
+                first.Layout();
+                Assert.True(first.ViewModel.IsSidebarCompact);
+                Assert.Equal(48, first.SidebarColumn.Width.Value);
+            }
+
+            using (var second = new Shell(services => services.AddSingleton(new WorkspacePreferencesService(path))))
+            {
+                Assert.True(second.ViewModel.IsSidebarCompact);
+                Assert.Equal(48, second.SidebarColumn.Width.Value);
+
+                second.ViewModel.ToggleSidebarCompactCommand.Execute(null);
+                second.Layout();
+                Assert.False(second.ViewModel.IsSidebarCompact);
+                Assert.Equal(260, second.SidebarColumn.Width.Value);
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [AvaloniaFact]
     public void About_page_is_registered_as_a_page_but_not_listed_in_the_menu()
     {
         using var shell = new Shell();
@@ -88,11 +164,69 @@ public class ShellTests
         Assert.Contains(shell.ViewModel.NavigationItems, item => item.Id == ShellNavigation.AboutId);
         Assert.DoesNotContain(shell.ViewModel.MenuItems, item => item.Id == ShellNavigation.AboutId);
         Assert.IsType<NavigationItem>(shell.NavList.Items[0]);
-        Assert.Equal(shell.ViewModel.MenuItems.Count, shell.NavList.Items.Count);
+        Assert.Equal(shell.ViewModel.PrimaryMenuItems.Count, shell.NavList.Items.Count);
+        Assert.DoesNotContain(shell.ViewModel.PrimaryMenuItems, item => item.Id == ShellNavigation.SettingsId);
+        Assert.Contains(shell.ViewModel.FooterMenuItems, item => item.Id == ShellNavigation.SettingsId);
+        Assert.Contains(shell.NavFooter.Items.OfType<NavigationItem>(), item => item.Id == ShellNavigation.SettingsId);
+        Assert.True(shell.NavFooter.IsEffectivelyVisible);
+        Assert.True(shell.NavFooter.Bounds.Height > 0);
     }
 
     [AvaloniaFact]
-    public void F1_opens_the_about_page_once_even_when_pressed_twice()
+    public void Alt_number_opens_the_numbered_primary_page()
+    {
+        using var shell = new Shell();
+        var target = shell.ViewModel.PrimaryMenuItems[1];
+
+        shell.Press(Key.D2, PhysicalKey.Digit2, RawInputModifiers.Alt);
+
+        Assert.Equal(target.Id, shell.ViewModel.SelectedTab?.Id);
+    }
+
+    [AvaloniaFact]
+    public void Alt_zero_opens_settings_from_the_footer()
+    {
+        using var shell = new Shell();
+
+        shell.Press(Key.D0, PhysicalKey.Digit0, RawInputModifiers.Alt);
+
+        Assert.Equal(ShellNavigation.SettingsId, shell.ViewModel.SelectedTab?.Id);
+    }
+
+    [AvaloniaFact]
+    public void Ctrl_k_opens_quick_open_and_enter_navigates()
+    {
+        using var shell = new Shell();
+
+        shell.Press(Key.K, PhysicalKey.K, RawInputModifiers.Control);
+        Assert.True(shell.ViewModel.IsQuickOpen);
+        Assert.True(shell.Window.FindControl<Border>("QuickOpenPanel")!.IsVisible);
+        Assert.NotEmpty(shell.ViewModel.QuickOpenItems);
+
+        shell.ViewModel.QuickOpenText = "设置";
+        Assert.Single(shell.ViewModel.QuickOpenItems);
+        Assert.Equal(ShellNavigation.SettingsId, shell.ViewModel.QuickOpenItems[0].Id);
+
+        shell.ViewModel.AcceptQuickOpenCommand.Execute(shell.ViewModel.QuickOpenSelection);
+
+        Assert.False(shell.ViewModel.IsQuickOpen);
+        Assert.Equal(ShellNavigation.SettingsId, shell.ViewModel.SelectedTab?.Id);
+    }
+
+    [AvaloniaFact]
+    public void Ctrl_k_closes_an_open_quick_open()
+    {
+        using var shell = new Shell();
+        shell.Press(Key.K, PhysicalKey.K, RawInputModifiers.Control);
+        Assert.True(shell.ViewModel.IsQuickOpen);
+
+        shell.Press(Key.K, PhysicalKey.K, RawInputModifiers.Control);
+
+        Assert.False(shell.ViewModel.IsQuickOpen);
+    }
+
+    [AvaloniaFact]
+    public void F1_opens_the_help_page_once_even_when_pressed_twice()
     {
         using var shell = new Shell();
 
@@ -101,8 +235,8 @@ public class ShellTests
         Dispatcher.UIThread.RunJobs();
         shell.Layout();
 
-        Assert.Single(shell.ViewModel.Tabs, tab => tab.Title == "关于");
-        Assert.IsType<AboutView>(shell.PageView<AboutView>());
+        Assert.Single(shell.ViewModel.Tabs, tab => tab.Id == ShellNavigation.HelpId);
+        Assert.IsType<HelpView>(shell.PageView<HelpView>());
     }
 
     [AvaloniaFact]
@@ -258,6 +392,10 @@ public class ShellTests
             AvaloniaLog.Sink = previousSink;
         }
     }
+
+    /// <summary>导航行的名称/提示可能挂在 ListBoxItem 或模板根上,按行内任意控件判断。</summary>
+    private static IEnumerable<Control> RowControls(Control row) =>
+        new[] { row }.Concat(row.GetVisualDescendants().OfType<Control>());
 
     private sealed class CollectSink : ILogEventSink
     {

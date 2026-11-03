@@ -1,20 +1,50 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:loc="using:Plinth.App.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
              x:Class="Plinth.App.Views.AboutView"
              x:DataType="vm:AboutViewModel">
 
-  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-    <TextBlock Text="Plinth" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
-    <TextBlock Text="{Binding Version, StringFormat='版本 {0}'}"
+  <ScrollViewer VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+              Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}">
+    <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" Width="96" Height="96"
+           Stretch="Uniform" HorizontalAlignment="Center"
+           AutomationProperties.Name="{Binding ProductName}" />
+    <TextBlock Text="{Binding ProductName}" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center"
+               Foreground="{DynamicResource PlinthAccentBrush}" />
+    <TextBlock Text="{Binding VersionText}"
                HorizontalAlignment="Center"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-    <TextBlock Text="通用原生桌面 Admin 框架(Avalonia + .NET 10)"
+    <TextBlock Text="{Binding Description}"
                HorizontalAlignment="Center"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <TextBlock Text="{Binding SupportText}"
+               IsVisible="{Binding SupportText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               HorizontalAlignment="Center"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <Button Content="{loc:T about.support}" Command="{Binding OpenSupportCommand}"
+            IsVisible="{Binding HasSupportUrl}" HorizontalAlignment="Center" />
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+      <Button Content="{loc:T license.title}"
+              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowLicensesCommand}" />
+      <Button Content="{loc:T about.update.check}" Command="{Binding CheckForUpdatesCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding UpdateStatus}"
+               IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               TextWrapping="Wrap"
+               MaxWidth="480"
+               HorizontalAlignment="Center"
+               TextAlignment="Center" />
+    <Button x:Name="OpenUpdateDownloadButton"
+            Content="{loc:T about.update.open}"
+            AutomationProperties.Name="{loc:T about.update.open}"
+            Command="{Binding OpenUpdateDownloadCommand}"
+            IsVisible="{Binding HasUpdateDownload}"
+            HorizontalAlignment="Center" />
     <TextBlock Text="{Binding Framework}"
                Margin="0,12,0,0"
                HorizontalAlignment="Center"
@@ -25,4 +55,5 @@
                FontSize="11"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

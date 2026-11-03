@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:svc="using:Plinth.App.Services"
+             xmlns:loc="using:Plinth.App.Localization"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+             x:Class="Plinth.App.Views.LogView"
+             x:DataType="vm:LogViewModel">
+
+  <DockPanel Margin="{DynamicResource PlinthPageMargin}">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="0,0,0,12">
+      <TextBlock Text="{loc:T logs.title}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
+        <WrapPanel.Styles>
+          <Style Selector="Button"><Setter Property="Margin" Value="8,0,0,0" /></Style>
+        </WrapPanel.Styles>
+        <Button Content="{loc:T logs.reload}" Command="{Binding ReloadCommand}" />
+        <Button Content="{loc:T logs.openFolder}" Command="{Binding OpenFolderCommand}" />
+        <Button Content="{loc:T logs.cleanOld}" Command="{Binding CleanOldCommand}" />
+        <Button Content="{loc:T logs.clearFilters}" Command="{Binding ClearFiltersCommand}" />
+      </WrapPanel>
+    </Grid>
+    <!-- 筛选条件成组:固定 4 列网格,不靠 WrapPanel 换行,避免出现只剩两个控件的残行 -->
+    <Border DockPanel.Dock="Top" Margin="0,0,0,12"
+            Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+            BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
+            BoxShadow="0 1 3 0 #1A000000">
+      <Grid ColumnDefinitions="*,*,*,*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="12">
+        <ComboBox Grid.Row="0" Grid.Column="0" ItemsSource="{Binding EventKinds}" SelectedIndex="{Binding EventKindIndex}"
+                  AutomationProperties.Name="{loc:T logs.kind}" />
+        <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" x:Name="LogSearch"
+                 PlaceholderText="{loc:T logs.search}" Text="{Binding Search}"
+                 AutomationProperties.Name="{loc:T logs.search}" />
+        <ComboBox Grid.Row="0" Grid.Column="3" ItemsSource="{Binding LevelOptions}" SelectedIndex="{Binding LevelIndex}"
+                  AutomationProperties.Name="{loc:T logs.col.level}" />
+        <TextBox Grid.Row="0" Grid.Column="4" PlaceholderText="{loc:T logs.module}" Text="{Binding Module}"
+                 AutomationProperties.Name="{loc:T logs.module}" />
+
+        <TextBox Grid.Row="1" Grid.Column="0" PlaceholderText="{loc:T logs.taskId}" Text="{Binding TaskId}"
+                 AutomationProperties.Name="{loc:T logs.taskId}" />
+        <TextBox Grid.Row="1" Grid.Column="1" PlaceholderText="{loc:T logs.errorCode}" Text="{Binding ErrorCode}"
+                 AutomationProperties.Name="{loc:T logs.errorCode}" />
+        <TextBox Grid.Row="1" Grid.Column="2" PlaceholderText="{loc:T logs.correlationId}" Text="{Binding CorrelationId}"
+                 AutomationProperties.Name="{loc:T logs.correlationId}" />
+        <CalendarDatePicker Grid.Row="1" Grid.Column="3" SelectedDate="{Binding From}"
+                            AutomationProperties.Name="{loc:T logs.from}" />
+        <CalendarDatePicker Grid.Row="1" Grid.Column="4" SelectedDate="{Binding To}"
+                            AutomationProperties.Name="{loc:T logs.to}" />
+
+        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="12">
+          <Button Content="{loc:T logs.search}" Command="{Binding ReloadCommand}" />
+          <CheckBox Content="{loc:T logs.onlyProblems}" IsChecked="{Binding OnlyProblems}" VerticalAlignment="Center" />
+          <ProgressBar Width="80" IsIndeterminate="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                       VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <TextBlock DockPanel.Dock="Bottom"
+               Margin="0,12,0,0"
+               Text="{Binding StatusText}"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+
+    <!-- 选中记录的完整详情:与列表分开成卡片,按钮跟着卡片走 -->
+    <Border DockPanel.Dock="Bottom" Margin="0,8,0,0"
+            Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+            BorderThickness="1" CornerRadius="6" Padding="12" BoxShadow="0 1 3 0 #1A000000">
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{loc:T shell.details}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <Button Content="{loc:T logs.copyDetails}" Click="CopyDetails" />
+          <Button Content="{loc:T logs.copyId}" Click="CopyId" />
+        </StackPanel>
+        <TextBlock Text="{loc:T logs.details.empty}" IsVisible="{Binding !SelectedEntry}"
+                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}" TextWrapping="Wrap" />
+        <ScrollViewer Height="90"
+                      IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Text="{Binding SelectedEntry?.Details, Mode=OneWay}" TextWrapping="Wrap"
+                     AutomationProperties.Name="{loc:T logs.col.message}" />
+        </ScrollViewer>
+      </StackPanel>
+    </Border>
+    <Border Margin="0,0,0,8" Background="{DynamicResource PlinthPanelBrush}"
+            BorderBrush="{DynamicResource PlinthBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="1"
+            MinHeight="90" BoxShadow="0 1 3 0 #1A000000">
+      <Grid>
+        <TableView ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" AutomationProperties.Name="{loc:T logs.title}">
+      <TableView.Columns>
+        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.time}" Binding="{Binding TimeText}" Width="170" />
+        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.level}" Binding="{Binding Level}" Width="100" />
+        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.module}" Binding="{Binding Module}" Width="120" />
+        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.message}" Binding="{Binding Message}" />
+      </TableView.Columns>
+        </TableView>
+        <TextBlock Text="{loc:T logs.status.empty}" IsVisible="{Binding !HasEntries}" HorizontalAlignment="Center"
+                   VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+      </Grid>
+    </Border>
+  </DockPanel>
+</UserControl>

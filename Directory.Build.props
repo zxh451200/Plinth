@@ -5,7 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- XLSX 要先完成兼容、内存和许可验收；默认交付 CSV。 -->
+    <PlinthEnableXlsx Condition="'$(PlinthEnableXlsx)' == ''">false</PlinthEnableXlsx>
     <!-- 发版只改这一行:状态栏/概览页/关于页/日志里的版本都取自它 -->
     <Version>0.1.0</Version>
+    <!-- 第一次 dotnet restore 会生成 packages.lock.json,记录实际用到的每个包的版本和校验值;提交到 Git 后,
+         以后依赖被悄悄换掉能被发现。想在 CI 里强制按锁文件还原,给 dotnet restore 加上 locked-mode 参数 -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>

@@ -1,0 +1,71 @@
+name: Nightly dependencies and release checks
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'scripts/**'
+      - 'installer/**'
+      - '**/*.csproj'
+      - '**/packages.lock.json'
+      - 'Directory.*.props'
+      - 'global.json'
+permissions:
+  contents: read
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/release_checks.py locks
+      - run: dotnet restore Plinth.sln --locked-mode --configfile scripts/nuget.config -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -p:TreatWarningsAsErrors=true
+      - name: Inventory available dependency updates
+        shell: pwsh
+        run: |
+          New-Item artifacts/compliance -ItemType Directory -Force | Out-Null
+          dotnet list Plinth.sln package --outdated --include-transitive --format json > artifacts/compliance/outdated.json
+          if ($LASTEXITCODE -ne 0) { throw "Dependency inventory failed" }
+      - run: python scripts/third_party.py --output artifacts/compliance
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-evidence
+          path: artifacts/compliance
+          if-no-files-found: warn
+  release-check:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: choco install nsis --no-progress -y
+      - name: Build, test and package
+        shell: pwsh
+        run: |
+          $env:PATH += ";${env:ProgramFiles(x86)}\NSIS"
+          ./scripts/acceptance.ps1 -Package
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-release-candidate
+          path: |
+            artifacts/*.zip
+            artifacts/*.exe
+            artifacts/*.sha256
+            artifacts/compliance
+            artifacts/test-results
+          if-no-files-found: warn

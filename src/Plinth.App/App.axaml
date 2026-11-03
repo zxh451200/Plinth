@@ -19,5 +19,27 @@
 
     <Application.Styles>
         <FluentTheme />
+        <Style Selector="Button:not(.tabClose)">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+            <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+            <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+            <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+        </Style>
+        <Style Selector="NumericUpDown">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+        </Style>
+        <Style Selector="TableViewRow">
+            <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
+            <Setter Property="Padding" Value="{DynamicResource PlinthRowPadding}" />
+        </Style>
     </Application.Styles>
 </Application>

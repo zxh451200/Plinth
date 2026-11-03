@@ -1,11 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- 与便携包／安装包共用同一还原图；普通 CI 仍可在宿主平台运行测试。 -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\plinth.ico</ApplicationIcon>
+    <DefineConstants Condition="'$(PlinthEnableXlsx)' == 'true'">$(DefineConstants);PLINTH_XLSX</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Plinth.App.Tests" />
     <AvaloniaResource Include="Assets\**" />
+    <None Update="plinth.install.lock" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,8 +23,20 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="ClosedXML" />
+    <PackageReference Include="Duende.IdentityModel.OidcClient" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <!-- 给 dotnet ef 命令和 AppDbContextFactory 用,不传递给引用本项目的其它项目 -->
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="Serilog.Formatting.Compact" />

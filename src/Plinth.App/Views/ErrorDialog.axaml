@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:Plinth.App.Localization"
+        x:Class="Plinth.App.Views.ErrorDialog"
+        Title="{loc:T error.title}"
+        Width="460" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Foreground="{DynamicResource PlinthForegroundBrush}"
+        Background="{DynamicResource PlinthBackgroundBrush}">
+
+  <StackPanel Margin="20" Spacing="12">
+    <TextBlock Text="{loc:T error.body}" TextWrapping="Wrap" />
+    <TextBlock x:Name="DetailText" TextWrapping="Wrap" FontSize="11"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <TextBlock x:Name="LogPathText" TextWrapping="Wrap" FontSize="11"
+               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <WrapPanel HorizontalAlignment="Right">
+      <Button x:Name="RelatedLogsButton" IsEnabled="False" Content="{loc:T logs.viewRelated}" Click="OnLogsClick" Margin="0,0,8,0" />
+      <Button Content="{loc:T help.title}" Click="OnHelpClick" />
+      <Button Content="{loc:T error.ok}" Click="OnOkClick" Margin="8,0,0,0" />
+    </WrapPanel>
+  </StackPanel>
+</Window>

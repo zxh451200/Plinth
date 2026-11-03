@@ -2,12 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Plinth.App.ViewModels"
         xmlns:nav="using:Plinth.App.Navigation"
+        xmlns:services="using:Plinth.App.Services"
+        xmlns:loc="using:Plinth.App.Localization"
+        xmlns:conv="using:Avalonia.Data.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
         x:Class="Plinth.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/plinth.ico"
         Title="{Binding AppTitle}"
         Width="1200" Height="720"
         MinWidth="960" MinHeight="560"
@@ -16,72 +19,280 @@
         Foreground="{DynamicResource PlinthForegroundBrush}"
         Background="{DynamicResource PlinthBackgroundBrush}">
 
-  <!-- 快捷键集中在这里定义,菜单项用 InputGesture 只做提示(§2.2) -->
-  <Window.KeyBindings>
-    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseTabCommand}" />
-    <KeyBinding Gesture="F5" Command="{Binding RefreshCommand}" />
-    <KeyBinding Gesture="F1" Command="{Binding ShowAboutCommand}" />
-  </Window.KeyBindings>
+  <!-- 快捷键由 AppShortcuts 集中定义，在冒泡 KeyDown 中分发。 -->
+
+  <Window.Resources>
+    <!-- 侧栏导航项:分组标题由 ViewModel 填好,模板只负责"有标题才显示";主列表和底部列表共用。
+         折叠成图标轨道时只留图标,标题与分组标题一起让位。 -->
+    <DataTemplate x:Key="NavigationItemTemplate" x:DataType="nav:NavigationItem">
+      <StackPanel>
+        <TextBlock Text="{Binding DisplayGroupTitle}"
+                   Classes="navGroupHeader"
+                   AutomationProperties.AccessibilityView="Raw"
+                   FontSize="11"
+                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
+                   Margin="10,10,10,2">
+          <TextBlock.IsVisible>
+            <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+              <Binding Path="ShowGroupHeader" />
+              <Binding Path="$parent[Window].((vm:MainViewModel)DataContext).IsSidebarCompact"
+                       Converter="{x:Static conv:BoolConverters.Not}" />
+            </MultiBinding>
+          </TextBlock.IsVisible>
+        </TextBlock>
+        <Border Classes="navRow" Margin="4,1" MinHeight="34" Padding="8,0" CornerRadius="6">
+          <StackPanel Classes="navItemRow" Orientation="Horizontal"
+                      Spacing="8"
+                      AutomationProperties.Name="{Binding Title}"
+                      ToolTip.Tip="{Binding Title}">
+            <TextBlock Text="{Binding Icon}"
+                       FontFamily="Segoe Fluent Icons,Segoe MDL2 Assets"
+                       FontSize="16"
+                       Width="20"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Text="{Binding Title}"
+                       Padding="10,5"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsSidebarCompact, Converter={x:Static conv:BoolConverters.Not}}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </DataTemplate>
+    <!-- 桌面化选中态:底色只包住导航行,分组标题留在底色外 -->
+    <ControlTheme x:Key="NavigationItemTheme" TargetType="ListBoxItem">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:disabled">
+        <Setter Property="Opacity" Value="0.5" />
+      </Style>
+    </ControlTheme>
+  </Window.Resources>
 
   <!-- 文档标签比 Fluent 默认的表单标签更紧凑 -->
   <Window.Styles>
     <Style Selector="TabItem">
       <Setter Property="FontSize" Value="13" />
-      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
       <Setter Property="Padding" Value="12,0" />
+    </Style>
+    <!-- 导航行密度:图标轨道与展开态统一 36,避免行高随内容跳动 -->
+    <Style Selector="ListBox#NavigationList ListBoxItem" x:DataType="nav:NavigationItem">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+    </Style>
+    <Style Selector="ListBox#NavigationFooter ListBoxItem" x:DataType="nav:NavigationItem">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+    </Style>
+    <!-- 侧栏两态:展开态左对齐留边;折叠成 48px 图标轨道时图标水平居中,行内边距让位 -->
+    <Style Selector="ListBox#NavigationList, ListBox#NavigationFooter">
+      <Setter Property="Padding" Value="6,0" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem Border.navRow, ListBox#NavigationFooter ListBoxItem Border.navRow">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem:pointerover Border.navRow, ListBox#NavigationFooter ListBoxItem:pointerover Border.navRow">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem:selected Border.navRow, ListBox#NavigationFooter ListBoxItem:selected Border.navRow">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem:focus Border.navRow, ListBox#NavigationFooter ListBoxItem:focus Border.navRow">
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <!-- 开关与导航行共用同一块底色:展开态左缘 10(列表内边距 6 + 行内缩 4),折叠态 4 -->
+    <Style Selector="Button#NavigationToggle">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Margin" Value="10,8,10,0" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.compact Button#NavigationToggle">
+      <Setter Property="Margin" Value="4,8,4,1" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <!-- 悬停/按下与导航行统一用同一块底色,避免两种灰 -->
+    <Style Selector="Button#NavigationToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="Button#NavigationToggle:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="Border.compact ListBox#NavigationList, Border.compact ListBox#NavigationFooter">
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Border.compact ListBox#NavigationList ListBoxItem Border.navRow, Border.compact ListBox#NavigationFooter ListBoxItem Border.navRow">
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Border.compact StackPanel.navItemRow">
+      <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
   </Window.Styles>
 
   <!-- 菜单(§2.2):只放当前已经实现、点了确实有作用的命令 -->
+  <Grid>
   <DockPanel LastChildFill="True">
 
     <Menu DockPanel.Dock="Top"
           Background="{DynamicResource PlinthPanelBrush}"
           BorderBrush="{DynamicResource PlinthBorderBrush}"
           BorderThickness="0,0,0,1">
-      <MenuItem Header="文件(_F)">
-        <MenuItem Header="关闭当前标签"
+      <MenuItem Header="{loc:T menu.file}">
+        <MenuItem Header="{loc:T menu.file.new}" Command="{Binding NewPageCommand}" InputGesture="{x:Static nav:AppShortcuts.New}" />
+        <MenuItem Header="{loc:T menu.file.save}" Command="{Binding SavePageCommand}" InputGesture="{x:Static nav:AppShortcuts.Save}" />
+        <MenuItem Header="{loc:T shell.navigation.recent}" ItemsSource="{Binding RecentPages}"
+                  IsEnabled="{Binding HasRecentPages}">
+          <MenuItem.ItemContainerTheme>
+            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
+              <Setter Property="Header" Value="{Binding Title}" />
+              <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenTabCommand}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </ControlTheme>
+          </MenuItem.ItemContainerTheme>
+        </MenuItem>
+        <MenuItem Header="{loc:T shell.navigation.clearRecent}" Command="{Binding ClearRecentPagesCommand}" />
+        <Separator />
+        <MenuItem Header="{loc:T menu.file.closeTab}"
                   Command="{Binding CloseTabCommand}"
-                  InputGesture="Ctrl+W" />
-        <MenuItem Header="关闭全部标签"
+                  InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
+        <MenuItem Header="{loc:T menu.file.closeAll}"
                   Command="{Binding CloseAllTabsCommand}" />
         <Separator />
-        <MenuItem Header="退出" Command="{Binding ExitCommand}" />
+        <MenuItem Header="{loc:T menu.file.exit}" Command="{Binding ExitCommand}" />
       </MenuItem>
-      <MenuItem Header="查看(_V)">
-        <MenuItem Header="导航面板"
+      <MenuItem x:Name="EditMenu" Header="{loc:T menu.edit}">
+        <MenuItem x:Name="FindPageMenu" Header="{loc:T menu.edit.find}" Click="OnFindPageClick" IsEnabled="{Binding HasTabs}" InputGesture="{x:Static nav:AppShortcuts.Find}" />
+        <MenuItem Header="{loc:T menu.edit.delete}" Command="{Binding DeletePageCommand}" InputGesture="{x:Static nav:AppShortcuts.Delete}" />
+        <MenuItem Header="{loc:T menu.edit.cancel}" Command="{Binding CancelPageCommand}" InputGesture="{x:Static nav:AppShortcuts.Cancel}" />
+      </MenuItem>
+      <MenuItem Header="{loc:T menu.view}">
+        <MenuItem Header="{loc:T menu.view.quickOpen}" Command="{Binding OpenQuickOpenCommand}" />
+        <Separator />
+        <MenuItem Header="{loc:T shell.layout.reset}" Command="{Binding ResetLayoutCommand}" />
+        <MenuItem Header="{Binding SidebarToggleText}" Command="{Binding ToggleSidebarCompactCommand}" />
+        <MenuItem Header="{loc:T menu.view.sidebar}"
                   ToggleType="CheckBox"
                   IsChecked="{Binding IsSidebarVisible, Mode=TwoWay}" />
+        <MenuItem Header="{loc:T shell.sidePanel}" ToggleType="CheckBox"
+                  IsChecked="{Binding IsSidePanelVisible, Mode=TwoWay}" />
+        <MenuItem Header="{loc:T tasks.title}" Command="{Binding ShowTaskPanelCommand}" />
       </MenuItem>
-      <MenuItem Header="数据(_D)">
-        <MenuItem Header="刷新" Command="{Binding RefreshCommand}" InputGesture="F5" />
+      <MenuItem Header="{loc:T menu.data}">
+        <MenuItem Header="{loc:T menu.data.refresh}" Command="{Binding RefreshCommand}" InputGesture="{x:Static nav:AppShortcuts.Refresh}" />
+        <MenuItem Header="{loc:T menu.data.pageCommands}" ItemsSource="{Binding ModuleCommands}"
+                  IsVisible="{Binding HasModuleCommands}">
+          <MenuItem.ItemContainerTheme>
+            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:CommandMenu">
+              <Setter Property="Header" Value="{Binding Header}" />
+              <Setter Property="Command" Value="{Binding Command}" />
+            </ControlTheme>
+          </MenuItem.ItemContainerTheme>
+        </MenuItem>
       </MenuItem>
-      <MenuItem Header="工具(_T)">
-        <MenuItem Header="打开数据目录" Command="{Binding OpenDataFolderCommand}" />
-        <MenuItem Header="打开日志目录" Command="{Binding OpenLogFolderCommand}" />
+      <MenuItem Header="{loc:T menu.tools}">
+        <MenuItem Header="{loc:T nav.logs}" Command="{Binding ShowLogsCommand}" />
+        <MenuItem Header="{loc:T logs.showErrors}" Command="{Binding ShowErrorsCommand}" />
+        <MenuItem Header="{loc:T nav.taskDiagnostics}" Command="{Binding ShowTaskDiagnosticsCommand}" />
+        <Separator />
+        <MenuItem Header="{loc:T menu.tools.openData}" Command="{Binding OpenDataFolderCommand}" />
+        <MenuItem Header="{loc:T menu.tools.openLogs}" Command="{Binding OpenLogFolderCommand}" />
       </MenuItem>
-      <MenuItem Header="帮助(_H)">
-        <MenuItem Header="关于 Plinth" Command="{Binding ShowAboutCommand}" InputGesture="F1" />
+      <MenuItem Header="{loc:T menu.window}">
+        <MenuItem Header="{loc:T shell.navigation.toggleFavorite}" ToggleType="CheckBox"
+                  IsChecked="{Binding IsCurrentPageFavorite, Mode=OneWay}"
+                  Command="{Binding ToggleFavoriteCommand}" />
+        <MenuItem Header="{loc:T shell.navigation.favorites}" ItemsSource="{Binding FavoritePages}"
+                  IsEnabled="{Binding HasFavoritePages}">
+          <MenuItem.ItemContainerTheme>
+            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
+              <Setter Property="Header" Value="{Binding Title}" />
+              <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenTabCommand}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </ControlTheme>
+          </MenuItem.ItemContainerTheme>
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="{loc:T menu.file.closeTab}" Command="{Binding CloseTabCommand}" InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
+        <MenuItem Header="{loc:T menu.file.closeAll}" Command="{Binding CloseAllTabsCommand}" />
+        <MenuItem Header="{loc:T menu.window.openPages}" ItemsSource="{Binding Tabs}" IsEnabled="{Binding HasTabs}">
+          <MenuItem.ItemContainerTheme>
+            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:WorkspaceTabViewModel">
+              <Setter Property="Header" Value="{Binding Title}" />
+              <Setter Property="Command"
+                      Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).SelectTabCommand}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </ControlTheme>
+          </MenuItem.ItemContainerTheme>
+        </MenuItem>
+      </MenuItem>
+      <MenuItem Header="{loc:T menu.help}">
+        <MenuItem Header="{loc:T help.title}" Command="{Binding ShowHelpCommand}" InputGesture="{x:Static nav:AppShortcuts.Help}" />
+        <MenuItem Header="{loc:T license.title}" Command="{Binding ShowLicensesCommand}" />
+        <MenuItem Header="{loc:T menu.help.about}" Command="{Binding ShowAboutCommand}" />
       </MenuItem>
     </Menu>
 
     <!-- 工具栏 -->
     <Border DockPanel.Dock="Top"
-            Padding="8,6"
+            Padding="{DynamicResource PlinthToolbarPadding}"
             Background="{DynamicResource PlinthPanelBrush}"
             BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="0,0,0,1">
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Content="刷新"
+        <Button Content="{loc:T toolbar.refresh}"
                 Command="{Binding RefreshCommand}"
-                ToolTip.Tip="刷新当前页面 (F5)" />
-        <Button Content="关闭标签"
+                ToolTip.Tip="{loc:T toolbar.refresh.tip}" />
+        <Button Content="{loc:T toolbar.closeTab}"
                 Command="{Binding CloseTabCommand}"
-                ToolTip.Tip="关闭当前标签 (Ctrl+W)" />
-        <Button Content="日志目录"
-                Command="{Binding OpenLogFolderCommand}"
-                ToolTip.Tip="打开日志所在目录" />
+                ToolTip.Tip="{loc:T toolbar.closeTab.tip}" />
+        <Button Content="{loc:T toolbar.logs}"
+                Command="{Binding ShowLogsCommand}"
+                ToolTip.Tip="{loc:T toolbar.logs.tip}" />
+        <Button Content="{loc:T tasks.title}" Command="{Binding ShowTaskPanelCommand}" />
       </StackPanel>
+    </Border>
+
+    <!-- Persistent module state has its own row, independent of task notices and StatusMessage. -->
+    <Border x:Name="ModuleFailureBanner" DockPanel.Dock="Top" IsVisible="{Binding HasModuleFailure}"
+            Padding="{DynamicResource PlinthToolbarPadding}"
+            Background="{DynamicResource PlinthPanelBrush}"
+            BorderBrush="{DynamicResource PlinthAccentBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock x:Name="ModuleFailureText" Text="{Binding ModuleFailureText}"
+                   TextWrapping="Wrap" VerticalAlignment="Center" />
+        <Button x:Name="ModuleFailureLogsButton" Grid.Column="1" Margin="8,0,0,0"
+                Content="{loc:T logs.viewRelated}" Command="{Binding ShowModuleFailureLogsCommand}" />
+      </Grid>
+    </Border>
+
+    <Border DockPanel.Dock="Top" IsVisible="{Binding HasTaskNotification}"
+            Padding="{DynamicResource PlinthToolbarPadding}"
+            Background="{DynamicResource PlinthPanelBrush}"
+            BorderBrush="{DynamicResource PlinthAccentBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Text="{Binding TaskNotificationText}" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TaskNotificationText}" />
+        <Button Grid.Column="1" Content="{loc:T tasks.notification.view}"
+                Command="{Binding ViewCompletedTaskCommand}" Margin="8,0" />
+        <Button Grid.Column="2" Content="{loc:T tasks.notification.dismiss}"
+                Command="{Binding DismissTaskNotificationCommand}" />
+      </Grid>
     </Border>
 
     <!-- 状态栏 -->
@@ -90,7 +301,7 @@
             Background="{DynamicResource PlinthPanelBrush}"
             BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6">
         <TextBlock Text="{Binding StatusMessage}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
@@ -101,6 +312,18 @@
           <TextBlock Text="{Binding VersionText}"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
         </StackPanel>
+        <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
+          <Button x:Name="ConnectionStatusButton" Content="{Binding ShellStatus.ConnectionText}"
+                  Command="{Binding ShowSettingsCommand}" ToolTip.Tip="{Binding ShellStatus.ConnectionHint}"
+                  AutomationProperties.Name="{Binding ShellStatus.ConnectionText}"
+                  MinHeight="0" Padding="4,2" Margin="0,0,12,0" />
+          <TextBlock Text="{Binding ShellStatus.UserText}" ToolTip.Tip="{Binding ShellStatus.UserText}"
+                     MaxWidth="200" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock Text="{Binding ShellStatus.EnvironmentText}" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <Button x:Name="TaskStatusButton" Content="{Binding ShellStatus.TaskText}"
+                  Command="{Binding ShowTaskPanelCommand}" ToolTip.Tip="{loc:T tasks.title}"
+                  AutomationProperties.Name="{Binding ShellStatus.TaskText}" MinHeight="0" Padding="4,2" />
+        </WrapPanel>
       </Grid>
     </Border>
 
@@ -110,38 +333,67 @@
         <ColumnDefinition Width="260" MinWidth="180" MaxWidth="420" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="0" MinWidth="0" MaxWidth="480" />
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0"
+              Classes.compact="{Binding IsSidebarCompact}"
               IsVisible="{Binding IsSidebarVisible}"
               Background="{DynamicResource PlinthPanelBrush}"
               BorderBrush="{DynamicResource PlinthBorderBrush}"
               BorderThickness="0,0,1,0">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Top"
-                     Text="导航"
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <Button x:Name="NavigationToggle"
+                  Grid.Row="0"
+                  Content="&#xE700;"
+                  FontFamily="Segoe Fluent Icons,Segoe MDL2 Assets"
+                  FontSize="14"
+                  Command="{Binding ToggleSidebarCompactCommand}"
+                  AutomationProperties.Name="{Binding SidebarToggleText}"
+                  ToolTip.Tip="{Binding SidebarToggleText}"
+                  Background="Transparent"
+                  BorderThickness="0" />
+          <TextBlock x:Name="NavigationTitle"
+                     Grid.Row="1"
+                     Text="{loc:T shell.nav.title}"
+                     IsVisible="{Binding IsSidebarCompact, Converter={x:Static conv:BoolConverters.Not}}"
                      Margin="14,12,14,4"
                      FontSize="11"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
           <ListBox x:Name="NavigationList"
-                   ItemsSource="{Binding MenuItems}"
-                   SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
+             ItemContainerTheme="{StaticResource NavigationItemTheme}"
+                   Grid.Row="2"
+                   ItemsSource="{Binding PrimaryMenuItems}"
+                   ItemTemplate="{StaticResource NavigationItemTemplate}"
+                   SelectedItem="{Binding SelectedNavigationItem, Mode=OneWay}"
+                   SelectionChanged="OnNavigationSelectionChanged"
+                   Focusable="True"
                    Background="Transparent"
                    BorderThickness="0"
-                   Padding="6,0"
-                   Tapped="OnNavigationTapped">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="nav:NavigationItem">
-                <TextBlock Text="{Binding Title}" Padding="10,7" />
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
+                   Tapped="OnNavigationTapped" />
+          <!-- 底部固定项(设置):视觉与 Tab 顺序都在主列表之后 -->
+          <Border Grid.Row="3"
+                  BorderBrush="{DynamicResource PlinthBorderBrush}"
+                  BorderThickness="0,1,0,0">
+            <ListBox x:Name="NavigationFooter"
+               ItemContainerTheme="{StaticResource NavigationItemTheme}"
+                     ItemsSource="{Binding FooterMenuItems}"
+                     ItemTemplate="{StaticResource NavigationItemTemplate}"
+                     SelectedItem="{Binding SelectedNavigationItem, Mode=OneWay}"
+                     SelectionChanged="OnNavigationSelectionChanged"
+                     AutomationProperties.Name="{loc:T nav.settings}"
+                     Focusable="True"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Tapped="OnNavigationTapped" />
+          </Border>
+        </Grid>
       </Border>
 
-      <GridSplitter Grid.Column="1"
+      <GridSplitter x:Name="SidebarSplitter" Grid.Column="1"
                     Width="4"
-                    IsVisible="{Binding IsSidebarVisible}"
+                    IsVisible="{Binding IsSidebarSplitterVisible}"
                     ResizeDirection="Columns"
                     ResizeBehavior="PreviousAndNext"
                     Background="Transparent" />
@@ -152,32 +404,44 @@
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Spacing="6">
-          <TextBlock Text="从左侧导航打开一个页面"
+          <TextBlock Text="{loc:T shell.empty.hint}"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBlock Text="Ctrl+W 关闭标签 · F5 刷新 · F1 关于"
+          <TextBlock Text="{loc:T shell.empty.keys}"
                      HorizontalAlignment="Center"
                      FontSize="11"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
         </StackPanel>
 
         <!-- 标签工作区:内容由 ViewLocator 按 XxxViewModel → XxxView 解析 -->
-        <TabControl ItemsSource="{Binding Tabs}"
+        <TabControl x:Name="WorkspaceTabs" ItemsSource="{Binding Tabs}"
                     SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
+                    Focusable="True"
+                    KeyboardNavigation.TabNavigation="Continue"
                     IsVisible="{Binding HasTabs}"
                     Background="Transparent"
                     Padding="0">
+          <TabControl.ItemContainerTheme>
+            <ControlTheme TargetType="TabItem" BasedOn="{StaticResource {x:Type TabItem}}" x:DataType="vm:WorkspaceTabViewModel">
+              <Setter Property="Focusable" Value="True" />
+              <Setter Property="KeyboardNavigation.IsTabStop" Value="False" />
+              <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+            </ControlTheme>
+          </TabControl.ItemContainerTheme>
           <TabControl.ItemTemplate>
             <DataTemplate x:DataType="vm:WorkspaceTabViewModel">
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="2,2">
-                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
-                <Button Content="✕"
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
+                           MaxWidth="220" TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding Title}" />
+                <Button Content="✕" Classes="tabClose"
+                        AutomationProperties.Name="{Binding Title}"
                         Padding="4,0"
                         FontSize="10"
                         VerticalAlignment="Center"
                         Background="Transparent"
                         BorderThickness="0"
-                        ToolTip.Tip="关闭标签"
+                        ToolTip.Tip="{loc:T shell.tab.close}"
                         Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloseTabItemCommand}"
                         CommandParameter="{Binding}" />
               </StackPanel>
@@ -190,6 +454,121 @@
           </TabControl.ContentTemplate>
         </TabControl>
       </Panel>
+
+      <GridSplitter x:Name="SidePanelSplitter" Grid.Column="3" Width="4"
+                    IsVisible="{Binding IsSidePanelVisible}"
+                    ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                    Background="Transparent" />
+      <Border Grid.Column="4" IsVisible="{Binding IsSidePanelVisible}"
+              Background="{DynamicResource PlinthPanelBrush}"
+              BorderBrush="{DynamicResource PlinthBorderBrush}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Button DockPanel.Dock="Top" Content="{loc:T shell.sidePanel.hide}"
+                  Command="{Binding HideSidePanelCommand}" HorizontalAlignment="Right"
+                  Margin="8" />
+          <TabControl SelectedIndex="{Binding SidePanelTab, Mode=TwoWay}">
+            <TabItem Header="{loc:T shell.details}">
+              <ScrollViewer>
+                <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="12">
+                  <TextBlock Text="{Binding PageDetailsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:T shell.details.empty}" IsVisible="{Binding !HasPageDetails}"
+                             TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding PageDetails}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="nav:PageDetail">
+                        <StackPanel Spacing="4" Margin="0,0,0,12">
+                          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+                          <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="{loc:T tasks.title}">
+              <DockPanel Margin="12">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:T shell.tasks.empty}"
+                           IsVisible="{Binding !HasPanelTasks}" TextWrapping="Wrap" />
+                <Button DockPanel.Dock="Bottom" Content="{loc:T nav.taskDiagnostics}"
+                        Command="{Binding ShowTaskDiagnosticsCommand}" Margin="0,8,0,0" />
+                <ScrollViewer>
+                  <ItemsControl ItemsSource="{Binding PanelTasks}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="services:WorkItem">
+                        <StackPanel Spacing="6" Margin="0,0,0,16">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding StatusText}" />
+                          <TextBlock Text="{Binding ProgressText}" />
+                          <StackPanel Spacing="6">
+                            <Button Content="{loc:T tasks.cancel}" IsEnabled="{Binding CanCancel}"
+                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CancelPanelTaskCommand}"
+                                    CommandParameter="{Binding}" />
+                            <Button Content="{loc:T tasks.notification.view}"
+                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPanelTaskCommand}"
+                                    CommandParameter="{Binding}" />
+                          </StackPanel>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </DockPanel>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
+      </Border>
     </Grid>
   </DockPanel>
+
+  <!-- Ctrl+K 快速打开:搜索当前可见导航页 -->
+  <Border x:Name="QuickOpenScrim"
+          IsVisible="{Binding IsQuickOpen}"
+          Background="#01000000"
+          ZIndex="20"
+          PointerPressed="OnQuickOpenScrimPressed" />
+  <Border x:Name="QuickOpenPanel"
+          IsVisible="{Binding IsQuickOpen}"
+          Width="520"
+          MaxHeight="440"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Margin="0,96,0,0"
+          Padding="12"
+          Background="{DynamicResource PlinthPanelBrush}"
+          BorderBrush="{DynamicResource PlinthBorderBrush}"
+          BorderThickness="1"
+          CornerRadius="8"
+          ZIndex="21">
+    <DockPanel>
+      <TextBox x:Name="QuickOpenBox"
+               DockPanel.Dock="Top"
+               Text="{Binding QuickOpenText, Mode=TwoWay}"
+               PlaceholderText="搜索页面（Ctrl+K）"
+               AutomationProperties.Name="快速打开页面"
+               KeyDown="OnQuickOpenKeyDown" />
+      <ListBox x:Name="QuickOpenList"
+               Margin="0,8,0,0"
+               MaxHeight="340"
+               ItemsSource="{Binding QuickOpenItems}"
+               SelectedItem="{Binding QuickOpenSelection, Mode=TwoWay}"
+               AutomationProperties.Name="页面搜索结果">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="nav:NavigationItem">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding Icon}"
+                         FontFamily="Segoe Fluent Icons,Segoe MDL2 Assets"
+                         FontSize="16"
+                         Width="20"
+                         TextAlignment="Center"
+                         VerticalAlignment="Center"
+                         AutomationProperties.AccessibilityView="Raw" />
+              <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Border>
+  </Grid>
 </Window>

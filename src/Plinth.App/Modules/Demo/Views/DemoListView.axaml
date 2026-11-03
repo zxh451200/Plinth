@@ -1,0 +1,165 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plinth.App.Modules.Demo.ViewModels"
+             xmlns:data="using:Plinth.App.Modules.Demo.Data"
+             xmlns:loc="using:Plinth.App.Localization"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+             x:Class="Plinth.App.Modules.Demo.Views.DemoListView"
+             x:DataType="vm:DemoListViewModel">
+  <UserControl.Resources>
+    <!-- 手动打开，等待未保存确认完成后才允许操作目标行。 -->
+    <ContextMenu x:Key="RecordContextMenu" IsEnabled="{Binding CanUseSelectedRecord}">
+      <MenuItem Header="{loc:T demo.list.edit}" Click="OnEditRecordClick" IsEnabled="{Binding HasEditPermission}" />
+      <MenuItem Header="{loc:T demo.list.copy}" Click="OnCopyClick" />
+      <Separator />
+      <MenuItem Header="{loc:T demo.delete}" Command="{Binding AskDeleteCommand}" IsEnabled="{Binding HasDeletePermission}" />
+    </ContextMenu>
+  </UserControl.Resources>
+  <!-- 左边:搜索 + 列表。右边:编辑表单(选中一行或点"新增"后出现) -->
+  <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource PlinthPageMargin}">
+
+    <DockPanel Grid.Column="0" LastChildFill="True">
+      <TextBlock DockPanel.Dock="Top" Text="{loc:T nav.demo}" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+      <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+        <Button Content="{loc:T demo.new}" Command="{Binding NewCommand}" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.export}" Command="{Binding ExportCommand}" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.import}" Click="OnImportClick" Margin="0,0,8,4" />
+        <TextBox x:Name="SearchBox" Width="240"
+                 MaxLength="500"
+                 PlaceholderText="{loc:T demo.search.placeholder}"
+                 Text="{Binding SearchText}"
+                 AutomationProperties.Name="{loc:T demo.search.name}" />
+      </WrapPanel>
+
+      <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+        <WrapPanel>
+          <TextBlock Text="{loc:T demo.list.sort}" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}" MinWidth="120"
+                    AutomationProperties.Name="{loc:T demo.list.sort}" />
+          <CheckBox Content="{loc:T demo.list.descending}" IsChecked="{Binding Descending}" />
+          <Button Content="{loc:T demo.list.copy}" Click="OnCopyClick" IsEnabled="{Binding CanUseSelectedRecord}" />
+          <Button x:Name="ResetListButton" Content="{loc:T demo.list.reset}" Command="{Binding ResetListCommand}"
+                  AutomationProperties.Name="{loc:T demo.list.reset}" />
+        </WrapPanel>
+        <WrapPanel>
+          <Button x:Name="ToggleBatchButton" Content="{loc:T demo.batch.toggle}"
+                  Command="{Binding ToggleBatchSelectionCommand}" IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
+          <TextBlock Text="{loc:T demo.batch.active}" IsVisible="{Binding IsBatchSelecting}" VerticalAlignment="Center" />
+        </WrapPanel>
+        <WrapPanel IsVisible="{Binding IsBatchSelecting}">
+          <TextBlock Text="{Binding BatchSelectionText}" VerticalAlignment="Center" Margin="0,0,8,4" />
+          <Button x:Name="SelectPageButton" Content="{loc:T demo.batch.selectPage}" Click="OnSelectPageClick"
+                  IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
+          <Button x:Name="ClearBatchButton" Content="{loc:T demo.batch.clear}" Click="OnClearBatchClick"
+                  IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
+          <Button x:Name="CopyBatchButton" Content="{loc:T demo.batch.copy}" Click="OnCopyBatchClick"
+                  IsEnabled="{Binding CanCopyBatch}" Margin="0,0,8,4" />
+        </WrapPanel>
+        <Expander Header="{loc:T demo.list.columns}">
+          <StackPanel x:Name="ColumnMenu" Orientation="Horizontal" Spacing="8" />
+        </Expander>
+        <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsLoading}" />
+      </StackPanel>
+      <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+        <Button Content="{loc:T demo.list.previous}" Command="{Binding PreviousPageCommand}" />
+        <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
+        <Button Content="{loc:T demo.list.next}" Command="{Binding NextPageCommand}" />
+        <TextBlock Text="{loc:T demo.list.pageSize}" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}"
+                  AutomationProperties.Name="{loc:T demo.list.pageSize}" />
+      </WrapPanel>
+      <TextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.preferencesFailed}"
+                 IsVisible="{Binding PreferencesSaveFailed}" TextWrapping="Wrap"
+                 Foreground="{DynamicResource PlinthErrorBrush}" />
+      <TextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.empty}" IsVisible="{Binding IsEmpty}" />
+
+      <TextBlock DockPanel.Dock="Bottom"
+                 Margin="0,12,0,0"
+                 Text="{Binding StatusText}"
+                 Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+
+      <!-- 列表。点一行,在右边表单里改 -->
+      <TableView x:Name="RecordsTable" ItemsSource="{Binding Items}"
+                 Focusable="True"
+                 SelectedItem="{Binding SelectedItem}"
+                 AutomationProperties.Name="{loc:T demo.list.name}">
+        <TableView.Columns>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.code}" Binding="{Binding Code}" Width="140" />
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.name}" Binding="{Binding Name}" Width="200" />
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.remark}" Binding="{Binding Remark}" Width="200" />
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.updatedAt}" Binding="{Binding UpdatedAtText}" Width="140" />
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.updatedBy}" Binding="{Binding UpdatedBy}" Width="120" />
+        </TableView.Columns>
+      </TableView>
+    </DockPanel>
+
+    <!-- 编辑表单 -->
+    <Border Grid.Column="1"
+            Width="320"
+            Margin="16,0,0,0"
+            Padding="{DynamicResource PlinthPanelPadding}"
+            CornerRadius="6"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource PlinthBorderBrush}"
+            Background="{DynamicResource PlinthPanelBrush}"
+            IsVisible="{Binding IsEditing}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="10" IsEnabled="{Binding !IsSaving}">
+        <TextBlock Text="{loc:T demo.form.title}" FontWeight="SemiBold" />
+        <TextBlock Text="{loc:T demo.form.unsaved}" IsVisible="{Binding IsDirty}" />
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.code}" />
+          <TextBox x:Name="EditCodeBox" Text="{Binding EditCode}" MaxLength="50" AutomationProperties.Name="{loc:T demo.col.code}" />
+          <TextBlock Text="{Binding CodeError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding CodeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.name}" />
+          <TextBox Text="{Binding EditName}" MaxLength="200" AutomationProperties.Name="{loc:T demo.col.name}" />
+          <TextBlock Text="{Binding NameError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.remark}" />
+          <TextBox Text="{Binding EditRemark}"
+                   MaxLength="500"
+                   AcceptsReturn="True"
+                   Height="90"
+                   TextWrapping="Wrap"
+                   AutomationProperties.Name="{loc:T demo.col.remark}" />
+          <TextBlock Text="{Binding RemarkError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding RemarkError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding ErrorMessage}"
+                   Foreground="{DynamicResource PlinthErrorBrush}"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="{loc:T demo.save}" Command="{Binding SaveCommand}" />
+          <Button Content="{loc:T demo.cancel}" Command="{Binding CancelCommand}" />
+          <Button Content="{loc:T demo.delete}" Command="{Binding AskDeleteCommand}" IsVisible="{Binding CanDelete}" />
+        </StackPanel>
+
+        <!-- 删除前再确认一次 -->
+        <Border IsVisible="{Binding IsConfirmingDelete}" Padding="0,4,0,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:T demo.delete.confirm}" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{loc:T demo.delete}" Command="{Binding ConfirmDeleteCommand}" />
+              <Button Content="{loc:T demo.delete.keep}" Command="{Binding CancelDeleteCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>

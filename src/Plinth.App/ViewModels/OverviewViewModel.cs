@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plinth.App.Navigation;
 using Plinth.App.Services;
+using Plinth.App.Localization;
 
 namespace Plinth.App.ViewModels;
 
@@ -39,13 +40,13 @@ public partial class OverviewViewModel : ViewModelBase, IRefreshable
     public partial string ActionHint { get; set; } = string.Empty;
 
     [RelayCommand]
-    private void OpenDataFolder() => OpenFolder(AppPaths.DataDirectory, "数据目录");
+    private void OpenDataFolder() => OpenFolder(AppPaths.DataDirectory, Loc.Get("folder.data"));
 
     [RelayCommand]
-    private void OpenLogFolder() => OpenFolder(AppPaths.LogDirectory, "日志目录");
+    private void OpenLogFolder() => OpenFolder(AppPaths.LogDirectory, Loc.Get("folder.log"));
 
     private void OpenFolder(string path, string displayName) =>
-        ActionHint = _folderService.TryOpen(path) ? $"已打开{displayName}" : $"无法打开{displayName},请检查日志";
+        ActionHint = _folderService.OpenWithMessage(path, displayName);
 
     public void Refresh() => LogSummary = ReadLogSummary();
 
@@ -56,25 +57,25 @@ public partial class OverviewViewModel : ViewModelBase, IRefreshable
             var directory = new DirectoryInfo(AppPaths.LogDirectory);
             if (!directory.Exists)
             {
-                return "日志目录尚未创建";
+                return Loc.Get("overview.log.noFolder");
             }
 
             var files = directory.GetFiles("*.ndjson");
             if (files.Length == 0)
             {
-                return "暂无日志文件";
+                return Loc.Get("overview.log.empty");
             }
 
             var totalBytes = files.Sum(file => file.Length);
-            return $"{files.Length} 个文件,共 {FormatSize(totalBytes)}";
+            return Loc.Format("overview.log.summary", files.Length, FormatSize(totalBytes));
         }
         catch (IOException)
         {
-            return "无法读取日志目录";
+            return Loc.Get("overview.log.ioError");
         }
         catch (UnauthorizedAccessException)
         {
-            return "无权限读取日志目录";
+            return Loc.Get("overview.log.denied");
         }
     }
 

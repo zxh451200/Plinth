@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>XLSX 导入导出</value></data>
+  <data name="Help" xml:space="preserve"><value>选择单工作表 XLSX，三列依次为编码、名称、备注（也支持 Code、Name、Remark 表头）。单元格必须为文本；编码和名称必填，三列长度上限为 50/200/500 字符。最多 5000 条、文件不超过 5 MiB。完整文件会被校验，预览显示前 20 条。</value></data>
+  <data name="ChooseFile" xml:space="preserve"><value>选择 XLSX 并预览</value></data>
+  <data name="ChooseFolder" xml:space="preserve"><value>选择导出目录</value></data>
+  <data name="Clear" xml:space="preserve"><value>清空预览</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消任务</value></data>
+  <data name="ExportHelp" xml:space="preserve"><value>按下方条件导出 Demo 记录；留空表示全部（最多 5000 条）。在所选目录创建新文件。</value></data>
+  <data name="Search" xml:space="preserve"><value>按编码或名称筛选导出记录</value></data>
+  <data name="Export" xml:space="preserve"><value>导出 XLSX…</value></data>
+  <data name="Preview" xml:space="preserve"><value>导入预览</value></data>
+  <data name="Row" xml:space="preserve"><value>行号</value></data>
+  <data name="Code" xml:space="preserve"><value>编码</value></data>
+  <data name="Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Remark" xml:space="preserve"><value>备注</value></data>
+  <data name="Errors" xml:space="preserve"><value>导入错误</value></data>
+  <data name="Acknowledge" xml:space="preserve"><value>我已核对预览：编码相同的记录会更新，新编码会新增；字段首尾空白将被去除。</value></data>
+  <data name="ConfirmImport" xml:space="preserve"><value>确认整批导入</value></data>
+  <data name="OutputPath" xml:space="preserve"><value>已导出文件路径（可复制）</value></data>
+  <data name="Ready" xml:space="preserve"><value>选择文件进行预览，或导出现有 Demo 记录。</value></data>
+  <data name="PreviewTask" xml:space="preserve"><value>校验 XLSX 预览</value></data>
+  <data name="ImportTask" xml:space="preserve"><value>将 XLSX 导入 Demo</value></data>
+  <data name="ExportTask" xml:space="preserve"><value>将 Demo 导出为 XLSX</value></data>
+  <data name="Issue" xml:space="preserve"><value>第 {0} 行 [{1}]：{2}</value></data>
+  <data name="PreviewSummary" xml:space="preserve"><value>已校验 {0} 条记录，显示前 {1} 条；发现 {2} 个问题（最多报告 100 个）。</value></data>
+  <data name="InvalidBatch" xml:space="preserve"><value>未导入任何记录。请修复错误后重新选择文件。</value></data>
+  <data name="Imported" xml:space="preserve"><value>导入完成：新增 {0} 条、更新 {1} 条。请刷新 Demo 列表查看。</value></data>
+  <data name="CleanupWarning" xml:space="preserve"><value>有临时导入文件未能删除，请联系管理员清理该任务的临时目录。</value></data>
+  <data name="Exported" xml:space="preserve"><value>导出完成，可复制下方文件路径。</value></data>
+  <data name="NotConfirmed" xml:space="preserve"><value>操作未确认，未启动导入或导出。</value></data>
+  <data name="Running" xml:space="preserve"><value>任务运行中：{0}。也可在任务中心查看进度或取消。</value></data>
+  <data name="Completed" xml:space="preserve"><value>校验完成。请核对预览，勾选确认后导入。</value></data>
+  <data name="Cancelled" xml:space="preserve"><value>任务已取消；有效预览可重新确认导入。</value></data>
+  <data name="Failed" xml:space="preserve"><value>任务失败（{0}）。请检查文件格式与限制、权限和目录访问，并查看任务中心。不会接受部分数据批次。导出请确认筛选结果为 1–5000 条；数据发生变化时请重试。</value></data>
+  <data name="StartFailed" xml:space="preserve"><value>无法启动操作，请检查生产确认设置和任务容量后重试。</value></data>
+  <data name="PickerFailed" xml:space="preserve"><value>无法选择本地文件或目录，请检查桌面文件选择器支持和访问权限。</value></data>
+  <data name="Cancelling" xml:space="preserve"><value>已请求取消，工作簿加载或保存可能延迟响应；已完成的提交仍按成功处理。</value></data>
+  <data name="RequiredIssue" xml:space="preserve"><value>编码和名称不能为空。</value></data>
+  <data name="LengthIssue" xml:space="preserve"><value>编码、名称或备注超出 50/200/500 字符限制。</value></data>
+  <data name="DuplicateIssue" xml:space="preserve"><value>文件内编码重复（去除首尾空白后忽略大小写比较）。</value></data>
+  <data name="TypeIssue" xml:space="preserve"><value>请使用纯文本单元格；不导入数值、日期、布尔值或公式。</value></data>
+  <data name="HeaderIssue" xml:space="preserve"><value>表头须依次为 编码,名称,备注 或 Code,Name,Remark。</value></data>
+  <data name="EmptyIssue" xml:space="preserve"><value>至少需要一行表头和一条数据。</value></data>
+  <data name="TextIssue" xml:space="preserve"><value>文本或单元格内容不受支持。</value></data>
+</root>

@@ -1,0 +1,28 @@
+name: Generate dependency locks
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore actual dependencies and generate lock files
+        run: dotnet restore Plinth.sln --use-lock-file --force-evaluate --configfile scripts/nuget.config
+      - name: Confirm locked restore succeeds
+        run: dotnet restore Plinth.sln --locked-mode --configfile scripts/nuget.config
+      - name: Confirm Windows publish restore uses the same locks
+        run: dotnet restore src/Plinth.App/Plinth.App.csproj -r win-x64 --locked-mode --configfile scripts/nuget.config
+      - name: Export lock files for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-locks
+          path: |
+            src/**/packages.lock.json
+            tests/**/packages.lock.json
+          if-no-files-found: error

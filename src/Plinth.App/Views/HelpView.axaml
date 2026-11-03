@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plinth.App.ViewModels"
+             xmlns:nav="using:Plinth.App.Navigation"
+             xmlns:loc="using:Plinth.App.Localization"
+             x:Class="Plinth.App.Views.HelpView" x:DataType="vm:HelpViewModel">
+  <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,Auto,*"
+        RowSpacing="{DynamicResource PlinthSectionSpacing}">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <TextBlock Text="{loc:T help.title}" FontSize="19" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding VersionText}" VerticalAlignment="Center" />
+    </StackPanel>
+    <TextBox x:Name="HelpSearch" Grid.Row="1" Text="{Binding SearchText}"
+             PlaceholderText="{loc:T help.search}" AutomationProperties.Name="{loc:T help.search}" />
+    <Grid Grid.Row="2" ColumnDefinitions="180,*" ColumnSpacing="12">
+      <ListBox ItemsSource="{Binding Topics}" SelectedItem="{Binding SelectedTopic, Mode=TwoWay}"
+               AutomationProperties.Name="{loc:T help.topics}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="nav:HelpTopic">
+            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
+        <TextBlock Text="{loc:T help.noResults}" IsVisible="{Binding !HasTopics}" TextWrapping="Wrap" />
+        <TextBox Grid.Row="1" Text="{Binding SelectedTopic.Body, Mode=OneWay}"
+                 IsVisible="{Binding HasTopics}" IsReadOnly="True" AcceptsReturn="True"
+                 TextWrapping="Wrap" AutomationProperties.Name="{loc:T help.content}"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

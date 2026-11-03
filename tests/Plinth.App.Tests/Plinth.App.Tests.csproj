@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <DefineConstants Condition="'$(PlinthEnableXlsx)' == 'true'">$(DefineConstants);PLINTH_XLSX</DefineConstants>
     <NoWarn>$(NoWarn);AVLN3000;CS0618</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -18,5 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Plinth.App\Plinth.App.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlinthRunPoc)' != 'true'">
+    <Compile Remove="PerformancePocTests.cs" />
   </ItemGroup>
 </Project>

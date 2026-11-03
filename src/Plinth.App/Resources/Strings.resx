@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 文字资源。key 规则:模块.位置.动作,例如 demo.col.code。英文是默认(找不到语言时用它),中文在 Strings.zh-CN.resx。
+       两个文件的 key 必须一一对应、{0} 占位符也要一致,tests/Plinth.App.Tests/LocalizationTests.cs 会检查。 -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="menu.file" xml:space="preserve"><value>_File</value></data>
+  <data name="menu.file.closeTab" xml:space="preserve"><value>Close current tab</value></data>
+  <data name="menu.file.closeAll" xml:space="preserve"><value>Close all tabs</value></data>
+  <data name="menu.file.exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="menu.view.quickOpen" xml:space="preserve"><value>Quick open (Ctrl+K)</value></data>
+  <data name="menu.view" xml:space="preserve"><value>_View</value></data>
+  <data name="menu.view.sidebar" xml:space="preserve"><value>Navigation pane</value></data>
+  <data name="menu.view.sidebarCompact" xml:space="preserve"><value>Collapse navigation</value></data>
+  <data name="menu.view.sidebarExpand" xml:space="preserve"><value>Expand navigation</value></data>
+  <data name="menu.data" xml:space="preserve"><value>_Data</value></data>
+  <data name="menu.data.refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="menu.tools" xml:space="preserve"><value>_Tools</value></data>
+  <data name="menu.tools.openData" xml:space="preserve"><value>Open data folder</value></data>
+  <data name="menu.tools.openLogs" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="menu.help" xml:space="preserve"><value>_Help</value></data>
+  <data name="menu.help.about" xml:space="preserve"><value>About Plinth</value></data>
+  <data name="toolbar.refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="toolbar.refresh.tip" xml:space="preserve"><value>Refresh the current page (F5)</value></data>
+  <data name="toolbar.closeTab" xml:space="preserve"><value>Close tab</value></data>
+  <data name="toolbar.closeTab.tip" xml:space="preserve"><value>Close the current tab (Ctrl+W)</value></data>
+  <data name="toolbar.logs" xml:space="preserve"><value>Logs and errors</value></data>
+  <data name="toolbar.logs.tip" xml:space="preserve"><value>Open the log and error centre</value></data>
+  <data name="shell.nav.title" xml:space="preserve"><value>Navigation</value></data>
+  <data name="shell.empty.hint" xml:space="preserve"><value>Open a page from the navigation on the left</value></data>
+  <data name="shell.empty.keys" xml:space="preserve"><value>Ctrl+W close tab · F5 refresh · F1 help</value></data>
+  <data name="shell.tab.close" xml:space="preserve"><value>Close tab</value></data>
+  <data name="shell.status.ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="shell.status.tabCount" xml:space="preserve"><value>{0} tab(s)</value></data>
+  <data name="shell.status.opened" xml:space="preserve"><value>Opened: {0}</value></data>
+  <data name="shell.status.closed" xml:space="preserve"><value>Closed: {0}</value></data>
+  <data name="shell.status.closedAll" xml:space="preserve"><value>Closed all tabs ({0})</value></data>
+  <data name="shell.status.refreshed" xml:space="preserve"><value>Refreshed: {0}</value></data>
+  <data name="shell.status.nothingToRefresh" xml:space="preserve"><value>This page has nothing to refresh</value></data>
+  <data name="folder.data" xml:space="preserve"><value>data folder</value></data>
+  <data name="folder.log" xml:space="preserve"><value>log folder</value></data>
+  <data name="folder.opened" xml:space="preserve"><value>Opened the {0}</value></data>
+  <data name="folder.failed" xml:space="preserve"><value>Could not open the {0}. Check the log.</value></data>
+  <data name="nav.overview" xml:space="preserve"><value>Overview</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="nav.about" xml:space="preserve"><value>About</value></data>
+  <data name="nav.demo" xml:space="preserve"><value>Sample data</value></data>
+  <data name="nav.group.business" xml:space="preserve"><value>Business</value></data>
+  <data name="nav.group.system" xml:space="preserve"><value>System</value></data>
+  <data name="overview.title" xml:space="preserve"><value>Overview</value></data>
+  <data name="overview.intro" xml:space="preserve"><value>This is the running state of the Plinth desktop shell. The pages in the navigation come from the NavigationItem each module registers. To add a page, follow the steps in GETTING_STARTED.</value></data>
+  <data name="overview.version" xml:space="preserve"><value>Version</value></data>
+  <data name="overview.runtime" xml:space="preserve"><value>.NET runtime</value></data>
+  <data name="overview.os" xml:space="preserve"><value>Operating system</value></data>
+  <data name="overview.arch" xml:space="preserve"><value>Process architecture</value></data>
+  <data name="overview.dataDir" xml:space="preserve"><value>Data folder</value></data>
+  <data name="overview.logDir" xml:space="preserve"><value>Log folder</value></data>
+  <data name="overview.logFiles" xml:space="preserve"><value>Log files</value></data>
+  <data name="overview.openData" xml:space="preserve"><value>Open data folder</value></data>
+  <data name="overview.openLogs" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="overview.log.noFolder" xml:space="preserve"><value>The log folder has not been created yet</value></data>
+  <data name="overview.log.empty" xml:space="preserve"><value>No log files yet</value></data>
+  <data name="overview.log.summary" xml:space="preserve"><value>{0} file(s), {1} in total</value></data>
+  <data name="overview.log.ioError" xml:space="preserve"><value>Cannot read the log folder</value></data>
+  <data name="overview.log.denied" xml:space="preserve"><value>No permission to read the log folder</value></data>
+  <data name="about.version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="about.description" xml:space="preserve"><value>A general-purpose native desktop admin framework (Avalonia + .NET 10)</value></data>
+  <data name="settings.title" xml:space="preserve"><value>Settings</value></data>
+  <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="settings.theme.system" xml:space="preserve"><value>Follow the system</value></data>
+  <data name="settings.theme.light" xml:space="preserve"><value>Light</value></data>
+  <data name="settings.theme.dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="settings.theme.hint" xml:space="preserve"><value>Takes effect immediately. "Follow the system" switches with the system light/dark setting.</value></data>
+  <data name="settings.saved" xml:space="preserve"><value>Saved</value></data>
+  <data name="settings.language" xml:space="preserve"><value>Language</value></data>
+  <data name="settings.language.hint" xml:space="preserve"><value>Restart the app for a language change to take effect.</value></data>
+  <data name="settings.language.saved" xml:space="preserve"><value>Saved. Restart the app to switch the language.</value></data>
+  <data name="demo.new" xml:space="preserve"><value>New</value></data>
+  <data name="demo.search.placeholder" xml:space="preserve"><value>Search by code or name</value></data>
+  <data name="demo.search.name" xml:space="preserve"><value>Search</value></data>
+  <data name="demo.list.name" xml:space="preserve"><value>Sample data list</value></data>
+  <data name="demo.col.code" xml:space="preserve"><value>Code</value></data>
+  <data name="demo.col.name" xml:space="preserve"><value>Name</value></data>
+  <data name="demo.col.remark" xml:space="preserve"><value>Remark</value></data>
+  <data name="demo.form.title" xml:space="preserve"><value>Edit</value></data>
+  <data name="demo.save" xml:space="preserve"><value>Save</value></data>
+  <data name="demo.cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="demo.delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="demo.delete.confirm" xml:space="preserve"><value>Delete this record? This cannot be undone.</value></data>
+  <data name="demo.delete.keep" xml:space="preserve"><value>Keep</value></data>
+  <data name="demo.export" xml:space="preserve"><value>Export CSV</value></data>
+  <data name="demo.status.exported" xml:space="preserve"><value>Exported to {0}</value></data>
+  <data name="demo.status.exportFailed" xml:space="preserve"><value>Export failed. Details were written to the log.</value></data>
+  <data name="demo.status.count" xml:space="preserve"><value>{0} record(s)</value></data>
+  <data name="demo.status.loadFailed" xml:space="preserve"><value>Could not load the data. Details were written to the log.</value></data>
+  <data name="demo.err.codeRequired" xml:space="preserve"><value>Enter a code.</value></data>
+  <data name="demo.err.codeTooLong" xml:space="preserve"><value>The code can be at most {0} characters.</value></data>
+  <data name="demo.err.nameRequired" xml:space="preserve"><value>Enter a name.</value></data>
+  <data name="demo.err.nameTooLong" xml:space="preserve"><value>The name can be at most {0} characters.</value></data>
+  <data name="demo.err.remarkTooLong" xml:space="preserve"><value>The remark can be at most {0} characters.</value></data>
+  <data name="demo.err.duplicate" xml:space="preserve"><value>The code {0} already exists. Please use another one.</value></data>
+  <data name="demo.err.conflict" xml:space="preserve"><value>This record was changed or deleted while you were editing. Preserve your input, cancel and refresh the list.</value></data>
+  <data name="demo.err.saveFailed" xml:space="preserve"><value>Could not save. Please try again later. Details were written to the log.</value></data>
+  <data name="demo.err.gone" xml:space="preserve"><value>This record no longer exists.</value></data>
+  <data name="nav.logs" xml:space="preserve"><value>Logs and errors</value></data>
+  <data name="logs.title" xml:space="preserve"><value>Logs and errors</value></data>
+  <data name="logs.reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="logs.openFolder" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="logs.onlyProblems" xml:space="preserve"><value>Warnings and errors only</value></data>
+  <data name="logs.col.time" xml:space="preserve"><value>Time</value></data>
+  <data name="logs.col.level" xml:space="preserve"><value>Level</value></data>
+  <data name="logs.level.all"><value>All levels</value></data>
+  <data name="logs.col.message" xml:space="preserve"><value>Message</value></data>
+  <data name="logs.status.count" xml:space="preserve"><value>Latest {0} entries</value></data>
+  <data name="logs.status.empty" xml:space="preserve"><value>No log entries to show.</value></data>
+  <data name="logs.status.failed" xml:space="preserve"><value>Could not read the log files.</value></data>
+  <data name="demo.import" xml:space="preserve"><value>Import CSV</value></data>
+  <data name="demo.import.pickTitle" xml:space="preserve"><value>Choose a CSV file</value></data>
+  <data name="demo.import.tooBig" xml:space="preserve"><value>The file is larger than {0} MB.</value></data>
+  <data name="demo.import.empty" xml:space="preserve"><value>The file has no data rows. The first row must be a header.</value></data>
+  <data name="demo.import.tooMany" xml:space="preserve"><value>The file has more than {0} data rows.</value></data>
+  <data name="demo.import.dupInFile" xml:space="preserve"><value>Code "{0}" appears more than once in the file.</value></data>
+  <data name="demo.import.rowError" xml:space="preserve"><value>Row {0}: {1}</value></data>
+  <data name="demo.status.imported" xml:space="preserve"><value>Imported: {0} added, {1} updated</value></data>
+  <data name="demo.status.importRejected" xml:space="preserve"><value>Nothing was imported. {0}</value></data>
+  <data name="demo.status.importFailed" xml:space="preserve"><value>Import failed. Details were written to the log.</value></data>
+  <data name="nav.backup" xml:space="preserve"><value>Backup</value></data>
+  <data name="backup.title" xml:space="preserve"><value>Backup and restore</value></data>
+  <data name="backup.intro" xml:space="preserve"><value>A ZIP backup contains a consistent database copy, settings and a SHA-256 manifest. Preview and confirm it before scheduling restore on the next startup; safety copies of the current database and settings are kept.</value></data>
+  <data name="backup.create" xml:space="preserve"><value>Back up now...</value></data>
+  <data name="backup.restore" xml:space="preserve"><value>Restore from backup...</value></data>
+  <data name="backup.pickSave" xml:space="preserve"><value>Save backup as</value></data>
+  <data name="backup.pickOpen" xml:space="preserve"><value>Choose a backup file</value></data>
+  <data name="backup.fileType" xml:space="preserve"><value>ZIP backup</value></data>
+  <data name="backup.status.done" xml:space="preserve"><value>Backup saved to {0}</value></data>
+  <data name="backup.status.failed" xml:space="preserve"><value>Backup failed. Details were written to the log.</value></data>
+  <data name="backup.status.staged" xml:space="preserve"><value>The backup is ready. Restart the app to finish restoring. The current data stays in place until then.</value></data>
+  <data name="backup.status.pending" xml:space="preserve"><value>A restore is waiting for the next restart.</value></data>
+  <data name="backup.err.notDatabase" xml:space="preserve"><value>This file is not a database backup.</value></data>
+  <data name="backup.err.corrupt" xml:space="preserve"><value>This backup failed the integrity check and was not used.</value></data>
+  <data name="backup.err.stageFailed" xml:space="preserve"><value>Could not prepare the restore. Details were written to the log.</value></data>
+  <data name="demo.col.updatedAt" xml:space="preserve"><value>Updated at</value></data>
+  <data name="demo.col.updatedBy" xml:space="preserve"><value>Updated by</value></data>
+  <data name="error.title" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="error.body" xml:space="preserve"><value>An unexpected error occurred. The details were written to the log. You can keep working; if problems continue, restart the app.</value></data>
+  <data name="error.logPath" xml:space="preserve"><value>Log folder: {0}</value></data>
+  <data name="error.ok" xml:space="preserve"><value>OK</value></data>
+  <data name="about.update.check" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="about.update.open" xml:space="preserve"><value>Open download address</value></data>
+  <data name="about.update.openFailed" xml:space="preserve"><value>Could not open the download address. Check your default browser or contact support.</value></data>
+  <data name="about.update.checking" xml:space="preserve"><value>Checking...</value></data>
+  <data name="about.update.notConfigured" xml:space="preserve"><value>Update check is turned off. An administrator can enable it by setting UpdateFeedUrl in settings.json.</value></data>
+  <data name="about.update.upToDate" xml:space="preserve"><value>You are using the latest version.</value></data>
+  <data name="about.update.available" xml:space="preserve"><value>Version {0} is available: {1}</value></data>
+  <data name="about.update.failed" xml:space="preserve"><value>Could not check for updates. Details were written to the log.</value></data>
+  <data name="tray.show" xml:space="preserve"><value>Show window</value></data>
+  <data name="tray.exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="remote.title"><value>Remote connection</value></data>
+  <data name="remote.enabled"><value>Enable connection checks</value></data>
+  <data name="remote.baseUrl"><value>Service URL (HTTPS)</value></data>
+  <data name="remote.healthPath"><value>Health check path</value></data>
+  <data name="remote.check"><value>Check connection</value></data>
+  <data name="remote.status.disabled"><value>Connection checks are disabled.</value></data>
+  <data name="remote.status.connected"><value>The health endpoint responded successfully.</value></data>
+  <data name="remote.status.invalid"><value>Enter a valid HTTPS URL and a health path on the same server.</value></data>
+  <data name="remote.status.failed"><value>The health check failed or timed out.</value></data>
+  <data name="remote.status.unavailable"><value>The connection service is unavailable.</value></data>
+  <data name="logs.cleanOld"><value>Clean logs using configured retention</value></data>
+  <data name="logs.status.cleaned"><value>Removed {0} old log file(s)</value></data>
+  <data name="settings.paths"><value>Locations</value></data>
+  <data name="settings.dataPath"><value>Data folder</value></data>
+  <data name="settings.logPath"><value>Log folder</value></data>
+  <data name="settings.openDataPath"><value>Open data folder</value></data>
+  <data name="settings.openLogPath"><value>Open log folder</value></data>
+  <data name="menu.file.new"><value>New</value></data>
+  <data name="menu.file.save"><value>Save</value></data>
+  <data name="menu.edit"><value>_Edit</value></data>
+  <data name="menu.edit.find"><value>Find</value></data>
+  <data name="menu.edit.delete"><value>Delete</value></data>
+  <data name="menu.edit.cancel"><value>Cancel editing</value></data>
+  <data name="menu.window"><value>_Window</value></data>
+  <data name="menu.window.openPages"><value>Open pages</value></data>
+  <data name="menu.data.pageCommands"><value>Page commands</value></data>
+  <data name="shell.layout.reset"><value>Reset workspace layout</value></data>
+  <data name="shell.layout.saveFailed"><value>Could not save workspace layout.</value></data>
+  <data name="shell.unsaved.title"><value>Unsaved changes</value></data>
+  <data name="shell.unsaved.message"><value>Save your changes before closing?</value></data>
+  <data name="shell.unsaved.save"><value>Save</value></data>
+  <data name="shell.unsaved.discard"><value>Discard</value></data>
+  <data name="shell.unsaved.cancel"><value>Cancel</value></data>
+  <data name="shell.unsaved.failed"><value>Could not check whether the page can close. Retry and check the log.</value></data>
+  <data name="demo.form.unsaved"><value>Unsaved changes</value></data>
+  <data name="demo.list.sort"><value>Sort</value></data>
+  <data name="demo.list.descending"><value>Descending</value></data>
+  <data name="demo.list.copy"><value>Copy selected record</value></data>
+  <data name="demo.list.edit"><value>Edit selected record</value></data>
+  <data name="demo.list.copyFailed"><value>Could not copy the selected record to the clipboard.</value></data>
+  <data name="demo.list.columns"><value>Visible columns</value></data>
+  <data name="demo.list.reset"><value>Restore list defaults</value></data>
+  <data name="demo.list.previous"><value>Previous page</value></data>
+  <data name="demo.list.next"><value>Next page</value></data>
+  <data name="demo.list.pageSize"><value>Rows per page</value></data>
+  <data name="demo.list.preferencesFailed"><value>Could not save list preferences.</value></data>
+  <data name="demo.list.empty"><value>No matching records</value></data>
+  <data name="nav.taskDiagnostics"><value>Tasks and diagnostics</value></data>
+  <data name="logs.search"><value>Search</value></data>
+  <data name="logs.module"><value>Module</value></data>
+  <data name="logs.taskId"><value>Task ID</value></data>
+  <data name="logs.errorCode"><value>Error code</value></data>
+  <data name="logs.correlationId"><value>Correlation ID</value></data>
+  <data name="logs.from"><value>From date</value></data>
+  <data name="logs.to"><value>To date</value></data>
+  <data name="logs.range.invalid"><value>The start date must not be after the end date.</value></data>
+  <data name="logs.scan.summary"><value>Invalid lines: {0}; results limited: {1}.</value></data>
+  <data name="logs.copyDetails"><value>Copy details</value></data>
+  <data name="logs.copyId"><value>Copy correlation ID</value></data>
+  <data name="logs.copy.failed"><value>Could not copy to the clipboard.</value></data>
+  <data name="logs.details.empty"><value>Select a log entry to see its full details.</value></data>
+  <data name="tasks.title"><value>Task centre</value></data>
+  <data name="tasks.cancel"><value>Request cancellation</value></data>
+  <data name="tasks.name"><value>Task</value></data>
+  <data name="tasks.status"><value>Status</value></data>
+  <data name="tasks.progress"><value>Progress</value></data>
+  <data name="tasks.elapsed"><value>Elapsed</value></data>
+  <data name="tasks.indeterminate"><value>Unknown</value></data>
+  <data name="tasks.retry.allowed"><value>You can retry.</value></data>
+  <data name="tasks.retry.manual"><value>Check the result before starting again.</value></data>
+  <data name="tasks.error.failed"><value>The task failed.</value></data>
+  <data name="tasks.error.next"><value>Use the correlation ID to check the log and verify the result before continuing.</value></data>
+  <data name="tasks.status.Waiting"><value>Waiting</value></data>
+  <data name="tasks.status.Running"><value>Running</value></data>
+  <data name="tasks.status.Succeeded"><value>Succeeded</value></data>
+  <data name="tasks.status.Failed"><value>Failed</value></data>
+  <data name="tasks.status.Cancelled"><value>Cancelled</value></data>
+  <data name="tasks.status.Cancelling"><value>Cancelling</value></data>
+  <data name="tasks.queued"><value>Added to the task centre. See Tasks and diagnostics for progress and results. CSV error reports are saved in the export folder. Refresh the list when finished.</value></data>
+  <data name="diagnostics.title"><value>Diagnostic package</value></data>
+  <data name="diagnostics.logs"><value>Log metadata</value></data>
+  <data name="diagnostics.runtime"><value>Runtime metadata</value></data>
+  <data name="diagnostics.preview"><value>Preview</value></data>
+  <data name="diagnostics.cancelPreview"><value>Cancel preview</value></data>
+  <data name="diagnostics.file"><value>File</value></data>
+  <data name="diagnostics.bytes"><value>Bytes</value></data>
+  <data name="diagnostics.fields"><value>Included fields</value></data>
+  <data name="diagnostics.redaction"><value>Redaction status</value></data>
+  <data name="diagnostics.excluded"><value>Excluded content</value></data>
+  <data name="diagnostics.confirm"><value>I have reviewed the file and field list and agree to export.</value></data>
+  <data name="diagnostics.export"><value>Export diagnostic package</value></data>
+  <data name="diagnostics.preview.summary"><value>Content: {0} bytes; invalid lines: {1}; results limited: {2}.</value></data>
+  <data name="diagnostics.confirmRequired"><value>Preview and confirm the content first.</value></data>
+  <data name="diagnostics.cancelled"><value>Cancelled. No diagnostic package was saved.</value></data>
+  <data name="diagnostics.failed"><value>Operation failed. Check permissions, free space and whether the destination already exists.</value></data>
+  <data name="diagnostics.exported"><value>Exported. Package content passed the second scan.</value></data>
+  <data name="tasks.list.empty"><value>No background tasks.</value></data>
+  <data name="diagnostics.preview.empty"><value>No preview yet. Choose Preview to list the files and fields to export.</value></data>
+  <data name="auth.title"><value>Remote identity</value></data>
+  <data name="auth.login"><value>Sign in with browser</value></data>
+  <data name="auth.refresh"><value>Refresh session</value></data>
+  <data name="auth.logout"><value>Sign out</value></data>
+  <data name="auth.signedIn"><value>Signed in</value></data>
+  <data name="auth.signedOut"><value>Signed out</value></data>
+  <data name="auth.completed"><value>Session operation completed.</value></data>
+  <data name="auth.failed"><value>Session operation failed. Check identity configuration, network and system credential store; sign in again if needed.</value></data>
+  <data name="profile.title"><value>Environment</value></data>
+  <data name="profile.production"><value>Production</value></data>
+  <data name="profile.confirm"><value>This operation affects production. Continue?</value></data>
+  <data name="common.confirm"><value>Confirm</value></data>
+  <data name="settings.restart"><value>Saved. Restart to apply log retention settings.</value></data>
+  <data name="settings.logRetentionDays"><value>Log retention days (1–365)</value></data>
+  <data name="settings.logRetainedFiles"><value>Maximum log files (1–100, 10 MB each)</value></data>
+  <data name="about.support"><value>Open support page</value></data>
+  <data name="backup.preview.summary"><value>Application version: {0}; schema version: {1}; created (UTC): {2}. Verified files:</value></data>
+  <data name="backup.confirm"><value>I have reviewed the ZIP content. Restore replaces the database and settings on next startup and keeps safety copies. Missing workspace preferences reset the layout.</value></data>
+  <data name="backup.confirmRestore"><value>Confirm restore on next startup</value></data>
+  <data name="csv.preview"><value>Preview CSV</value></data>
+  <data name="csv.encoding"><value>Encoding (check preview even without BOM)</value></data>
+  <data name="csv.delimiter"><value>Delimiter</value></data>
+  <data name="csv.mapping"><value>Source column numbers (starting at 1): code / name / remark</value></data>
+  <data name="csv.confirm"><value>I have checked the encoding and mapping preview (up to 20 rows) and agree to import the full file.</value></data>
+  <data name="csv.failed"><value>Could not preview CSV. Check encoding, delimiter and column mapping.</value></data>
+  <data name="csv.errorReport"><value>CSV error report: {0}</value></data>
+  <data name="remote.invalid_address.message"><value>Invalid service address.</value></data>
+  <data name="remote.authentication_required.message"><value>Sign in before accessing this service.</value></data>
+  <data name="remote.credential_unavailable.message"><value>System credential store is unavailable.</value></data>
+  <data name="remote.timeout.message"><value>The request timed out.</value></data>
+  <data name="remote.network_error.message"><value>The network request failed.</value></data>
+  <data name="remote.unauthorized.message"><value>This service requires a valid session.</value></data>
+  <data name="remote.forbidden.message"><value>You do not have permission for this operation.</value></data>
+  <data name="remote.not_found.message"><value>The requested resource does not exist.</value></data>
+  <data name="remote.conflict.message"><value>The resource changed. Reload before continuing.</value></data>
+  <data name="remote.rate_limited.message"><value>The service is limiting request rates.</value></data>
+  <data name="remote.http_error.message"><value>The service returned an error.</value></data>
+  <data name="auth.suggestion.login"><value>Sign in again.</value></data>
+  <data name="security.suggestion.request_access"><value>Contact an administrator to request access.</value></data>
+  <data name="remote.suggestion.reload"><value>Reload the latest data.</value></data>
+  <data name="credential.suggestion.unlock"><value>Unlock or enable the system credential store.</value></data>
+  <data name="remote.suggestion.verify_result"><value>Verify the result before retrying.</value></data>
+  <data name="remote.suggestion.retry"><value>Check the connection and retry.</value></data>
+  <data name="remote.suggestion.check_configuration"><value>Check the service configuration.</value></data>
+  <data name="csv.exportErrors"><value>Export preview error report</value></data>
+  <data name="settings.saveFailed"><value>Settings were not saved. Check permissions and data folder access. Previous settings remain active.</value></data>
+  <data name="settings.cancelled"><value>Change cancelled. Previous settings remain active.</value></data>
+  <data name="settings.region"><value>Regional format</value></data>
+  <data name="settings.timeZone"><value>Time zone</value></data>
+  <data name="settings.format.system"><value>Follow system</value></data>
+  <data name="settings.format.hint"><value>Regional format is independent of display language. Restart to apply changes. Currency is not inferred.</value></data>
+  <data name="settings.format.saved"><value>Saved. Restart to apply regional and time zone settings.</value></data>
+  <data name="notes.title"><value>Sample note</value></data>
+  <data name="notes.hint"><value>A shared local note, up to 2000 characters. Save before closing.</value></data>
+  <data name="notes.reload"><value>Reload note</value></data>
+  <data name="notes.failed"><value>Could not load or save the note. Check your permissions and the log.</value></data>
+  <data name="notes.conflict"><value>The note changed or could not be written. Keep your text, then reload and retry.</value></data>
+  <data name="settings.density"><value>Interface density</value></data>
+  <data name="settings.interface"><value>Interface</value></data>
+  <data name="settings.regionTime"><value>Region and time</value></data>
+  <data name="settings.density.standard"><value>Standard</value></data>
+  <data name="settings.density.compact"><value>Compact</value></data>
+  <data name="settings.density.comfortable"><value>Comfortable</value></data>
+  <data name="settings.density.hint"><value>Applies immediately to spacing and control sizes. Font sizes and saved window layout stay independent.</value></data>
+  <data name="tasks.notification"><value>{0}: {1}. See the task centre for all results.</value></data>
+  <data name="tasks.notification.view"><value>View task</value></data>
+  <data name="tasks.notification.dismiss"><value>Dismiss</value></data>
+  <data name="shell.sidePanel"><value>Details and tasks panel</value></data>
+  <data name="shell.sidePanel.hide"><value>Hide panel</value></data>
+  <data name="shell.details"><value>Details</value></data>
+  <data name="shell.details.empty"><value>No details to display. Select a record on a page that provides details.</value></data>
+  <data name="shell.tasks.empty"><value>No background tasks yet.</value></data>
+  <data name="shell.navigation.recent"><value>Recent pages</value></data>
+  <data name="shell.navigation.clearRecent"><value>Clear recent pages</value></data>
+  <data name="shell.navigation.favorites"><value>Favorite pages</value></data>
+  <data name="shell.navigation.toggleFavorite"><value>Favorite current page</value></data>
+  <data name="shell.navigation.saveFailed"><value>Could not save page shortcuts. Saved favorites and history were not changed.</value></data>
+  <data name="help.title"><value>Help centre</value></data>
+  <data name="help.search"><value>Search help, topic keys or error codes</value></data>
+  <data name="help.topics"><value>Help topics</value></data>
+  <data name="help.content"><value>Help content</value></data>
+  <data name="help.noResults"><value>No matching topics. Try a shorter term or clear the search.</value></data>
+  <data name="help.start.title"><value>Getting started and workspace</value></data>
+  <data name="help.start.body"><value>Open a page from the left navigation. Opening it again selects the existing tab. Ctrl+W closes the current tab; F5 refreshes supported pages; Ctrl+F focuses page search. F1 opens help for the current page.&#10;&#10;The File menu has recent pages. The Window menu can favorite the current page. The View menu shows or hides navigation and the details/tasks panel, and resets layout. Resetting layout keeps open pages and favorites.&#10;&#10;Unsaved changes require Save, Discard or Cancel before closing. A failed save keeps the input. Do not delete the database to resolve an error.</value></data>
+  <data name="help.settings.title"><value>Settings, language and appearance</value></data>
+  <data name="help.settings.body"><value>Theme and interface density apply after they are saved. Language, regional format, time zone and log retention require a restart. Regional format is independent of display language. Stored timestamps remain UTC.&#10;&#10;Changes may require permission or production confirmation. Failed or cancelled changes restore the previous settings. Remote health checks are disabled by default; a successful check verifies only the configured health endpoint. Sign-in requires administrator identity configuration and a working system credential store.</value></data>
+  <data name="help.backup.title"><value>Backup, restore and upgrades</value></data>
+  <data name="help.backup.body"><value>Create a ZIP backup before upgrades or major changes. It contains a consistent local database copy, user settings, workspace preferences and a SHA-256 manifest. Deployment identity configuration and credentials are excluded.&#10;&#10;Preview the backup and confirm the listed content before scheduling restore. Restore replaces database and preferences on the next startup and keeps safety copies. Old backups without workspace preferences reset the layout. Raw database files are not accepted.&#10;&#10;If upgrade or restore fails, keep the original files and logs. Do not delete migration history or overwrite the database manually. Ask the administrator to follow the supplied upgrade guide.</value></data>
+  <data name="help.diagnostics.title"><value>Tasks and common errors</value></data>
+  <data name="help.diagnostics.body"><value>Open the task panel to inspect imports and exports while keeping the business page open. Cancellation is a request: a commit that already succeeded remains successful. View task opens the full diagnostic record. Closing a page does not stop its global task.&#10;&#10;TASK_FAILED: inspect the task result and correlation ID in the log before retrying; avoid repeating an operation whose result is uncertain.&#10;&#10;UI_UNEXPECTED: an unexpected interface error was logged. Keep the error code and correlation ID. If it recurs, restart safely and contact support. Original exceptions are not shown in the error dialog.&#10;&#10;Diagnostic export requires a preview and explicit confirmation. Only the listed, sanitized metadata is included; diagnostic files are not uploaded automatically.</value></data>
+  <data name="help.logs.title"><value>Logs and error investigation</value></data>
+  <data name="help.logs.body"><value>Select technical, task or security audit events, then filter by time, level, module, task ID, error code or correlation ID. The warnings/errors preset includes technical and task events. Clear filters returns to technical logs. Use the copy buttons for details or correlation IDs.&#10;&#10;When authentication is enabled, technical/task events require logs:read and audit requires audit:read. Opening shared log folders requires both; cleanup also requires settings:manage and production confirmation. Account changes or lost access clear old results; reload after access is restored.&#10;&#10;Cleanup uses configured retention. Diagnostic packages exclude audit events and require diagnostics:export, plus logs:read when including logs. Review exports before sharing; do not send the entire data directory.</value></data>
+  <data name="help.version.title"><value>Version, updates and licenses</value></data>
+  <data name="help.version.body"><value>The help header and About page show the installed application version. About can check the administrator-configured HTTPS update feed. When an update is available, review the version and address, then choose Open download address to open it in your default browser. The application does not install updates automatically. Checking again clears the old download entry; closing About cancels its check.&#10;&#10;Help → Third-party license notices displays the THIRD_PARTY_NOTICES.md shipped with this build. The same entry is available from About. Development builds may not include this file. Its absence does not mean there are no third-party dependencies or that release compliance passed.</value></data>
+  <data name="help.demo.title"><value>Sample records and CSV</value></data>
+  <data name="help.demo.body"><value>Select a record to edit it in the standard form. Ctrl+N creates a record; Ctrl+S saves; Cancel discards through the unsaved-changes prompt. Code and name are required. A version conflict requires preserving your input and reloading the current record.&#10;&#10;CSV import: choose encoding, delimiter and source column mapping, inspect the preview, then confirm. The preview is limited to 20 data rows; full validation happens before committing. Maximum input is 5000 rows and 5 MiB. A changed file requires a new preview. Validation errors prevent the whole import and can be exported as a report.&#10;&#10;Export uses the current search condition. Imports and exports continue in the task centre if the page closes. Refresh the list after completion.</value></data>
+  <data name="help.spreadsheet.title"><value>Text spreadsheet exchange</value></data>
+  <data name="help.spreadsheet.body"><value>The optional XLSX page handles bounded plain-text tables, up to 5000 rows and 5 MiB for import. Preview and confirm the validated content before importing. Formulas, macros, external relationships and non-text cells are rejected.&#10;&#10;Cancelling preview or closing the page stops the local preview. A started import or export belongs to the global task centre. Check the final result before retrying. Office compatibility and performance require separate validation for your deployment.</value></data>
+  <data name="help.notes.title"><value>Shared local note</value></data>
+  <data name="help.notes.body"><value>This example stores one shared local note of at most 2000 characters. It is not a private notebook or cross-device sync service. Save with the button or Ctrl+S. The details panel shows saved text, not uncommitted input.&#10;&#10;Reload first asks about unsaved changes. A failed save keeps your text. If the note changed elsewhere, keep a copy of your input, reload and retry. Wait for a running save to finish before closing. The note is included in the application database backup.</value></data>
+  <data name="license.title"><value>Third-party license notices</value></data>
+  <data name="license.reload"><value>Reload</value></data>
+  <data name="license.status.loading"><value>Loading license notices…</value></data>
+  <data name="license.status.loaded"><value>License notices loaded.</value></data>
+  <data name="license.status.missing"><value>This build has no shipped license notice file. Development builds may omit it; release compliance is not confirmed by this page.</value></data>
+  <data name="license.status.tooLarge"><value>The license notices file exceeds 2 MiB and cannot be displayed here. See the notice file shipped with the application.</value></data>
+  <data name="license.status.unreadable"><value>Could not read the license notices. Check the application installation and file access.</value></data>
+  <data name="license.status.cancelled"><value>Loading cancelled.</value></data>
+  <data name="shell.status.user"><value>User: {0}</value></data>
+  <data name="shell.status.environment"><value>Environment: {0}</value></data>
+  <data name="shell.status.activeTasks"><value>Active tasks: {0}</value></data>
+  <data name="shell.health.disabled"><value>Remote checks disabled</value></data>
+  <data name="shell.health.passed"><value>Health check passed</value></data>
+  <data name="shell.health.failed"><value>Health check failed</value></data>
+  <data name="shell.health.invalid"><value>Invalid service address</value></data>
+  <data name="shell.health.unchecked"><value>Health not checked</value></data>
+  <data name="shell.health.hint"><value>Shows only the last explicit health check for this configuration, not continuous connectivity or business API availability. Open Settings to check again.</value></data>
+  <data name="shell.health.checkedAt"><value>Last checked: {0}.</value></data>
+  <data name="logs.clearFilters"><value>Clear filters</value></data>
+  <data name="logs.showErrors"><value>View warnings and errors</value></data>
+  <data name="logs.viewRelated"><value>View related logs</value></data>
+  <data name="logs.viewTask"><value>View task logs</value></data>
+  <data name="cli.invalidArguments"><value>Unsupported command-line arguments. Start without arguments to open the desktop, or use --version to print the version.</value></data>
+  <data name="tasks.retry"><value>Retry task</value></data>
+  <data name="tasks.retry.started"><value>A new attempt has been queued. This record keeps the original failure.</value></data>
+  <data name="tasks.retry.queued"><value>Retry queued. The new attempt is selected; permissions and confirmations run again.</value></data>
+  <data name="tasks.retry.unavailable"><value>This task cannot be retried now. It may already have a new attempt, or the application is closing.</value></data>
+  <data name="tasks.retry.previous"><value>Previous attempt</value></data>
+  <data name="tasks.retry.next"><value>Next attempt</value></data>
+  <data name="tasks.retry.historyMissing"><value>This attempt is no longer in the current process history. Use its task ID to check retained logs.</value></data>
+  <data name="demo.batch.toggle"><value>Toggle batch selection</value></data>
+  <data name="demo.batch.active"><value>Batch mode: select current-page rows; editing is closed.</value></data>
+  <data name="demo.batch.count"><value>{0} selected on the current page only</value></data>
+  <data name="demo.batch.selectPage"><value>Select current page (Ctrl+A)</value></data>
+  <data name="demo.batch.clear"><value>Clear selection</value></data>
+  <data name="demo.batch.copy"><value>Copy selected rows as CSV (Ctrl+C)</value></data>
+  <data name="logs.kind"><value>Event category</value></data>
+  <data name="logs.kind.operational"><value>Technical and task logs</value></data>
+  <data name="logs.kind.technical"><value>Technical logs</value></data>
+  <data name="logs.kind.audit"><value>Security audit</value></data>
+  <data name="logs.kind.task"><value>Task logs</value></data>
+  <data name="logs.accessDenied"><value>Access denied or account changed. Select an allowed category and reload.</value></data>
+  <data name="installation.unavailable"><value>The application files are being installed or are unavailable. Finish installation and try again. If the problem continues, reinstall the complete package. User data has not been opened.</value></data>
+  <data name="demo.err.codeInvalid"><value>Code contains invalid Unicode text.</value></data>
+  <data name="remoteDemo.title"><value>Remote sample data</value></data>
+  <data name="remoteDemo.search"><value>Apply search and sorting</value></data>
+  <data name="remoteDemo.refresh"><value>Refresh remote records</value></data>
+  <data name="remoteDemo.actorChanged.message"><value>The session or account changed. Refresh after signing in; verify any pending write before retrying.</value></data>
+  <data name="remoteDemo.invalidQuery.message"><value>Check the search text, page size and sort field.</value></data>
+  <data name="remoteDemo.invalidResponse.message"><value>The service returned data that does not match the expected contract. Verify any write result before retrying.</value></data>
+  <data name="remoteDemo.operationFailed.message"><value>The remote operation failed. Keep your input and verify the result before retrying.</value></data>
+  <data name="remoteDemo.writeCancelled.message"><value>The write was cancelled before sending.</value></data>
+  <data name="remoteDemo.writeUncertain.message"><value>The write was interrupted. The server may have committed it; verify the result before retrying.</value></data>
+  <data name="remoteDemo.invalidText.message"><value>The field contains invalid Unicode text or a null character.</value></data>
+  <data name="help.remoteDemo.title"><value>Remote sample records</value></data>
+  <data name="help.remoteDemo.body"><value>This page reads and writes the configured remote API. Search, sorting and paging happen on the server; local sample records and local backups are separate. Apply search and sorting with the button.&#10;&#10;Code and name are required. Save and delete require permission and production confirmation when applicable. A version conflict keeps your input: preserve it, cancel, refresh and select the latest record. A timeout or account change does not prove a write was rolled back. Verify the server result before retrying.&#10;&#10;Signing out or changing account clears old remote data. Sign in and refresh to load your account's data. The server must enforce its own permissions, uniqueness and concurrency rules.</value></data>
+  <data name="backup.confirmCreate"><value>Confirm backup creation</value></data>
+  <data name="backup.createPreview.summary"><value>Destination: {0}&#10;Estimated source size: approximately {1} bytes&#10;Included files:</value></data>
+  <data name="backup.createPreview.estimateNote"><value>Sizes are estimates. The backup includes committed database changes; normalization, compression and changes after this preview may affect the final size.</value></data>
+  <data name="backup.createPreview.excluded"><value>Excluded: logs, separate credential files, fields outside the settings contract, pending restore archives and other files. Database journal files are not archived separately.</value></data>
+  <data name="backup.status.cancelled"><value>Backup cancelled.</value></data>
+  <data name="tasks.result.title"><value>Result</value></data>
+  <data name="tasks.result.import"><value>Imported: {0} added, {1} updated. Failed rows: 0.</value></data>
+  <data name="tasks.result.export"><value>Exported {0} data rows.</value></data>
+  <data name="tasks.result.report"><value>Saved a report with {0} issue entries.</value></data>
+  <data name="tasks.result.rejected"><value>Nothing was imported. Rows with detected errors: {0}. The whole batch was rejected.</value></data>
+  <data name="tasks.result.atLeast"><value>at least {0}</value></data>
+  <data name="tasks.result.unknown"><value>not determined</value></data>
+  <data name="tasks.result.path"><value>Output file: {0}</value></data>
+  <data name="shell.module.failed"><value>{0} could not initialize and is disabled for this session. Other modules remain available. Open related logs or contact support. Correlation ID: {1}</value></data>
+</root>
