@@ -223,11 +223,16 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
         });
     }
 
+    // 区域/时区显示名由当前 UI culture 决定；缓存键必须同时包含界面语言与 UI culture，
+    // 否则测试或其他调用方切换 UI culture 后会复用旧语言的显示名。
+    private static string DisplayCultureKey =>
+        $"{Loc.Culture.Name}|{CultureInfo.CurrentUICulture.Name}";
+
     private static IReadOnlyList<SettingOption> GetRegions() =>
-        RegionCache.GetOrAdd(Loc.Culture.Name, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildRegionList)).Value;
+        RegionCache.GetOrAdd(DisplayCultureKey, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildRegionList)).Value;
 
     private static IReadOnlyList<SettingOption> GetTimeZones() =>
-        ZoneCache.GetOrAdd(Loc.Culture.Name, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildTimeZoneList)).Value;
+        ZoneCache.GetOrAdd(DisplayCultureKey, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildTimeZoneList)).Value;
 
     private static IReadOnlyList<SettingOption> BuildRegionList() =>
         new[] { new SettingOption(string.Empty, Loc.Get("settings.format.system")) }
