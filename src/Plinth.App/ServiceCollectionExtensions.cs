@@ -70,6 +70,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<BackupService>();
         services.AddTransient<BackupViewModel>();
         services.AddSingleton<SettingsService>();
+        services.AddSingleton(provider => new LocalLoginService(
+            DeploymentConfiguration.Current.LocalLogin, AppPaths.DataDirectory));
         services.AddSingleton<UpdateCheckService>();
         services.AddSingleton(provider => new RemoteConnectionService(
             provider.GetRequiredService<SettingsService>(),

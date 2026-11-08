@@ -6,6 +6,10 @@
   "EnableRuntimePlugins": false,
   "EnableOfflineSyncPilot": false,
   "DemoApiBaseUrl": "",
+  "LocalLogin": {
+    "Enabled": false,
+    "Username": ""
+  },
   "Database": {
     "Provider": "Sqlite",
     "ConnectionString": ""

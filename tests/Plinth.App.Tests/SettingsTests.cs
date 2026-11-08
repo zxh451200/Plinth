@@ -190,8 +190,10 @@ public sealed class SettingsTests : IDisposable
         Loc.Initialize("zh-CN");
         try
         {
-            Assert.SkipWhen(!new CultureInfo("en-AI").DisplayName.Contains("英语", StringComparison.Ordinal),
-                "运行环境未提供中文区域显示名（globalization 数据缺失），跳过本地化标题断言。");
+            Assert.SkipWhen(!CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+                    .Single(culture => culture.Name == "en-AI").DisplayName
+                    .Contains("英语", StringComparison.Ordinal),
+                "运行环境未提供中文区域显示名（CultureInfo.GetCultures 未本地化），跳过标题断言。");
             var anguilla = new SettingsViewModel(Create()).Regions.Single(option => option.Key == "en-AI");
             Assert.Contains("英语", anguilla.Title, StringComparison.Ordinal);
             Assert.DoesNotContain("English (Anguilla)", anguilla.Title, StringComparison.Ordinal);

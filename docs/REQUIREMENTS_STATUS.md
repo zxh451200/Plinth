@@ -12,6 +12,8 @@
 
 高级表格通过受信任部署项 `EnableAdvancedTablePilot` 独立启用，默认关闭。Dock 四项依赖统一在 Directory.Packages.props 固定版本，主应用不引用 Dock；独立项目仍需真实 restore 生成锁文件。插件和同步仍是独立试点，分别不提供 OS 沙箱保证和生产同步传输适配，不代表完整通用插件平台或离线业务系统。安装器自动备份要求旧版支持命令，失败即阻止覆盖，静默升级仍拒绝。
 
+本地登录门禁（2026-11-09）：受信任部署项 `LocalLogin.Enabled` 默认关闭；开启后先登录再创建主窗口，首次启动设置本机用户名/密码。密码只保存 PBKDF2 哈希到数据目录 `login.json`，备份不包含；门禁不加密数据、不替代远程 OIDC 身份/权限。实现与测试见 IMPLEMENTATION_STATUS。
+
 本轮复核修复了失效选行导致草稿丢失、重选草稿行未恢复、备份 ZIP 目标撞名、插件缺字段协议校验，以及高级表格初始化重试、晚到 DataContext 和页面释放问题。源码契约及资源集成检查已通过；实际编译、headless 测试与 NSIS 安装器编译已于 2026-11-08 补齐并全绿，Windows 升级前备份／恢复完整演练仍待历史版本安装包。具体边界见 ADVANCED_TABLE_PILOT.md、DOCK_OPTIONAL_POC.md、RUNTIME_PLUGIN_PILOT.md、OFFLINE_SYNC_PILOT.md 和 UPGRADING.md。
 
 ## Must 与实施约束

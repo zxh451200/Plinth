@@ -1,8 +1,10 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Plinth.App.Auth;
+using Plinth.App.Security;
 using Serilog.Events;
 using Plinth.App.Remote;
 
@@ -14,6 +16,8 @@ public sealed class DeploymentConfiguration
     public static DeploymentConfiguration Current { get; } = Load();
     public string Profile { get; set; } = "Development";
     public RemoteAuthOptions Authentication { get; set; } = new();
+    /// <summary>本地登录门禁；默认关闭。开启后首次启动设置本机密码，之后每次启动先登录。</summary>
+    public LocalLoginOptions LocalLogin { get; set; } = new();
     /// <summary>空值不注册远程示例；这是受信任部署地址，不从用户偏好读取。</summary>
     public string DemoApiBaseUrl { get; set; } = "";
     /// <summary>示例模块(Demo/Notes)默认关闭,部署显式打开。</summary>
@@ -80,9 +84,13 @@ public sealed class DeploymentConfiguration
     public void Validate()
     {
         if (Profile is not ("Development" or "Test" or "Production")
-            || Authentication is null || DemoApiBaseUrl is null)
+            || Authentication is null || LocalLogin is null || DemoApiBaseUrl is null)
             throw new InvalidDataException("Invalid deployment configuration.");
         if (Authentication.Enabled) Authentication.Validate();
+        if (LocalLogin.Enabled && !string.IsNullOrWhiteSpace(LocalLogin.Username)
+            && (LocalLogin.Username.Trim().Length > LocalLoginService.MaxUsernameLength
+                || LocalLogin.Username.Any(char.IsControl)))
+            throw new InvalidDataException("Invalid local login configuration.");
         if (!TryParseLogLevel(MinimumLogLevel, out _))
             throw new InvalidDataException("Invalid deployment log level.");
         if (DemoApiBaseUrl.Length == 0) return;

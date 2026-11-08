@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Plinth.App.Data;
 using Plinth.App.Localization;
+using Plinth.App.Security;
 using Plinth.App.Services;
 using Plinth.App.ViewModels;
 using Plinth.App.Views;
@@ -60,55 +61,108 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
-            // 模板原本直接 new MainViewModel,这里改为从容器解析(§4.6.1 偏差表)
-            var mainViewModel = _services.GetRequiredService<MainViewModel>();
-            var mainWindow = new MainWindow
+            var localLogin = _services.GetRequiredService<LocalLoginService>();
+            if (localLogin.IsEnabled)
             {
-                DataContext = mainViewModel,
-                Icon = branding.CreateWindowIcon(),
-            };
-            // 系统通知点击冷启动时只进入任务中心;普通启动保持原标签恢复。
-            mainWindow.Opened += (_, _) =>
+                ShowLogin(desktopLifetime, localLogin, branding);
+            }
+            else
             {
-                if (Program.StartupIntent == ActivationIntent.TaskCenter)
-                {
-                    mainViewModel.OpenTaskCenter();
-                }
-            };
-            desktopLifetime.MainWindow = mainWindow;
-            _services.GetRequiredService<SensitiveOperationService>().ConfirmProductionAsync =
-                mainWindow.ConfirmProductionAsync;
-            desktopLifetime.ShutdownRequested += (_, e) =>
-            {
-                if (mainWindow.CloseApproved) return;
-                e.Cancel = true;
-                Dispatcher.UIThread.Post(mainWindow.Close);
-            };
-
-            // 恢复上次关闭时的窗口位置和大小,关闭时再记下来
-            var settings = _services.GetRequiredService<SettingsService>();
-            WindowPlacementStore.Restore(mainWindow, settings);
-            mainWindow.Closing += (_, _) => WindowPlacementStore.Remember(mainWindow, settings);
-
-            CreateTrayIcon(desktopLifetime, mainWindow, _services.GetRequiredService<BrandingService>());
-
-            // 用户又启动了一次程序时,把已有的窗口带到前台;通知点击还要进入任务中心
-            if (Program.SingleInstance is { } singleInstance)
-            {
-                singleInstance.ActivationRequested += intent => Dispatcher.UIThread.Post(() =>
-                {
-                    BringToFront(desktopLifetime.MainWindow);
-                    if (intent == ActivationIntent.TaskCenter
-                        && desktopLifetime.MainWindow?.DataContext is MainViewModel viewModel)
-                    {
-                        viewModel.OpenTaskCenter();
-                    }
-                });
+                CreateMainWindow(desktopLifetime, branding, show: false);
+                SettingsViewModel.Prewarm();
             }
         }
 
-        SettingsViewModel.Prewarm();
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>先显示登录窗口；只有登录成功才创建主窗口。关闭登录窗口视为退出。</summary>
+    private void ShowLogin(IClassicDesktopStyleApplicationLifetime desktopLifetime,
+        LocalLoginService localLogin, BrandingService branding)
+    {
+        Log.Information("本地登录门禁已启用，等待登录");
+        var viewModel = new LoginViewModel(localLogin, branding);
+        var window = new LoginWindow
+        {
+            DataContext = viewModel,
+            Icon = branding.CreateWindowIcon(),
+        };
+        var completed = false;
+        desktopLifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        desktopLifetime.MainWindow = window;
+        viewModel.Completed += success =>
+        {
+            completed = true;
+            if (success)
+            {
+                CreateMainWindow(desktopLifetime, branding, show: true);
+                SettingsViewModel.Prewarm();
+                desktopLifetime.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                window.Close();
+            }
+            else
+            {
+                window.Close();
+                desktopLifetime.Shutdown();
+            }
+        };
+        window.Closed += (_, _) =>
+        {
+            if (!completed) desktopLifetime.Shutdown();
+        };
+    }
+
+    private void CreateMainWindow(IClassicDesktopStyleApplicationLifetime desktopLifetime,
+        BrandingService branding, bool show)
+    {
+        var services = _services!;
+        // 模板原本直接 new MainViewModel,这里改为从容器解析(§4.6.1 偏差表)
+        var mainViewModel = services.GetRequiredService<MainViewModel>();
+        var mainWindow = new MainWindow
+        {
+            DataContext = mainViewModel,
+            Icon = branding.CreateWindowIcon(),
+        };
+        // 系统通知点击冷启动时只进入任务中心;普通启动保持原标签恢复。
+        mainWindow.Opened += (_, _) =>
+        {
+            if (Program.StartupIntent == ActivationIntent.TaskCenter)
+            {
+                mainViewModel.OpenTaskCenter();
+            }
+        };
+        desktopLifetime.MainWindow = mainWindow;
+        services.GetRequiredService<SensitiveOperationService>().ConfirmProductionAsync =
+            mainWindow.ConfirmProductionAsync;
+        desktopLifetime.ShutdownRequested += (_, e) =>
+        {
+            if (mainWindow.CloseApproved) return;
+            e.Cancel = true;
+            Dispatcher.UIThread.Post(mainWindow.Close);
+        };
+
+        // 恢复上次关闭时的窗口位置和大小,关闭时再记下来
+        var settings = services.GetRequiredService<SettingsService>();
+        WindowPlacementStore.Restore(mainWindow, settings);
+        mainWindow.Closing += (_, _) => WindowPlacementStore.Remember(mainWindow, settings);
+
+        CreateTrayIcon(desktopLifetime, mainWindow, branding);
+
+        // 用户又启动了一次程序时,把已有的窗口带到前台;通知点击还要进入任务中心
+        if (Program.SingleInstance is { } singleInstance)
+        {
+            singleInstance.ActivationRequested += intent => Dispatcher.UIThread.Post(() =>
+            {
+                BringToFront(desktopLifetime.MainWindow);
+                if (intent == ActivationIntent.TaskCenter
+                    && desktopLifetime.MainWindow?.DataContext is MainViewModel viewModel)
+                {
+                    viewModel.OpenTaskCenter();
+                }
+            });
+        }
+
+        if (show) mainWindow.Show();
     }
 
     /// <summary>

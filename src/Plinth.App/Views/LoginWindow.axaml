@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Plinth.App.ViewModels"
+        xmlns:loc="using:Plinth.App.Localization"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="520"
+        x:Class="Plinth.App.Views.LoginWindow"
+        x:DataType="vm:LoginViewModel"
+        Title="{Binding WindowTitle}"
+        Width="420"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
+        FontSize="13"
+        Foreground="{DynamicResource PlinthForegroundBrush}"
+        Background="{DynamicResource PlinthBackgroundBrush}">
+
+  <Border Margin="24" Padding="28" CornerRadius="10"
+          Background="{DynamicResource PlinthPanelBrush}"
+          BorderBrush="{DynamicResource PlinthBorderBrush}"
+          BorderThickness="1"
+          BoxShadow="0 8 28 0 #22000000">
+    <StackPanel Spacing="8">
+      <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}"
+             Width="64" Height="64" Stretch="Uniform" HorizontalAlignment="Center"
+             AutomationProperties.Name="{Binding ProductName}" />
+      <TextBlock Text="{Binding ProductName}" FontSize="24" FontWeight="SemiBold"
+                 HorizontalAlignment="Center" Foreground="{DynamicResource PlinthAccentBrush}" />
+      <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold"
+                 HorizontalAlignment="Center" Margin="0,4,0,0" />
+      <TextBlock Text="{Binding Subtitle}" TextWrapping="Wrap" TextAlignment="Center"
+                 MaxWidth="320" HorizontalAlignment="Center"
+                 Foreground="{DynamicResource PlinthSubtleForegroundBrush}" Margin="0,0,0,8" />
+
+      <TextBlock Text="{loc:T login.username}" />
+      <TextBox x:Name="UsernameBox"
+               Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+               AutomationProperties.Name="{loc:T login.username}" />
+
+      <TextBlock Text="{loc:T login.password}" Margin="0,4,0,0" />
+      <TextBox x:Name="PasswordBox"
+               Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
+               PasswordChar="●"
+               AutomationProperties.Name="{loc:T login.password}" />
+
+      <StackPanel x:Name="ConfirmPanel" IsVisible="{Binding IsSetup}" Spacing="8" Margin="0,4,0,0">
+        <TextBlock Text="{loc:T login.confirm}" />
+        <TextBox x:Name="ConfirmBox"
+                 Text="{Binding ConfirmPassword, UpdateSourceTrigger=PropertyChanged}"
+                 PasswordChar="●"
+                 AutomationProperties.Name="{loc:T login.confirm}" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}"
+                 TextWrapping="Wrap" FontSize="12"
+                 Foreground="{DynamicResource PlinthErrorBrush}" Margin="0,4,0,0" />
+      <TextBlock Text="{loc:T login.busy}" IsVisible="{Binding IsBusy}"
+                 FontSize="12" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+
+      <Button Content="{Binding SubmitText}" Command="{Binding SubmitCommand}"
+              IsEnabled="{Binding !IsBusy}"
+              HorizontalAlignment="Stretch" Margin="0,8,0,0"
+              AutomationProperties.Name="{Binding SubmitText}" />
+      <Button Content="{loc:T login.exit}" Command="{Binding ExitCommand}"
+              HorizontalAlignment="Center" Classes="toolbar"
+              AutomationProperties.Name="{loc:T login.exit}" />
+    </StackPanel>
+  </Border>
+</Window>

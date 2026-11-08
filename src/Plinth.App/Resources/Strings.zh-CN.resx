@@ -516,4 +516,24 @@
   <data name="advanced.groupLabel" xml:space="preserve"><value>分组：{0}</value></data>
   <data name="advanced.subtotalLabel" xml:space="preserve"><value>{0} 小计（全部范围）</value></data>
   <data name="advanced.totalLabel" xml:space="preserve"><value>总计</value></data>
+  <data name="login.windowTitle" xml:space="preserve"><value>{0} - 登录</value></data>
+  <data name="login.title" xml:space="preserve"><value>登录</value></data>
+  <data name="login.subtitle" xml:space="preserve"><value>登录后才能继续使用。</value></data>
+  <data name="login.setupTitle" xml:space="preserve"><value>设置登录密码</value></data>
+  <data name="login.setupSubtitle" xml:space="preserve"><value>已启用本地登录。请为本机设置用户名和密码。</value></data>
+  <data name="login.username" xml:space="preserve"><value>用户名</value></data>
+  <data name="login.password" xml:space="preserve"><value>密码</value></data>
+  <data name="login.confirm" xml:space="preserve"><value>确认密码</value></data>
+  <data name="login.submit" xml:space="preserve"><value>登录</value></data>
+  <data name="login.setupSubmit" xml:space="preserve"><value>设置并登录</value></data>
+  <data name="login.exit" xml:space="preserve"><value>退出</value></data>
+  <data name="login.busy" xml:space="preserve"><value>正在验证…</value></data>
+  <data name="login.error.required" xml:space="preserve"><value>请输入用户名和密码。</value></data>
+  <data name="login.error.invalid" xml:space="preserve"><value>用户名或密码不正确。</value></data>
+  <data name="login.error.mismatch" xml:space="preserve"><value>两次输入的密码不一致。</value></data>
+  <data name="login.error.passwordLength" xml:space="preserve"><value>密码长度需为 8–128 个字符。</value></data>
+  <data name="login.error.passwordControl" xml:space="preserve"><value>密码不能包含控制字符。</value></data>
+  <data name="login.error.username" xml:space="preserve"><value>用户名需为 1–64 个字符，且不能包含控制字符。</value></data>
+  <data name="login.error.storage" xml:space="preserve"><value>无法读写登录凭据，请检查数据目录权限。</value></data>
+  <data name="login.error.setupRequired" xml:space="preserve"><value>尚未设置登录密码，请重新启动并完成设置。</value></data>
 </root>

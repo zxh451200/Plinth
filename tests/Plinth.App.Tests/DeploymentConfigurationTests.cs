@@ -118,6 +118,30 @@ public sealed class DeploymentConfigurationTests
             DeploymentConfiguration.BindOverrides(Authenticated(), overrides));
     }
 
+    [Fact]
+    public void Local_login_requires_a_valid_configured_username()
+    {
+        var enabled = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["LocalLogin:Enabled"] = "true",
+                ["LocalLogin:Username"] = "admin",
+            }).Build();
+        var configuration = new DeploymentConfiguration();
+        DeploymentConfiguration.BindOverrides(configuration, enabled);
+        Assert.True(configuration.LocalLogin.Enabled);
+        Assert.Equal("admin", configuration.LocalLogin.Username);
+
+        var invalid = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["LocalLogin:Enabled"] = "true",
+                ["LocalLogin:Username"] = "bad\nname",
+            }).Build();
+        Assert.Throws<InvalidDataException>(() =>
+            DeploymentConfiguration.BindOverrides(new DeploymentConfiguration(), invalid));
+    }
+
     private static DeploymentConfiguration Authenticated() => new()
     {
         Authentication = new RemoteAuthOptions

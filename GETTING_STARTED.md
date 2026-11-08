@@ -452,6 +452,20 @@ Profile 仅接受 Development、Test、Production；生产窗口标题有标识�
 
 还可配置 `LogoFile`、`IconFile` 和 `AccentColor`；图像随显式指定的品牌配置打包，详情见 [更换品牌](docs/BRANDING.md)。
 
+## 本地登录门禁
+
+默认关闭；关闭时启动路径不变。部署目录的 `deployment.json` 打开：
+
+```json
+"LocalLogin": { "Enabled": true, "Username": "admin" }
+```
+
+或设环境变量 `PLINTH_LocalLogin__Enabled=true`。`Username` 可省略，首次启动时填写；启用后应用先显示登录窗口，登录成功才打开主界面，关闭登录窗口视为退出。
+
+首次启用且数据目录没有 `login.json` 时，会要求设置用户名和密码；密码只以 PBKDF2-HMAC-SHA256 哈希保存（210,000 次、16 字节盐），位于数据目录的 `login.json`（默认 `%LOCALAPPDATA%\Plinth`），备份不包含该文件。忘记密码可删除 `login.json` 后重新设置。用户名 1–64 字符、密码 8–128 字符，拒绝控制字符。
+
+该门禁是桌面端使用门槛，不加密数据库/设置，也不改变远程 OIDC 身份、权限或审计中的当前用户。需要数据保护时仍依赖操作系统账户、磁盘加密和远程身份。
+
 ## 键盘快捷键
 
 | 快捷键 | 作用 |
