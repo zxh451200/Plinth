@@ -2,7 +2,7 @@
 
 Plinth 是一个通用的桌面 Admin 底座(Avalonia + .NET 10),用来在上面开发自己的业务软件。
 
-当前源码包含应用壳、工作区持久化、未保存确认、任务与诊断、CSV 预览映射、ZIP 备份恢复及可选远程身份接入。Demo 默认使用本机 SQLite。本机已用 SDK 10.0.403 完成真实 restore、Release 构建与自动回归（App 1183 项、Spreadsheet 48 项，0 失败）；真实 IdP、OS 级 DPI/IME/读屏与安装升级人工矩阵仍未验收；本机标准用户首启与独立小卷磁盘满（启动/CLI 备份）已实测，边界见实现状态。实际限制见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
+当前源码包含应用壳、工作区持久化、未保存确认、任务与诊断、CSV 预览映射、ZIP 备份恢复及可选远程身份接入。Demo 默认使用本机 SQLite。本机已用 SDK 10.0.403 完成真实 restore、Release 构建与自动回归（App 1194 项；2026-11-09 真实 GitHub CI run 42525487305 的 Windows/Ubuntu gate 与 6 个 pilot 全绿，Windows App 1192 通过/2 跳过、Ubuntu 1191/3）；真实 IdP、OS 级 DPI/IME/读屏与安装升级人工矩阵仍未验收；本机标准用户首启、独立小卷磁盘满（启动/CLI 备份）及日志目录 IO/只读降级已实测，边界见实现状态。实际限制见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
 
 ## 运行
 
@@ -485,6 +485,6 @@ Profile 仅接受 Development、Test、Production；生产窗口标题有标识�
 
 ## 已知限制 / 尚未实现
 
-真实第三方 IdP、正式 CA 签名与 OS 级 DPI／IME／读屏人工矩阵仍未完成；安装升级、0.1.0→0.1.1 备份演练、本机标准用户首启与独立 300MB 卷磁盘满（启动/CLI 备份）已实测，边界与恢复行为见实现状态。完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
+真实第三方 IdP、正式 CA 签名与 OS 级 DPI／IME／读屏人工矩阵仍未完成；安装升级、0.1.0→0.1.1 备份演练、本机标准用户首启、独立 300MB 卷磁盘满（启动/CLI 备份）、日志目录 IO/只读降级与真实 GitHub CI（run 42525487305）已实测/通过，边界见实现状态。完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
 
 按规范章节整理的剩余功能、条件项和验收阻塞见 [需求交付核对表](docs/REQUIREMENTS_STATUS.md)。系统 Toast 已接入并进入 Windows 通知历史；横幅物理点击和勿扰策略下的人工体验仍待验收，应用内任务提示不能替代这两项。

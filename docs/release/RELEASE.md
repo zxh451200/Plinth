@@ -23,6 +23,8 @@
 
 `CI / gate (windows-latest)` 和 `CI / gate (ubuntu-latest)` 均阻断失败，不再保留 Linux 的 `continue-on-error`。两端执行工具脚本测试、锁文件存在性检查、locked restore、format 校验、Release build 与 tests，TRX 作为 artifact 保存。Ubuntu 通过仅证明构建和自动测试通过，不能据此宣布 Linux 正式支持。
 
+2026-11-09 实际 run `42525487305`（commit `0ae0af8`）：Windows/Ubuntu gate 与 6 个 pilot 全绿；Windows App 1192 通过／2 跳过、Ubuntu App 1191 通过／3 跳过、Spreadsheet 48、XLSX 36、Python 107（环境项跳过 1／2）、SQLite 15；TRX/xunit 日志与 pilot 证据已归档。
+
 SDK 由根 `global.json` 指定。源由 `scripts/nuget.config` 固定为官方 NuGet，不读取未经确认的公司镜像。没有启用锁文件缓存，避免锁文件尚缺失时缓存初始化掩盖问题。
 
 两平台 gate 还执行 `check_source_contracts.py` 与 `integration_checks.py`。前者检查双语资源/占位符、模块直接引用边界、可审计实体的显式主键/并发版本配置，以及当前模块服务的本文件写入路径和权限字面量；后者检查完整 XML、Python AST 和中央依赖接线。`test_module_contracts.py` 包含正反例，防止只因源码出现 ExecuteAsync 就误认为后续所有写入均受保护。这些是窄静态规则，跨文件/动态调用的授权仍由运行时测试负责。
