@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Plinth.App.Localization;
@@ -17,10 +18,28 @@ namespace Plinth.App;
     Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
 public class ViewLocator : IDataTemplate
 {
+    // 标签内容每次切换都会重新走 DataTemplate；缓存 View 避免重复构造整页控件。
+    private readonly ConditionalWeakTable<ViewModelBase, Control> _views = new();
+
     public Control? Build(object? param)
     {
         if (param is null)
             return null;
+        if (param is ViewModelBase viewModel
+            && _views.TryGetValue(viewModel, out var cached)
+            && cached.Parent is null)
+        {
+            return cached;
+        }
+
+        var view = CreateView(param);
+        if (param is ViewModelBase cacheKey && view is not null)
+            _views.AddOrUpdate(cacheKey, view);
+        return view;
+    }
+
+    private static Control? CreateView(object param)
+    {
 
         if (param is ViewModelBase { OptionalModule: { } module })
         {
@@ -60,9 +79,8 @@ public class ViewLocator : IDataTemplate
         Log.Warning("找不到页面 {ViewModel} 对应的 View:{ExpectedView}", param.GetType().FullName, name);
         return new TextBlock
         {
-            Text = $"找不到页面「{param.GetType().Name}」对应的界面。\n"
-                 + $"需要一个叫 {name} 的 View(名字把 ViewModel 换成 View,命名空间对应)。\n"
-                 + "请检查 View 的类名、命名空间和 x:Class 是否拼写一致。",
+            Text = Loc.Format("shell.view.missing", param.GetType().Name, name) + "\n"
+                 + Loc.Get("shell.view.missing.hint"),
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
             Margin = new Avalonia.Thickness(24),
         };

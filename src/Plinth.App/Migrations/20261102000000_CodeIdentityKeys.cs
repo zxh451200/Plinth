@@ -65,7 +65,12 @@ public sealed class CodeIdentityKeys : Migration
         CREATE UNIQUE INDEX "IX_notes_entries_CodeKey" ON "notes_entries" ("CodeKey");
         """;
 
-    protected override void Up(MigrationBuilder migrationBuilder) => migrationBuilder.Sql(UpgradeSql);
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        if (!InitialSchema.IsSqlite(migrationBuilder.ActiveProvider))
+            throw new NotSupportedException("SQLite migrations require the SQLite provider.");
+        migrationBuilder.Sql(UpgradeSql);
+    }
 
     protected override void Down(MigrationBuilder migrationBuilder) =>
         throw new NotSupportedException("CodeIdentityKeys 仅支持向前迁移，请恢复兼容版本的备份。");

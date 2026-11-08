@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Plinth.App.Localization;
 
 namespace Plinth.App.Services;
 
@@ -15,6 +16,13 @@ public sealed record LogEntry(DateTimeOffset Time, string Level, string Message)
 {
     public LogEventKind EventKind { get; init; }
     public string TimeText => FormattingService.Current.FormatInstant(Time, includeSeconds: true);
+    public string LevelText => LogLevels.DisplayName(Level);
+    public string EventKindText => EventKind switch
+    {
+        LogEventKind.SecurityAudit => Loc.Get("logs.kind.audit"),
+        LogEventKind.Task => Loc.Get("logs.kind.task"),
+        _ => Loc.Get("logs.kind.technical"),
+    };
     public string Module { get; init; } = "";
     public string Component { get; init; } = "";
     public string TaskId { get; init; } = "";
@@ -22,7 +30,7 @@ public sealed record LogEntry(DateTimeOffset Time, string Level, string Message)
     public string CorrelationId { get; init; } = "";
     public string Exception { get; init; } = "";
     public string Source { get; init; } = "";
-    public string Details => $"{Time:O} {Level} {EventKind}\n{Module} {Component}\n{TaskId} {ErrorCode} {CorrelationId}\n{Message}\n{Exception}\n{Source}";
+    public string Details => $"{Time:O} {LevelText} {EventKindText}\n{Module} {Component}\n{TaskId} {ErrorCode} {CorrelationId}\n{Message}\n{Exception}\n{Source}";
 }
 
 public sealed record LogFilter(DateTimeOffset? From = null, DateTimeOffset? To = null,
@@ -35,6 +43,19 @@ public sealed record LogQueryResult(IReadOnlyList<LogEntry> Entries, int Invalid
 public static class LogLevels
 {
     public static readonly string[] Names = ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal", "Critical"];
+
+    /// <summary>级别写进日志时保持英文标记,界面按当前语言显示。</summary>
+    public static string DisplayName(string level) => level switch
+    {
+        "Verbose" => Loc.Get("logs.level.verbose"),
+        "Debug" => Loc.Get("logs.level.debug"),
+        "Information" => Loc.Get("logs.level.information"),
+        "Warning" => Loc.Get("logs.level.warning"),
+        "Error" => Loc.Get("logs.level.error"),
+        "Fatal" => Loc.Get("logs.level.fatal"),
+        "Critical" => Loc.Get("logs.level.critical"),
+        _ => level,
+    };
 }
 
 /// <summary>

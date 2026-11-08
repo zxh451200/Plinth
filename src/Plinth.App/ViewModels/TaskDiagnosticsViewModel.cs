@@ -31,11 +31,26 @@ public partial class TaskDiagnosticsViewModel(TaskService tasks, DiagnosticServi
     [ObservableProperty] public partial DateTimeOffset? From { get; set; }
     [ObservableProperty] public partial DateTimeOffset? To { get; set; }
     [ObservableProperty] public partial string Level { get; set; } = "";
-    public string[] LevelOptions { get; } = [Loc.Get("logs.level.all"), .. LogLevels.Names];
+    // 下拉显示当前语言的名字,筛选值仍用日志里的英文标记。
+    private string[] _levelOptions = BuildLevelOptions();
+    public string[] LevelOptions
+    {
+        get => _levelOptions;
+        private set { _levelOptions = value; OnPropertyChanged(); }
+    }
+
+    private static string[] BuildLevelOptions() =>
+        [Loc.Get("logs.level.all"), .. LogLevels.Names.Select(LogLevels.DisplayName)];
+
+    public override void OnUiLanguageChanged()
+    {
+        LevelOptions = BuildLevelOptions();
+        base.OnUiLanguageChanged();
+    }
     [ObservableProperty] public partial int LevelIndex { get; set; }
     partial void OnLevelIndexChanged(int value)
     {
-        Level = value <= 0 ? "" : LevelOptions[value];
+        Level = value is > 0 && value <= LogLevels.Names.Length ? LogLevels.Names[value - 1] : "";
     }
     [ObservableProperty] public partial bool IncludeLogs { get; set; } = true;
     [ObservableProperty] public partial bool IncludeRuntime { get; set; } = true;
@@ -67,8 +82,8 @@ public partial class TaskDiagnosticsViewModel(TaskService tasks, DiagnosticServi
     partial void OnToChanged(DateTimeOffset? value) => InvalidatePreview();
     partial void OnLevelChanged(string value)
     {
-        var index = Array.IndexOf(LevelOptions, value);
-        LevelIndex = index > 0 ? index : 0;
+        var index = Array.IndexOf(LogLevels.Names, value);
+        LevelIndex = index >= 0 ? index + 1 : 0;
         InvalidatePreview();
     }
     partial void OnIncludeLogsChanged(bool value) => InvalidatePreview();

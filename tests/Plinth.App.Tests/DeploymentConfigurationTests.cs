@@ -8,12 +8,40 @@ namespace Plinth.App.Tests;
 public sealed class DeploymentConfigurationTests
 {
     [Fact]
+    public void Optional_configuration_defaults_only_when_missing_and_rejects_directory_occupants()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "plinth-config-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            foreach (var name in new[] { "deployment.json", "database.json" })
+            {
+                var path = Path.Combine(root, name);
+                Assert.Null(DeploymentConfiguration.ReadOptionalConfiguration(path));
+                File.WriteAllText(path, """{"Profile":"Production"}""");
+                Assert.Equal("""{"Profile":"Production"}""", DeploymentConfiguration.ReadOptionalConfiguration(path));
+                if (OperatingSystem.IsWindows())
+                {
+                    using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                    Assert.ThrowsAny<IOException>(() => DeploymentConfiguration.ReadOptionalConfiguration(path));
+                }
+                File.Delete(path);
+                Directory.CreateDirectory(path);
+                Assert.ThrowsAny<Exception>(() => DeploymentConfiguration.ReadOptionalConfiguration(path));
+            }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void Default_configuration_is_offline_and_does_not_enable_remote_demo()
     {
         var configuration = new DeploymentConfiguration();
         configuration.Validate();
         Assert.Empty(configuration.DemoApiBaseUrl);
         Assert.False(configuration.Authentication.Enabled);
+        Assert.False(configuration.EnableRuntimePlugins);
+        Assert.False(configuration.EnableOfflineSyncPilot);
     }
 
     [Theory]

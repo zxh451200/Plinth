@@ -19,6 +19,7 @@ using Xunit;
 
 namespace Plinth.App.Tests;
 
+[Collection("Localization")]
 public sealed class TaskDiagnosticsTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "plinth-diagnostics-" + Guid.NewGuid().ToString("N"));
@@ -82,11 +83,12 @@ public sealed class TaskDiagnosticsTests : IDisposable
 
         Assert.DoesNotContain(view.GetVisualDescendants().OfType<TextBlock>(),
             text => text.Text == Loc.Get("tasks.list.empty") && IsShown(text));
+        var error = item.Error!;
         Assert.Equal(item.Id, page.SelectedItem!.Id);
-        Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == item.Error!.Code && IsShown(text));
-        Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == item.Error.Message && IsShown(text));
+        Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == error.Code && IsShown(text));
+        Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == error.Message && IsShown(text));
         Assert.Contains(view.GetVisualDescendants().OfType<TextBox>(),
-            box => box.Text == item.Error.CorrelationId && IsShown(box));
+            box => box.Text == error.CorrelationId && IsShown(box));
     }
 
     /// <summary>界面真画得出来才算数:控件本身与全部祖先都必须可见。</summary>

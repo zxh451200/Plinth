@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- 宿主只复用契约、状态机与本地传输数据库；模块注册耦合 Shell/权限/本地化，不进宿主。 -->
+    <Compile Include="../../src/Plinth.App/Modules/OfflineSync/OfflineSyncContracts.cs" Link="OfflineSync/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Plinth.App/Modules/OfflineSync/OfflineSyncPilot.cs" Link="OfflineSync/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Plinth.App/Modules/OfflineSync/PilotDbContext.cs" Link="OfflineSync/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Plinth.App/Data/PilotDatabaseOptions.cs" Link="Data/PilotDatabaseOptions.cs" />
+  </ItemGroup>
+</Project>

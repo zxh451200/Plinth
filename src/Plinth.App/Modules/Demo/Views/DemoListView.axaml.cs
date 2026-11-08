@@ -30,13 +30,15 @@ public partial class DemoListView : UserControl, IPageSearchTarget
     private int _lifetimeVersion;
     private DemoListViewModel? _selectionViewModel;
     private ContextMenu RecordContextMenu => (ContextMenu)Resources["RecordContextMenu"]!;
-    private readonly double[] _defaultWidths = [140, 200, 200, 140, 120];
+    private readonly double[] _defaultWidths = [140, 200, 200, 110, 130, 110, 80, 140, 120];
     public DemoListView()
     {
         InitializeComponent();
         // 先走现有未保存确认，再打开菜单，不能让表格先切行后对旧记录执行操作。
         RecordsTable.AddHandler(PointerPressedEvent, OnRecordPointerPressed, RoutingStrategies.Tunnel);
-        RecordsTable.AddHandler(ContextRequestedEvent, OnRecordContextRequested, RoutingStrategies.Bubble);
+        // 行内编辑把单元格换成 TextBox，其类处理器会吞掉右键的 ContextRequested；
+        // 用 Tunnel 保证右键目标行始终打开记录菜单（§2.1/§2.2），TextBox 不再弹出自身菜单。
+        RecordsTable.AddHandler(ContextRequestedEvent, OnRecordContextRequested, RoutingStrategies.Tunnel);
         RecordsTable.SelectionChanged += (_, _) =>
         {
             if (DataContext is DemoListViewModel { IsBatchSelecting: true } vm)
@@ -120,6 +122,34 @@ public partial class DemoListView : UserControl, IPageSearchTarget
     }
 
     private async void OnCopyBatchClick(object? sender, RoutedEventArgs e) => await CopyBatchAsync();
+
+    private async void OnExportPdfClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not DemoListViewModel vm || TopLevel.GetTopLevel(this) is not { } topLevel) return;
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = Loc.Get("demo.pdf.pickTitle"),
+                DefaultExtension = "pdf",
+                SuggestedFileName = $"demo-{DateTime.Now:yyyyMMdd-HHmmss}.pdf",
+                FileTypeChoices = [new FilePickerFileType("PDF") { Patterns = ["*.pdf"] }],
+                ShowOverwritePrompt = true,
+            });
+            if (file?.TryGetLocalPath() is { } path) await vm.ExportPdfAsync(path);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            if (DataContext is DemoListViewModel vm) vm.StatusText = Loc.Get("demo.status.pdfFailed");
+        }
+        catch (Exception ex) { UnhandledErrorReporter.Report(ex); }
+    }
+
+    private async void OnPrintPdfClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is DemoListViewModel vm) await vm.PrintPdfAsync();
+    }
 
     private async Task CopyBatchAsync()
     {
@@ -238,10 +268,10 @@ public partial class DemoListView : UserControl, IPageSearchTarget
         try
         {
             ColumnMenu.Children.Clear();
-            for (var i = 0; i < RecordsTable.Columns.Count; i++)
+            for (var i = 0; i < RecordsTable.Columns.Count && i < vm.ColumnKeys.Length; i++)
             {
                 var column = RecordsTable.Columns[i];
-                var saved = vm.ListPreferences.Columns?.GetValueOrDefault(vm.SortFields[i]);
+                var saved = vm.ListPreferences.Columns?.GetValueOrDefault(vm.ColumnKeys[i]);
                 column.IsVisible = saved?.Visible ?? true;
                 column.Width = new GridLength(saved is not null && double.IsFinite(saved.Width)
                     ? Math.Clamp(saved.Width, 40, 2000) : _defaultWidths[i]);
@@ -261,11 +291,11 @@ public partial class DemoListView : UserControl, IPageSearchTarget
     {
         if (DataContext is not DemoListViewModel vm) return;
         var columns = new Dictionary<string, DemoColumnPreference>();
-        for (var i = 0; i < RecordsTable.Columns.Count; i++)
+        for (var i = 0; i < RecordsTable.Columns.Count && i < vm.ColumnKeys.Length; i++)
         {
             var column = RecordsTable.Columns[i];
             var width = column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
-            columns[vm.SortFields[i]] = new DemoColumnPreference(column.IsVisible,
+            columns[vm.ColumnKeys[i]] = new DemoColumnPreference(column.IsVisible,
                 double.IsFinite(width) ? Math.Clamp(width, 40, 2000) : _defaultWidths[i]);
         }
         vm.SaveColumns(columns);

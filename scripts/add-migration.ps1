@@ -5,11 +5,15 @@
   pwsh scripts/add-migration.ps1 InitialCreate
 .EXAMPLE
   pwsh scripts/add-migration.ps1 Demo_AddAuditFields
+.EXAMPLE
+  pwsh scripts/add-migration.ps1 Demo_AddAuditFields -Provider PostgreSql
 #>
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidatePattern("^[A-Za-z][A-Za-z0-9_]*$")]
-    [string]$Name
+    [string]$Name,
+    [ValidateSet("Sqlite", "MySql", "PostgreSql")]
+    [string]$Provider = "Sqlite"
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,10 +24,22 @@ if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
 }
 
 $project = "src/Plinth.App/Plinth.App.csproj"
-$migrationDirectory = "src/Plinth.App/Migrations"
+$context = "AppDbContext"
+$outputDirectory = "Migrations"
+switch ($Provider) {
+    "MySql" {
+        $context = "MySqlMigrationContext"
+        $outputDirectory = "Migrations/MySql"
+    }
+    "PostgreSql" {
+        $context = "PostgreSqlMigrationContext"
+        $outputDirectory = "Migrations/PostgreSql"
+    }
+}
+$migrationDirectory = "src/Plinth.App/$outputDirectory"
 
-Write-Host "生成迁移:$Name"
-dotnet ef migrations add $Name --project $project --output-dir Migrations
+Write-Host "生成迁移:$Name ($Provider)"
+dotnet ef migrations add $Name --project $project --context $context --output-dir $outputDirectory
 if ($LASTEXITCODE -ne 0) {
     throw "生成迁移失败。请确认 dotnet-ef 已安装并且包已还原。"
 }

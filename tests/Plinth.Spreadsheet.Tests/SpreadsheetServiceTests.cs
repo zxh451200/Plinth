@@ -222,6 +222,26 @@ public sealed class SpreadsheetServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Office_directory_entries_are_allowed_but_carrying_data_is_not()
+    {
+        // 真实 Excel 保存的包会写 xl/、docProps/ 这类零长度目录条目；旧白名单把它们当成非法部件。
+        var office = Workbook(_ => { });
+        using (var zip = ZipFile.Open(office, ZipArchiveMode.Update))
+            zip.CreateEntry("xl/themes/");
+        var result = await _service.ImportAsync(office);
+        Assert.Empty(result.Errors);
+        Assert.Equal(2, result.Rows.Count);
+
+        var payload = Workbook(_ => { });
+        using (var zip = ZipFile.Open(payload, ZipArchiveMode.Update))
+        {
+            using var stream = zip.CreateEntry("xl/payload/").Open();
+            stream.WriteByte(1);
+        }
+        await Assert.ThrowsAsync<InvalidDataException>(() => _service.ImportAsync(payload));
+    }
+
+    [Fact]
     public async Task Compressed_bomb_entry_count_and_duplicate_parts_are_rejected()
     {
         var bomb = Workbook(_ => { });

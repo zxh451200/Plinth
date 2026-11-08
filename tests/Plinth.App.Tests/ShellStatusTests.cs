@@ -33,7 +33,8 @@ public sealed class ShellStatusTests
         users.CurrentUser = new("verified-subject", ImmutableHashSet<string>.Empty, ImmutableHashSet<string>.Empty);
         vm.Refresh();
         Assert.Equal(Loc.Format("shell.status.user", "verified-subject"), vm.UserText);
-        Assert.Equal(Loc.Format("shell.status.environment", DeploymentConfiguration.Current.Profile), vm.EnvironmentText);
+        Assert.Equal(Loc.Format("shell.status.environment",
+            Loc.Get("shell.environment." + DeploymentConfiguration.Current.Profile.ToLowerInvariant())), vm.EnvironmentText);
         await remote.CheckAsync();
         vm.Refresh();
         Assert.Equal(1, handler.Requests);

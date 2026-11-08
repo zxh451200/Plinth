@@ -22,15 +22,31 @@ public static class DatabaseInitializer
 
     public static void Initialize(AppDbContext db)
     {
+        if (!db.Database.IsSqlite())
+        {
+            InitializeServer(db);
+            return;
+        }
+
         var path = Path.GetFullPath(db.Database.GetDbConnection().DataSource);
         if (!db.Database.GetMigrations().Any())
             throw new InvalidOperationException("未找到 EF 迁移，拒绝使用 EnsureCreated 创建无版本数据库。");
         if (db.Database.HasPendingModelChanges())
             throw new InvalidOperationException("当前模型存在未生成迁移的变更，拒绝启动。");
 
+        // 0 字节文件是首次建库中途失败（例如磁盘满）留下的空库，不含用户数据。
+        // 只有确认没有 WAL/SHM/journal 时才重建；可能含已提交数据的日志一律保留并拒绝启动。
+        if (File.Exists(path) && new FileInfo(path).Length == 0)
+        {
+            if (File.Exists(path + "-wal") || File.Exists(path + "-shm") || File.Exists(path + "-journal"))
+                throw new IOException("数据库为空但存在 SQLite 日志，请先恢复原数据。");
+            Serilog.Log.Warning("检测到 0 字节数据库且无 SQLite 日志，按未完成初始化处理并重新建库。");
+            File.Delete(path);
+        }
+
         if (!File.Exists(path))
         {
-            if (File.Exists(path + "-wal") || File.Exists(path + "-shm"))
+            if (File.Exists(path + "-wal") || File.Exists(path + "-shm") || File.Exists(path + "-journal"))
                 throw new IOException("数据库缺失但存在 SQLite 日志，请先恢复原数据。");
             db.Database.Migrate();
             ValidateIntegrity(path);
@@ -105,6 +121,20 @@ public static class DatabaseInitializer
         }
     }
 
+    /// <summary>服务器数据库直接向前迁移；SQLite 的文件副本/WAL/旧库检查不适用。</summary>
+    private static void InitializeServer(AppDbContext db)
+    {
+        using var migrations = DatabaseConfiguration.CreateMigrationContext(db);
+        var known = migrations.Database.GetMigrations().ToArray();
+        if (known.Length == 0)
+            throw new InvalidOperationException("未找到 EF 迁移，拒绝创建无版本数据库。");
+        if (migrations.Database.HasPendingModelChanges())
+            throw new InvalidOperationException("当前模型存在未生成迁移的变更，拒绝启动。");
+        // Never relabel the previous experimental SQLite IDs as a server baseline.
+        ValidateMigrationHistory(known, migrations.Database.GetAppliedMigrations().ToArray());
+        migrations.Database.Migrate();
+    }
+
     internal static AppDbContext CreateContext(string path) =>
         new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(
             new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString()).Options);
@@ -175,9 +205,9 @@ public static class DatabaseInitializer
                 : InitialSchema.MigrationId;
         }
         var applied = db.Database.GetAppliedMigrations().ToArray();
-        if (applied.Length == 0 || applied.Length > known.Length ||
-            !applied.SequenceEqual(known.Take(applied.Length), StringComparer.Ordinal))
+        if (applied.Length == 0)
             throw new InvalidDataException("数据库版本较新或迁移路径未知，请使用兼容版本的备份。");
+        ValidateMigrationHistory(known, applied);
         // 初始版本也验证实际结构，不能只信任历史表。
         if (applied.Length == 1)
         {
@@ -196,7 +226,25 @@ public static class DatabaseInitializer
             if (!Schema(connection).SequenceEqual(Schema(expected), StringComparer.Ordinal))
                 throw new InvalidDataException("数据库结构与声明的迁移版本不一致。");
         }
+        else if (applied[^1] == DemoTypedColumns.MigrationId)
+        {
+            using var expected = new SqliteConnection("Data Source=:memory:");
+            expected.Open();
+            using var create = expected.CreateCommand();
+            create.CommandText = InitialSchema.CreateSql + NotesEntries.CreateSql
+                + CodeIdentityKeys.UpgradeSql + DemoTypedColumns.AddColumnsSql;
+            create.ExecuteNonQuery();
+            if (!Schema(connection).SequenceEqual(Schema(expected), StringComparer.Ordinal))
+                throw new InvalidDataException("数据库结构与声明的迁移版本不一致。");
+        }
         return applied[^1];
+    }
+
+    internal static void ValidateMigrationHistory(string[] known, string[] applied)
+    {
+        if (applied.Length > known.Length ||
+            !applied.SequenceEqual(known.Take(applied.Length), StringComparer.Ordinal))
+            throw new InvalidDataException("数据库版本较新或迁移路径未知，请使用兼容版本的备份。");
     }
 
     private static bool HasHistory(SqliteConnection connection)

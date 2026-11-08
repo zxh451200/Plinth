@@ -20,7 +20,8 @@ public static class DemoModuleRegistration
         services.AddTransient<DemoService>();
         services.AddTransient<DemoListViewModel>();
         services.AddSingleton<HelpTopic>(_ => new("demo.editing", Loc.Get("help.demo.title"),
-            Loc.Get("help.demo.body"), PageId));
+            Loc.Get("help.demo.body"), PageId)
+        { TitleKey = "help.demo.title", BodyKey = "help.demo.body" });
 
         // 只绑定现有页面的命令；New / Cancel 保留 VM 的 dirty 确认，Delete 只进入确认态。
         services.AddSingleton(new CommandMenuContribution(PageId, "demo.new",
@@ -44,13 +45,14 @@ public static class DemoModuleRegistration
             PageId,
             Loc.Get("nav.demo"),
             () => provider.GetRequiredService<DemoListViewModel>())
-        { Order = 200, Icon = "\uE8A5" });
+        { Order = 200, Icon = "\uE8A5", TitleKey = "nav.demo" });
 
 #if PLINTH_XLSX
         services.AddTransient<SpreadsheetService>();
         services.AddTransient<SpreadsheetViewModel>();
         services.AddSingleton<HelpTopic>(_ => new("demo.spreadsheet", Loc.Get("help.spreadsheet.title"),
-            Loc.Get("help.spreadsheet.body"), SpreadsheetViewModel.PageId));
+            Loc.Get("help.spreadsheet.body"), SpreadsheetViewModel.PageId)
+        { TitleKey = "help.spreadsheet.title", BodyKey = "help.spreadsheet.body" });
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             SpreadsheetViewModel.PageId,
             new SpreadsheetLabels()["Title"],

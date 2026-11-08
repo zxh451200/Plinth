@@ -44,6 +44,8 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
         return await _operations.ExecuteAsync("backup:export", "Backup", "backup.previewCreate", async token =>
         {
             await using var db = await dbFactory.CreateDbContextAsync(token);
+            if (!db.Database.IsSqlite())
+                throw new NotSupportedException("backup.server_managed");
             var source = Path.GetFullPath(db.Database.GetDbConnection().DataSource);
             destination = ValidateDestination(destination, source);
             var files = new List<BackupEstimate>();
@@ -153,6 +155,8 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
     private async Task BackupCoreAsync(string destination, CancellationToken cancellationToken, IProgress<double?>? progress)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        if (!db.Database.IsSqlite())
+            throw new NotSupportedException("backup.server_managed");
         var source = Path.GetFullPath(db.Database.GetDbConnection().DataSource);
         destination = ValidateDestination(destination, source);
         cancellationToken.ThrowIfCancellationRequested();
@@ -226,6 +230,8 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
     public static string? StageRestore(string backupPath, string? databasePath = null, byte[]? expectedHash = null,
         CancellationToken cancellationToken = default)
     {
+        if (DatabaseConfiguration.Current.IsServer)
+            throw new NotSupportedException("backup.server_managed");
         cancellationToken.ThrowIfCancellationRequested();
         databasePath ??= AppPaths.DatabasePath;
         lock (RestoreLock)
@@ -275,6 +281,7 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
     /// </summary>
     public static bool ApplyPendingRestore(string? databasePath = null)
     {
+        if (DatabaseConfiguration.Current.IsServer) return false;
         databasePath = Path.GetFullPath(databasePath ?? AppPaths.DatabasePath);
         lock (RestoreLock)
         {
@@ -357,7 +364,7 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
     }
 
     public static bool HasPendingRestore(string? databasePath = null) =>
-        File.Exists(PendingPath(databasePath ?? AppPaths.DatabasePath));
+        !DatabaseConfiguration.Current.IsServer && File.Exists(PendingPath(databasePath ?? AppPaths.DatabasePath));
 
     private static string PendingPath(string databasePath) => databasePath + ".restore";
 

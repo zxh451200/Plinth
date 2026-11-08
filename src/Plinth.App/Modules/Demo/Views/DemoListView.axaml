@@ -2,6 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plinth.App.Modules.Demo.ViewModels"
              xmlns:data="using:Plinth.App.Modules.Demo.Data"
+             xmlns:local="using:Plinth.App.Modules.Demo.Views"
+             xmlns:controls="using:Plinth.App.Views.Controls"
              xmlns:loc="using:Plinth.App.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,6 +11,8 @@
              x:Class="Plinth.App.Modules.Demo.Views.DemoListView"
              x:DataType="vm:DemoListViewModel">
   <UserControl.Resources>
+    <local:InlineEditingVisibilityConverter x:Key="InlineEditingVisibility" />
+    <local:PriorityLabelConverter x:Key="PriorityLabel" />
     <!-- 手动打开，等待未保存确认完成后才允许操作目标行。 -->
     <ContextMenu x:Key="RecordContextMenu" IsEnabled="{Binding CanUseSelectedRecord}">
       <MenuItem Header="{loc:T demo.list.edit}" Click="OnEditRecordClick" IsEnabled="{Binding HasEditPermission}" />
@@ -26,7 +30,16 @@
       <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
         <Button Content="{loc:T demo.new}" Command="{Binding NewCommand}" Margin="0,0,8,4" />
         <Button Content="{loc:T demo.export}" Command="{Binding ExportCommand}" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.exportPdf}" Click="OnExportPdfClick" IsEnabled="{Binding !IsEmpty}" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.printPdf}" Click="OnPrintPdfClick" IsEnabled="{Binding !IsEmpty}" Margin="0,0,8,4" />
         <Button Content="{loc:T demo.import}" Click="OnImportClick" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.save}" Command="{Binding SaveCommand}"
+                IsVisible="{Binding CanInlineEdit}" Margin="0,0,8,4" />
+        <Button Content="{loc:T demo.cancel}" Command="{Binding CancelCommand}"
+                IsVisible="{Binding CanInlineEdit}" Margin="0,0,8,4" />
+        <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding CanInlineEdit}"
+                   Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                   VerticalAlignment="Center" Margin="0,0,8,4" />
         <TextBox x:Name="SearchBox" Width="240"
                  MaxLength="500"
                  PlaceholderText="{loc:T demo.search.placeholder}"
@@ -36,8 +49,14 @@
 
       <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
         <WrapPanel>
+          <WrapPanel.Styles>
+            <Style Selector="TextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+            <Style Selector="ComboBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+            <Style Selector="CheckBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+            <Style Selector="Button"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+          </WrapPanel.Styles>
           <TextBlock Text="{loc:T demo.list.sort}" VerticalAlignment="Center" />
-          <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}" MinWidth="120"
+          <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}" Width="150"
                     AutomationProperties.Name="{loc:T demo.list.sort}" />
           <CheckBox Content="{loc:T demo.list.descending}" IsChecked="{Binding Descending}" />
           <Button Content="{loc:T demo.list.copy}" Click="OnCopyClick" IsEnabled="{Binding CanUseSelectedRecord}" />
@@ -64,11 +83,16 @@
         <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsLoading}" />
       </StackPanel>
       <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+        <WrapPanel.Styles>
+          <Style Selector="Button"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+          <Style Selector="TextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+          <Style Selector="ComboBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+        </WrapPanel.Styles>
         <Button Content="{loc:T demo.list.previous}" Command="{Binding PreviousPageCommand}" />
         <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
         <Button Content="{loc:T demo.list.next}" Command="{Binding NextPageCommand}" />
         <TextBlock Text="{loc:T demo.list.pageSize}" VerticalAlignment="Center" />
-        <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}"
+        <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" Width="90"
                   AutomationProperties.Name="{loc:T demo.list.pageSize}" />
       </WrapPanel>
       <TextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.preferencesFailed}"
@@ -87,9 +111,211 @@
                  SelectedItem="{Binding SelectedItem}"
                  AutomationProperties.Name="{loc:T demo.list.name}">
         <TableView.Columns>
-          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.code}" Binding="{Binding Code}" Width="140" />
-          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.name}" Binding="{Binding Name}" Width="200" />
-          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.remark}" Binding="{Binding Remark}" Width="200" />
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.code}" Width="140">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding Code}" VerticalAlignment="Center">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <TextBox Text="{Binding DataContext.EditCode, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           MaxLength="50" VerticalAlignment="Center"
+                           AutomationProperties.Name="{loc:T demo.col.code}">
+                    <TextBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBox.IsVisible>
+                  </TextBox>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.name}" Width="200">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <TextBox Text="{Binding DataContext.EditName, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           MaxLength="200" VerticalAlignment="Center"
+                           AutomationProperties.Name="{loc:T demo.col.name}">
+                    <TextBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBox.IsVisible>
+                  </TextBox>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.remark}" Width="200">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding Remark}" VerticalAlignment="Center" TextWrapping="Wrap">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <TextBox Text="{Binding DataContext.EditRemark, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           MaxLength="500" VerticalAlignment="Center"
+                           AutomationProperties.Name="{loc:T demo.col.remark}">
+                    <TextBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBox.IsVisible>
+                  </TextBox>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.quantity}" Width="110">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <!-- 数字单元格:NumericUpDown,范围与保存校验共用同一组常量。
+                       单元格里隐藏微调按钮,否则按钮会吃掉整列宽度、把数字挤没。 -->
+                  <NumericUpDown Value="{Binding DataContext.EditQuantity, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                 Minimum="{Binding DataContext.QuantityMinimum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Maximum="{Binding DataContext.QuantityMaximum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Increment="1" FormatString="0" ShowButtonSpinner="False"
+                                 Padding="6,0" VerticalAlignment="Center"
+                                 AutomationProperties.Name="{loc:T demo.col.quantity}">
+                    <NumericUpDown.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </NumericUpDown.IsVisible>
+                  </NumericUpDown>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.dueDate}" Width="130">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding DueDateText}" VerticalAlignment="Center">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <!-- 日期单元格:复用应用统一的紧凑日期控件。 -->
+                  <controls:DateField SelectedDate="{Binding DataContext.EditDueDate, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                      Placeholder="{loc:T demo.col.dueDate}" VerticalAlignment="Center"
+                                      AutomationProperties.Name="{loc:T demo.col.dueDate}">
+                    <controls:DateField.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </controls:DateField.IsVisible>
+                  </controls:DateField>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.priority}" Width="110">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <TextBlock Text="{Binding Priority, Converter={StaticResource PriorityLabel}}" VerticalAlignment="Center">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
+                  <!-- 枚举单元格:有限选项下拉,不允许自由输入。 -->
+                  <ComboBox ItemsSource="{Binding DataContext.PriorityLabels, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            SelectedIndex="{Binding DataContext.SelectedPriorityIndex, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="{loc:T demo.col.priority}">
+                    <ComboBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </ComboBox.IsVisible>
+                  </ComboBox>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
+          <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.active}" Width="80">
+            <TableViewColumn.CellTemplate>
+              <DataTemplate x:DataType="data:DemoRecord" x:CompileBindings="False">
+                <Grid>
+                  <CheckBox IsChecked="{Binding Active, Mode=OneWay}" IsHitTestVisible="False" Focusable="False"
+                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <CheckBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="display">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </CheckBox.IsVisible>
+                  </CheckBox>
+                  <CheckBox IsChecked="{Binding DataContext.EditActive, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                            AutomationProperties.Name="{loc:T demo.col.active}">
+                    <CheckBox.IsVisible>
+                      <MultiBinding Converter="{StaticResource InlineEditingVisibility}" ConverterParameter="editor">
+                        <Binding />
+                        <Binding Path="DataContext.SelectedItem" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                        <Binding Path="DataContext.CanInlineEdit" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                      </MultiBinding>
+                    </CheckBox.IsVisible>
+                  </CheckBox>
+                </Grid>
+              </DataTemplate>
+            </TableViewColumn.CellTemplate>
+          </TableViewColumn>
           <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.updatedAt}" Binding="{Binding UpdatedAtText}" Width="140" />
           <TableViewColumn x:DataType="data:DemoRecord" Header="{loc:T demo.col.updatedBy}" Binding="{Binding UpdatedBy}" Width="120" />
         </TableView.Columns>
@@ -136,6 +362,35 @@
           <TextBlock Text="{Binding RemarkError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding RemarkError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.quantity}" />
+          <NumericUpDown x:Name="EditQuantityBox" Value="{Binding EditQuantity, Mode=TwoWay}"
+                         Minimum="{Binding QuantityMinimum}" Maximum="{Binding QuantityMaximum}"
+                         Increment="1" FormatString="0"
+                         AutomationProperties.Name="{loc:T demo.col.quantity}" />
+          <TextBlock Text="{Binding QuantityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding QuantityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.dueDate}" />
+          <controls:DateField SelectedDate="{Binding EditDueDate, Mode=TwoWay}"
+                              Placeholder="{loc:T demo.col.dueDate}"
+                              AutomationProperties.Name="{loc:T demo.col.dueDate}" />
+          <TextBlock Text="{Binding DueDateError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding DueDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:T demo.col.priority}" />
+          <ComboBox ItemsSource="{Binding PriorityLabels}" SelectedIndex="{Binding SelectedPriorityIndex, Mode=TwoWay}"
+                    AutomationProperties.Name="{loc:T demo.col.priority}" />
+          <TextBlock Text="{Binding PriorityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding PriorityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <CheckBox Content="{loc:T demo.col.active}" IsChecked="{Binding EditActive, Mode=TwoWay}" />
 
         <TextBlock Text="{Binding ErrorMessage}"
                    Foreground="{DynamicResource PlinthErrorBrush}"

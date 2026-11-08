@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 宿主只复用无界面依赖的协议、配置与进程隔离宿主；模块注册耦合 Shell/本地化，不进宿主。 -->
+    <Compile Include="../../src/Plinth.App/Modules/RuntimePlugins/PluginProtocol.cs" Link="RuntimePlugins/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Plinth.App/Modules/RuntimePlugins/RuntimePluginConfiguration.cs" Link="RuntimePlugins/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Plinth.App/Modules/RuntimePlugins/RuntimePluginHost.cs" Link="RuntimePlugins/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

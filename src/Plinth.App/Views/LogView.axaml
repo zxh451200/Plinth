@@ -3,6 +3,7 @@
              xmlns:vm="using:Plinth.App.ViewModels"
              xmlns:svc="using:Plinth.App.Services"
              xmlns:loc="using:Plinth.App.Localization"
+             xmlns:controls="using:Plinth.App.Views.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
@@ -29,12 +30,12 @@
             BoxShadow="0 1 3 0 #1A000000">
       <Grid ColumnDefinitions="*,*,*,*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="12">
         <ComboBox Grid.Row="0" Grid.Column="0" ItemsSource="{Binding EventKinds}" SelectedIndex="{Binding EventKindIndex}"
-                  AutomationProperties.Name="{loc:T logs.kind}" />
+                  HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:T logs.kind}" />
         <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" x:Name="LogSearch"
                  PlaceholderText="{loc:T logs.search}" Text="{Binding Search}"
                  AutomationProperties.Name="{loc:T logs.search}" />
         <ComboBox Grid.Row="0" Grid.Column="3" ItemsSource="{Binding LevelOptions}" SelectedIndex="{Binding LevelIndex}"
-                  AutomationProperties.Name="{loc:T logs.col.level}" />
+                  HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:T logs.col.level}" />
         <TextBox Grid.Row="0" Grid.Column="4" PlaceholderText="{loc:T logs.module}" Text="{Binding Module}"
                  AutomationProperties.Name="{loc:T logs.module}" />
 
@@ -44,16 +45,12 @@
                  AutomationProperties.Name="{loc:T logs.errorCode}" />
         <TextBox Grid.Row="1" Grid.Column="2" PlaceholderText="{loc:T logs.correlationId}" Text="{Binding CorrelationId}"
                  AutomationProperties.Name="{loc:T logs.correlationId}" />
-        <CalendarDatePicker Grid.Row="1" Grid.Column="3" SelectedDate="{Binding From}"
-                            AutomationProperties.Name="{loc:T logs.from}" />
-        <CalendarDatePicker Grid.Row="1" Grid.Column="4" SelectedDate="{Binding To}"
-                            AutomationProperties.Name="{loc:T logs.to}" />
+        <controls:DateField Grid.Row="1" Grid.Column="3" SelectedDate="{Binding From}" Label="{loc:T logs.from}" />
+        <controls:DateField Grid.Row="1" Grid.Column="4" SelectedDate="{Binding To}" Label="{loc:T logs.to}" />
 
         <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="12">
           <Button Content="{loc:T logs.search}" Command="{Binding ReloadCommand}" />
           <CheckBox Content="{loc:T logs.onlyProblems}" IsChecked="{Binding OnlyProblems}" VerticalAlignment="Center" />
-          <ProgressBar Width="80" IsIndeterminate="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
-                       VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
     </Border>
@@ -73,12 +70,15 @@
           <Button Content="{loc:T logs.copyDetails}" Click="CopyDetails" />
           <Button Content="{loc:T logs.copyId}" Click="CopyId" />
         </StackPanel>
-        <TextBlock Text="{loc:T logs.details.empty}" IsVisible="{Binding !SelectedEntry}"
-                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}" TextWrapping="Wrap" />
-        <ScrollViewer Height="90"
-                      IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
-          <TextBlock Text="{Binding SelectedEntry?.Details, Mode=OneWay}" TextWrapping="Wrap"
-                     AutomationProperties.Name="{loc:T logs.col.message}" />
+        <!-- 详情区高度固定:选中与否都不改变表格高度,避免点一行表格塌成一行 -->
+        <ScrollViewer Height="70">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:T logs.details.empty}"
+                       IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNull}}"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SelectedEntry?.Details, Mode=OneWay}" TextWrapping="Wrap"
+                       AutomationProperties.Name="{loc:T logs.col.message}" />
+          </StackPanel>
         </ScrollViewer>
       </StackPanel>
     </Border>
@@ -89,13 +89,16 @@
         <TableView ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" AutomationProperties.Name="{loc:T logs.title}">
       <TableView.Columns>
         <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.time}" Binding="{Binding TimeText}" Width="170" />
-        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.level}" Binding="{Binding Level}" Width="100" />
+        <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.level}" Binding="{Binding LevelText}" Width="100" />
         <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.module}" Binding="{Binding Module}" Width="120" />
         <TableViewColumn x:DataType="svc:LogEntry" Header="{loc:T logs.col.message}" Binding="{Binding Message}" />
       </TableView.Columns>
         </TableView>
         <TextBlock Text="{loc:T logs.status.empty}" IsVisible="{Binding !HasEntries}" HorizontalAlignment="Center"
                    VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+        <!-- 加载条叠在卡片顶部:出现/消失都不参与布局,避免整行重排 -->
+        <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                     VerticalAlignment="Top" HorizontalAlignment="Stretch" />
       </Grid>
     </Border>
   </DockPanel>

@@ -18,7 +18,15 @@ public sealed class DeploymentConfiguration
     public string DemoApiBaseUrl { get; set; } = "";
     /// <summary>示例模块(Demo/Notes)默认关闭,部署显式打开。</summary>
     public bool IncludeSampleModules { get; set; }
+    /// <summary>高级表格试验模块默认关闭,可信部署显式打开。</summary>
+    public bool EnableAdvancedTablePilot { get; set; }
+    /// <summary>运行时插件模块默认关闭;打开时仍使用无参默认拒绝配置。</summary>
+    public bool EnableRuntimePlugins { get; set; }
+    /// <summary>离线同步试点默认关闭;主应用没有生产可信 transportFactory。</summary>
+    public bool EnableOfflineSyncPilot { get; set; }
     public string? MinimumLogLevel { get; set; } = "Information";
+    /// <summary>受信任部署默认值；用户可在数据目录 database.json 或 PLINTH_Database__* 覆盖。</summary>
+    public Plinth.App.Data.DatabaseOptions Database { get; set; } = new();
     public bool IsProduction => Profile == "Production";
 
     public LogEventLevel TechnicalLogLevel => TryParseLogLevel(MinimumLogLevel, out var level)
@@ -28,8 +36,9 @@ public sealed class DeploymentConfiguration
     private static DeploymentConfiguration Load()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "deployment.json");
-        var configuration = File.Exists(path)
-            ? JsonSerializer.Deserialize<DeploymentConfiguration>(File.ReadAllText(path))
+        var json = ReadOptionalConfiguration(path);
+        var configuration = json is not null
+            ? JsonSerializer.Deserialize<DeploymentConfiguration>(json)
                 ?? throw new InvalidDataException("Empty deployment configuration.")
             : new DeploymentConfiguration();
         var environment = new ConfigurationBuilder()
@@ -43,6 +52,14 @@ public sealed class DeploymentConfiguration
             // IConfigurationRoot 在 10.x 只保留 Reload；实现在具体 ConfigurationRoot 上。
             (environment as IDisposable)?.Dispose();
         }
+    }
+
+    // File.Exists also returns false for access errors and directories. Only absence may use defaults.
+    internal static string? ReadOptionalConfiguration(string path)
+    {
+        try { return File.ReadAllText(path); }
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
     }
 
     internal static DeploymentConfiguration BindOverrides(DeploymentConfiguration configuration, IConfiguration overrides)

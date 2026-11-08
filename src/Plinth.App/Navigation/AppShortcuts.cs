@@ -4,7 +4,7 @@ using Avalonia.Input;
 
 namespace Plinth.App.Navigation;
 
-public enum ShortcutAction { New, Save, Find, Delete, Cancel, CloseTab, Refresh, Help }
+public enum ShortcutAction { New, Save, Find, Delete, Cancel, CloseTab, Refresh, Help, ToggleSidebar }
 
 public sealed record AppShortcut(ShortcutAction Action, KeyGesture Gesture, bool AllowInTextInput = true);
 
@@ -19,6 +19,7 @@ public static class AppShortcuts
     public static KeyGesture CloseTab { get; } = new(Key.W, KeyModifiers.Control);
     public static KeyGesture Refresh { get; } = new(Key.F5);
     public static KeyGesture Help { get; } = new(Key.F1);
+    public static KeyGesture Sidebar { get; } = new(Key.B, KeyModifiers.Control);
 
     public static IReadOnlyList<AppShortcut> All { get; } = Array.AsReadOnly<AppShortcut>(
     [
@@ -30,6 +31,7 @@ public static class AppShortcuts
         new(ShortcutAction.CloseTab, CloseTab),
         new(ShortcutAction.Refresh, Refresh),
         new(ShortcutAction.Help, Help),
+        new(ShortcutAction.ToggleSidebar, Sidebar),
     ]);
 
     public static ShortcutAction? Match(KeyEventArgs e, bool isTextInput)

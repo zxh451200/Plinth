@@ -13,7 +13,7 @@ using Plinth.App.Localization;
 namespace Plinth.App.ViewModels;
 
 /// <summary>下拉框里的一个选项。Key 是保存到设置文件里的值,Title 是显示给用户看的文字。</summary>
-public sealed record SettingOption(string Key, string Title);
+public sealed record SettingOption(string Key, string Title) : ISelectOption;
 
 /// <summary>设置页。改了就立即生效并保存,不需要点保存按钮。</summary>
 public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IUnsavedChanges, IDisposable
@@ -50,19 +50,8 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
         LogRetentionDays = settings.Current.LogRetentionDays;
         LogRetainedFileCount = settings.Current.LogRetainedFileCount;
 
-        Themes =
-        [
-            new SettingOption(SettingsService.ThemeSystem, Loc.Get("settings.theme.system")),
-            new SettingOption(SettingsService.ThemeLight, Loc.Get("settings.theme.light")),
-            new SettingOption(SettingsService.ThemeDark, Loc.Get("settings.theme.dark")),
-        ];
+        ApplyOptionLists();
         SelectedTheme = Themes.FirstOrDefault(option => option.Key == settings.Current.Theme) ?? Themes[0];
-        Densities =
-        [
-            new(DensityService.Standard, Loc.Get("settings.density.standard")),
-            new(DensityService.Compact, Loc.Get("settings.density.compact")),
-            new(DensityService.Comfortable, Loc.Get("settings.density.comfortable")),
-        ];
         SelectedDensity = Densities.First(option => option.Key == settings.Current.Density);
 
         // 语言名称用各自的语言来写,这样任何语言的用户都认得出来
@@ -72,20 +61,6 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
             new SettingOption("en-US", "English"),
         ];
         SelectedLanguage = Languages.FirstOrDefault(option => option.Key == settings.Current.Language) ?? Languages[0];
-        Regions = new[] { new SettingOption(string.Empty, Loc.Get("settings.format.system")) }
-            .Concat(CultureInfo.GetCultures(CultureTypes.SpecificCultures)
-                .OrderBy(culture => culture.NativeName, StringComparer.CurrentCulture)
-                .Select(culture => new SettingOption(culture.Name, $"{culture.NativeName} ({culture.Name})")))
-            .ToArray();
-        TimeZones = new[] { new SettingOption(string.Empty, Loc.Get("settings.format.system")) }
-            .Concat(TimeZoneInfo.GetSystemTimeZones()
-                .Select(zone => new SettingOption(zone.Id, zone.DisplayName)))
-            .ToArray();
-        // Preserve imported identifiers unavailable on this OS; DisplayFormat applies its safe fallback.
-        if (!TimeZones.Any(option => option.Key == settings.Current.TimeZoneId))
-            TimeZones = TimeZones.Append(new SettingOption(settings.Current.TimeZoneId, settings.Current.TimeZoneId)).ToArray();
-        if (!Regions.Any(option => option.Key == settings.Current.Region))
-            Regions = Regions.Append(new SettingOption(settings.Current.Region, settings.Current.Region)).ToArray();
         SelectedRegion = Regions.First(option => option.Key == settings.Current.Region);
         SelectedTimeZone = TimeZones.First(option => option.Key == settings.Current.TimeZoneId);
         _initializing = false;
@@ -95,7 +70,7 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
     }
 
     public IReadOnlyList<SettingOption> Languages { get; }
-    public IReadOnlyList<SettingOption> Densities { get; }
+    public IReadOnlyList<SettingOption> Densities { get; private set; } = [];
     [ObservableProperty]
     public partial SettingOption SelectedDensity { get; set; }
 
@@ -104,8 +79,8 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
         if (!_initializing)
             QueueChange(nameof(AppSettings.Density), value.Key, "settings.saved");
     }
-    public IReadOnlyList<SettingOption> Regions { get; }
-    public IReadOnlyList<SettingOption> TimeZones { get; }
+    public IReadOnlyList<SettingOption> Regions { get; private set; } = [];
+    public IReadOnlyList<SettingOption> TimeZones { get; private set; } = [];
 
     [ObservableProperty]
     public partial SettingOption SelectedRegion { get; set; }
@@ -182,10 +157,105 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
     [ObservableProperty]
     public partial SettingOption SelectedLanguage { get; set; }
 
-    public IReadOnlyList<SettingOption> Themes { get; }
+    public IReadOnlyList<SettingOption> Themes { get; private set; } = [];
 
     [ObservableProperty]
     public partial SettingOption SelectedTheme { get; set; }
+
+    /// <summary>语言切换后重建会随语言变化的选项并保留当前选择。</summary>
+    public override void OnUiLanguageChanged()
+    {
+        var theme = SelectedTheme?.Key;
+        var density = SelectedDensity?.Key;
+        var language = SelectedLanguage?.Key;
+        var region = SelectedRegion?.Key;
+        var zone = SelectedTimeZone?.Key;
+        var initializing = _initializing;
+        _initializing = true;
+        try
+        {
+            ApplyOptionLists();
+            SelectedTheme = Themes.FirstOrDefault(option => option.Key == theme) ?? Themes[0];
+            SelectedDensity = Densities.FirstOrDefault(option => option.Key == density) ?? Densities[0];
+            SelectedLanguage = Languages.FirstOrDefault(option => option.Key == language) ?? Languages[0];
+            SelectedRegion = Regions.FirstOrDefault(option => option.Key == region) ?? Regions[0];
+            SelectedTimeZone = TimeZones.FirstOrDefault(option => option.Key == zone) ?? TimeZones[0];
+        }
+        finally
+        {
+            _initializing = initializing;
+        }
+        OnPropertyChanged(nameof(Themes));
+        OnPropertyChanged(nameof(Densities));
+        OnPropertyChanged(nameof(Regions));
+        OnPropertyChanged(nameof(TimeZones));
+        base.OnUiLanguageChanged();
+    }
+
+    private void ApplyOptionLists()
+    {
+        Themes =
+        [
+            new SettingOption(SettingsService.ThemeSystem, Loc.Get("settings.theme.system")),
+            new SettingOption(SettingsService.ThemeLight, Loc.Get("settings.theme.light")),
+            new SettingOption(SettingsService.ThemeDark, Loc.Get("settings.theme.dark")),
+        ];
+        Densities =
+        [
+            new SettingOption(DensityService.Standard, Loc.Get("settings.density.standard")),
+            new SettingOption(DensityService.Compact, Loc.Get("settings.density.compact")),
+            new SettingOption(DensityService.Comfortable, Loc.Get("settings.density.comfortable")),
+        ];
+        Regions = BuildRegions(_settings.Current.Region);
+        TimeZones = BuildTimeZones(_settings.Current.TimeZoneId);
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Lazy<IReadOnlyList<SettingOption>>> RegionCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Lazy<IReadOnlyList<SettingOption>>> ZoneCache = new();
+
+    /// <summary>后台预热；第一次打开设置页不再同步枚举上千个 Culture。</summary>
+    public static void Prewarm()
+    {
+        _ = Task.Run(() =>
+        {
+            _ = GetRegions();
+            _ = GetTimeZones();
+        });
+    }
+
+    private static IReadOnlyList<SettingOption> GetRegions() =>
+        RegionCache.GetOrAdd(Loc.Culture.Name, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildRegionList)).Value;
+
+    private static IReadOnlyList<SettingOption> GetTimeZones() =>
+        ZoneCache.GetOrAdd(Loc.Culture.Name, _ => new Lazy<IReadOnlyList<SettingOption>>(BuildTimeZoneList)).Value;
+
+    private static IReadOnlyList<SettingOption> BuildRegionList() =>
+        new[] { new SettingOption(string.Empty, Loc.Get("settings.format.system")) }
+            .Concat(CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+                // 同一语言同一地区只留一条:.NET 会给 zh-Hans-HK 和 zh-Hant-HK 这类并列写法,
+                // 下拉里看着像重复;按地区主导脚本保留一条。
+                .GroupBy(culture => RegionIdentity(culture), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.OrderBy(ScriptPreference).ThenBy(culture => culture.Name.Length).First())
+                // DisplayName 跟随界面语言；不能用 NativeName，否则中文界面也全是 English (…)。
+                .OrderBy(culture => culture.DisplayName, StringComparer.Create(Loc.Culture, ignoreCase: true))
+                .Select(culture => new SettingOption(culture.Name, culture.DisplayName)))
+            .ToArray();
+
+    private static IReadOnlyList<SettingOption> BuildTimeZoneList() =>
+        new[] { new SettingOption(string.Empty, Loc.Get("settings.format.system")) }
+            .Concat(TimeZoneInfo.GetSystemTimeZones()
+                .Select(zone => new SettingOption(zone.Id, zone.DisplayName)))
+            .ToArray();
+
+    private static IReadOnlyList<SettingOption> BuildRegions(string selected) =>
+        WithCurrent(GetRegions(), selected);
+
+    private static IReadOnlyList<SettingOption> BuildTimeZones(string selected) =>
+        WithCurrent(GetTimeZones(), selected);
+
+    private static IReadOnlyList<SettingOption> WithCurrent(IReadOnlyList<SettingOption> options, string selected) =>
+        options.Any(option => option.Key == selected)
+            ? options : options.Append(new SettingOption(selected, selected)).ToArray();
 
     /// <summary>设置改完后的提示,例如"已保存"。</summary>
     [ObservableProperty]
@@ -357,6 +427,9 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
         try
         {
             await _settings.ChangeAsync(field, value);
+            // 语言保存成功后立即切换界面;其余设置本来就在修改后即时生效。
+            if (field == nameof(AppSettings.Language) && value is string language)
+                Loc.SetLanguage(language);
             StatusText = Loc.Get(successKey);
         }
         catch (OperationCanceledException) { StatusText = Loc.Get("settings.cancelled"); }
@@ -385,5 +458,28 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
                 IsSaving = false;
             }
         }
+    }
+
+    /// <summary>语言 + 地区的身份:zh-Hant-HK 与 zh-Hans-HK 视为同一个地区。</summary>
+    private static string RegionIdentity(CultureInfo culture)
+    {
+        var parts = culture.Name.Split('-');
+        return parts.Length < 2 ? culture.Name : $"{parts[0]}-{parts[^1]}";
+    }
+
+    /// <summary>同一地区有多种脚本写法时,按该地区的主要书写系统挑选。</summary>
+    private static int ScriptPreference(CultureInfo culture)
+    {
+        var parts = culture.Name.Split('-');
+        if (parts.Length < 3) return 0;
+        var script = parts[1];
+        var region = parts[^1];
+        var expected = region.ToUpperInvariant() switch
+        {
+            "TW" or "HK" or "MO" => "Hant",
+            "CN" or "SG" => "Hans",
+            _ => null,
+        };
+        return expected is null ? 1 : string.Equals(script, expected, StringComparison.OrdinalIgnoreCase) ? 0 : 1;
     }
 }

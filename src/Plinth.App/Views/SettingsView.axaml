@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plinth.App.ViewModels"
              xmlns:loc="using:Plinth.App.Localization"
+             xmlns:controls="using:Plinth.App.Views.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
@@ -37,33 +38,18 @@
       <StackPanel Spacing="8">
         <TextBlock Classes="section" Text="{loc:T settings.interface}" />
         <TextBlock Text="{loc:T settings.density}" />
-        <ComboBox ItemsSource="{Binding Densities}" SelectedItem="{Binding SelectedDensity}"
-                  MinWidth="200" MaxWidth="320" HorizontalAlignment="Left"
-                  AutomationProperties.Name="{loc:T settings.density}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SettingOption"><TextBlock Text="{Binding Title}" /></DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <controls:SearchSelect Items="{Binding Densities}" SelectedItem="{Binding SelectedDensity}" Searchable="False"
+                               Label="{loc:T settings.density}" Width="280" HorizontalAlignment="Left" />
         <TextBlock Classes="hint" Text="{loc:T settings.density.hint}" />
 
         <TextBlock Text="{loc:T settings.theme}" Margin="0,4,0,0" />
-        <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                  MinWidth="200" MaxWidth="320" HorizontalAlignment="Left"
-                  AutomationProperties.Name="{loc:T settings.theme}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SettingOption"><TextBlock Text="{Binding Title}" /></DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <controls:SearchSelect Items="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" Searchable="False"
+                               Label="{loc:T settings.theme}" Width="280" HorizontalAlignment="Left" />
         <TextBlock Classes="hint" Text="{loc:T settings.theme.hint}" />
 
         <TextBlock Text="{loc:T settings.language}" Margin="0,4,0,0" />
-        <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}"
-                  MinWidth="200" MaxWidth="320" HorizontalAlignment="Left"
-                  AutomationProperties.Name="{loc:T settings.language}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SettingOption"><TextBlock Text="{Binding Title}" /></DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <controls:SearchSelect Items="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" Searchable="False"
+                               Label="{loc:T settings.language}" Width="280" HorizontalAlignment="Left" />
         <TextBlock Classes="hint" Text="{loc:T settings.language.hint}" />
       </StackPanel>
     </Border>
@@ -72,21 +58,11 @@
       <StackPanel Spacing="8">
         <TextBlock Classes="section" Text="{loc:T settings.regionTime}" />
         <TextBlock Text="{loc:T settings.region}" />
-        <ComboBox ItemsSource="{Binding Regions}" SelectedItem="{Binding SelectedRegion}"
-                  MinWidth="200" MaxWidth="480" HorizontalAlignment="Left"
-                  AutomationProperties.Name="{loc:T settings.region}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SettingOption"><TextBlock Text="{Binding Title}" /></DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <controls:SearchSelect Items="{Binding Regions}" SelectedItem="{Binding SelectedRegion}"
+                               Label="{loc:T settings.region}" Width="280" HorizontalAlignment="Left" />
         <TextBlock Text="{loc:T settings.timeZone}" Margin="0,4,0,0" />
-        <ComboBox ItemsSource="{Binding TimeZones}" SelectedItem="{Binding SelectedTimeZone}"
-                  MinWidth="200" MaxWidth="480" HorizontalAlignment="Left"
-                  AutomationProperties.Name="{loc:T settings.timeZone}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SettingOption"><TextBlock Text="{Binding Title}" /></DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <controls:SearchSelect Items="{Binding TimeZones}" SelectedItem="{Binding SelectedTimeZone}"
+                               Label="{loc:T settings.timeZone}" Width="280" HorizontalAlignment="Left" />
         <TextBlock Classes="hint" Text="{loc:T settings.format.hint}" />
       </StackPanel>
     </Border>
@@ -96,10 +72,10 @@
         <TextBlock Classes="section" Text="{loc:T profile.title}" />
         <TextBlock Text="{Binding Profile}" TextWrapping="Wrap" />
         <TextBlock Text="{loc:T settings.logRetentionDays}" Margin="0,4,0,0" />
-        <NumericUpDown Minimum="1" Maximum="365" Value="{Binding LogRetentionDays}" MinWidth="160"
+        <NumericUpDown Minimum="1" Maximum="365" Value="{Binding LogRetentionDays}" Width="160"
                        HorizontalAlignment="Left" AutomationProperties.Name="{loc:T settings.logRetentionDays}" />
         <TextBlock Text="{loc:T settings.logRetainedFiles}" />
-        <NumericUpDown Minimum="1" Maximum="100" Value="{Binding LogRetainedFileCount}" MinWidth="160"
+        <NumericUpDown Minimum="1" Maximum="100" Value="{Binding LogRetainedFileCount}" Width="160"
                        HorizontalAlignment="Left" AutomationProperties.Name="{loc:T settings.logRetainedFiles}" />
 
         <StackPanel IsVisible="{Binding AuthenticationEnabled}" Spacing="8" Margin="0,8,0,0">

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Microsoft.Extensions.Logging.Abstractions;
+using Plinth.App.Localization;
 using Plinth.App.Navigation;
 using Plinth.App.Services;
 using Plinth.App.ViewModels;
@@ -14,8 +16,22 @@ using Xunit;
 
 namespace Plinth.App.Tests;
 
+[Collection("Localization")]
 public sealed class LogNavigationTests
 {
+    /// <summary>级别下拉按界面语言显示,筛选值仍是日志里的英文标记。</summary>
+    [Fact]
+    public void Level_filter_shows_localized_names_but_maps_to_english_values()
+    {
+        Loc.Initialize("zh-CN");
+        using var logs = new LogViewModel(new FolderService(NullLogger<FolderService>.Instance));
+        Assert.Equal(["全部级别", "详细", "调试", "信息", "警告", "错误", "致命", "严重"], logs.LevelOptions);
+        logs.LevelIndex = 4;
+        Assert.Equal("Warning", logs.Level);
+        logs.Level = "Fatal";
+        Assert.Equal(6, logs.LevelIndex);
+    }
+
     [AvaloniaFact]
     public async Task Related_error_replaces_old_filters_and_keeps_information_context()
     {

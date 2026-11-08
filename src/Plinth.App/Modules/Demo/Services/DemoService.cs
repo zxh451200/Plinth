@@ -26,6 +26,12 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
     public const int MaxCodeLength = 50;
     public const int MaxNameLength = 200;
     public const int MaxRemarkLength = 500;
+    public const int MinQuantity = -1_000_000;
+    public const int MaxQuantity = 1_000_000;
+
+    /// <summary>日期单元格允许的范围；空值表示未设置。</summary>
+    public static readonly DateOnly MinDueDate = new(1900, 1, 1);
+    public static readonly DateOnly MaxDueDate = new(2100, 12, 31);
 
     private const int MaxImportRows = 5000;
     private const int MaxImportErrors = 20;
@@ -93,7 +99,8 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
     /// </summary>
     public async Task<string?> SaveAsync(DemoRecord input, CancellationToken cancellationToken = default)
         => (await SaveValidatedAsync(new DemoSaveInput(input.Id, input.Version,
-            input.Code, input.Name, input.Remark), cancellationToken))?.Message;
+            input.Code, input.Name, input.Remark, Quantity: input.Quantity, DueDate: input.DueDate,
+            Priority: input.Priority, Active: input.Active), cancellationToken))?.Message;
 
     public async Task<DemoSaveError?> SaveValidatedAsync(DemoSaveInput input, CancellationToken cancellationToken = default)
         => await _operations.ExecuteConfirmedAsync("demo:save", "Demo", "save",
@@ -105,7 +112,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         var name = input.Name.Trim();
         var remark = input.Remark.Trim();
 
-        var invalid = ValidateFields(code, name, remark);
+        var invalid = ValidateFields(code, name, remark, input.Quantity, input.DueDate, input.Priority);
         if (invalid is not null)
         {
             return invalid;
@@ -125,13 +132,27 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         {
             if (input.MustExist)
                 return new(DemoSaveField.Form, Loc.Get("demo.err.conflict"));
-            records.Add(new DemoRecord { Id = input.Id, Code = code, Name = name, Remark = remark });
+            records.Add(new DemoRecord
+            {
+                Id = input.Id,
+                Code = code,
+                Name = name,
+                Remark = remark,
+                Quantity = input.Quantity,
+                DueDate = input.DueDate,
+                Priority = input.Priority,
+                Active = input.Active,
+            });
         }
         else
         {
             existing.Code = code;
             existing.Name = name;
             existing.Remark = remark;
+            existing.Quantity = input.Quantity;
+            existing.DueDate = input.DueDate;
+            existing.Priority = input.Priority;
+            existing.Active = input.Active;
 
             // 带上打开表单时的版本号:库里的版本已经变了,UPDATE 就会找不到这一行,下面会收到并发冲突
             db.Entry(existing).Property(record => record.Version).OriginalValue = input.Version;
@@ -211,7 +232,11 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         var path = Path.Combine(directory, $"demo-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.csv");
         var count = new ExportCount();
         await CsvWriter.WriteFileAsync(path,
-            [Loc.Get("demo.col.code"), Loc.Get("demo.col.name"), Loc.Get("demo.col.remark")],
+            [
+                Loc.Get("demo.col.code"), Loc.Get("demo.col.name"), Loc.Get("demo.col.remark"),
+                Loc.Get("demo.col.quantity"), Loc.Get("demo.col.dueDate"),
+                Loc.Get("demo.col.priority"), Loc.Get("demo.col.active"),
+            ],
             ExportRowsAsync(search, count, progress, cancellationToken), cancellationToken);
         return (path, count.Written);
     }
@@ -236,11 +261,21 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         for (var offset = 0; ; offset = checked(offset + batchSize))
         {
             var page = await query.OrderBy(r => r.CodeKey).ThenBy(r => r.Id).Skip(offset).Take(batchSize)
-                .Select(r => new { r.Code, r.Name, r.Remark }).ToListAsync(token);
+                .Select(r => new { r.Code, r.Name, r.Remark, r.Quantity, r.DueDate, r.Priority, r.Active })
+                .ToListAsync(token);
             foreach (var record in page)
             {
                 token.ThrowIfCancellationRequested();
-                yield return new[] { record.Code, record.Name, record.Remark };
+                // 类型列用固定格式导出,不跟随界面区域设置;导入仍只更新文本三列。
+                yield return
+                [
+                    record.Code, record.Name, record.Remark,
+                    record.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    record.DueDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+                        ?? string.Empty,
+                    record.Priority.ToString(),
+                    record.Active ? "true" : "false",
+                ];
                 // The writer has completed NextRecordAsync before requesting the next row.
                 count.Written++;
                 progress?.Report(total > 0 ? (double)count.Written / total : null);
@@ -253,6 +288,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
 
     /// <summary>
     /// 从 CSV 导入(第一行是表头,列顺序:编码、名称、备注)。编码已存在就更新名称和备注,不存在就新增。
+    /// 数量/日期/优先级/启用属于类型列,不参与 CSV 导入,请在表单或单元格里维护。
     /// 要么全部成功,要么什么都不改:只要有一行不合格,就返回所有问题(最多 20 条)而不写库。
     /// </summary>
     public async Task<ImportResult> ImportCsvAsync(string path, CancellationToken cancellationToken = default,
@@ -407,9 +443,10 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
     private static string DuplicateMessage(string code) => Loc.Format("demo.err.duplicate", code);
 
     private static string? Validate(string code, string name, string remark)
-        => ValidateFields(code, name, remark)?.Message;
+        => ValidateFields(code, name, remark, 0, null, DemoPriority.Normal)?.Message;
 
-    private static DemoSaveError? ValidateFields(string code, string name, string remark)
+    private static DemoSaveError? ValidateFields(string code, string name, string remark,
+        int quantity, DateOnly? dueDate, DemoPriority priority)
     {
         if (code.Length == 0)
         {
@@ -435,6 +472,22 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         if (remark.Length > MaxRemarkLength)
         {
             return new(DemoSaveField.Remark, Loc.Format("demo.err.remarkTooLong", MaxRemarkLength));
+        }
+
+        if (quantity is < MinQuantity or > MaxQuantity)
+        {
+            return new(DemoSaveField.Quantity, Loc.Format("demo.err.quantityRange", MinQuantity, MaxQuantity));
+        }
+
+        if (dueDate is { } date && (date < MinDueDate || date > MaxDueDate))
+        {
+            return new(DemoSaveField.DueDate,
+                Loc.Format("demo.err.dueDateRange", MinDueDate.ToString("d"), MaxDueDate.ToString("d")));
+        }
+
+        if (!Enum.IsDefined(priority))
+        {
+            return new(DemoSaveField.Priority, Loc.Get("demo.err.priorityInvalid"));
         }
 
         return null;

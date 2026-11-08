@@ -99,7 +99,16 @@ public sealed class CsvExportTests : IDisposable
     public async Task Export_writes_a_bom_csv_with_a_header_and_the_matching_rows()
     {
         var service = new DemoService(_database.Factory, NullLogger<DemoService>.Instance);
-        await service.SaveAsync(new DemoRecord { Code = "A1", Name = "苹果,红", Remark = "" });
+        await service.SaveAsync(new DemoRecord
+        {
+            Code = "A1",
+            Name = "苹果,红",
+            Remark = "",
+            Quantity = 5,
+            DueDate = new DateOnly(2026, 12, 31),
+            Priority = DemoPriority.High,
+            Active = false,
+        });
         await service.SaveAsync(new DemoRecord { Code = "B1", Name = "香蕉", Remark = "" });
 
         var path = await service.ExportCsvAsync("A", _directory);
@@ -108,7 +117,7 @@ public sealed class CsvExportTests : IDisposable
         Assert.True(bytes.Take(3).SequenceEqual(new byte[] { 0xEF, 0xBB, 0xBF }));
         var lines = (await File.ReadAllTextAsync(path)).TrimEnd().Split("\r\n");
         Assert.Equal(2, lines.Length); // 表头 + 只有 A1 匹配
-        Assert.Equal("A1,\"苹果,红\",", lines[1]);
+        Assert.Equal("A1,\"苹果,红\",,5,2026-12-31,High,false", lines[1]);
         Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
     }
 

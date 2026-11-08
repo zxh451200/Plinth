@@ -14,18 +14,18 @@
     <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" Width="96" Height="96"
            Stretch="Uniform" HorizontalAlignment="Center"
            AutomationProperties.Name="{Binding ProductName}" />
-    <TextBlock Text="{Binding ProductName}" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center"
-               Foreground="{DynamicResource PlinthAccentBrush}" />
-    <TextBlock Text="{Binding VersionText}"
-               HorizontalAlignment="Center"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-    <TextBlock Text="{Binding Description}"
-               HorizontalAlignment="Center"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-    <TextBlock Text="{Binding SupportText}"
-               IsVisible="{Binding SupportText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-               HorizontalAlignment="Center"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <SelectableTextBlock Text="{Binding ProductName}" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PlinthAccentBrush}" />
+    <SelectableTextBlock Text="{Binding VersionText}"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <SelectableTextBlock Text="{Binding Description}"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <SelectableTextBlock Text="{Binding SupportText}"
+                         IsVisible="{Binding SupportText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
     <Button Content="{loc:T about.support}" Command="{Binding OpenSupportCommand}"
             IsVisible="{Binding HasSupportUrl}" HorizontalAlignment="Center" />
     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
@@ -33,27 +33,27 @@
               Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowLicensesCommand}" />
       <Button Content="{loc:T about.update.check}" Command="{Binding CheckForUpdatesCommand}" />
     </StackPanel>
-    <TextBlock Text="{Binding UpdateStatus}"
-               IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-               TextWrapping="Wrap"
-               MaxWidth="480"
-               HorizontalAlignment="Center"
-               TextAlignment="Center" />
+    <SelectableTextBlock Text="{Binding UpdateStatus}"
+                         IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         TextWrapping="Wrap"
+                         MaxWidth="480"
+                         HorizontalAlignment="Center"
+                         TextAlignment="Center" />
     <Button x:Name="OpenUpdateDownloadButton"
             Content="{loc:T about.update.open}"
             AutomationProperties.Name="{loc:T about.update.open}"
             Command="{Binding OpenUpdateDownloadCommand}"
             IsVisible="{Binding HasUpdateDownload}"
             HorizontalAlignment="Center" />
-    <TextBlock Text="{Binding Framework}"
-               Margin="0,12,0,0"
-               HorizontalAlignment="Center"
-               FontSize="11"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-    <TextBlock Text="{Binding OperatingSystem}"
-               HorizontalAlignment="Center"
-               FontSize="11"
-               Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <SelectableTextBlock Text="{Binding Framework}"
+                         Margin="0,12,0,0"
+                         HorizontalAlignment="Center"
+                         FontSize="11"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <SelectableTextBlock Text="{Binding OperatingSystem}"
+                         HorizontalAlignment="Center"
+                         FontSize="11"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
   </StackPanel>
   </ScrollViewer>
 </UserControl>

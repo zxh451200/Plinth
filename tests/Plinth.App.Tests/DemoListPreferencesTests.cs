@@ -3,9 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plinth.App.Modules.Demo.Services;
 using Plinth.App.Modules.Demo.ViewModels;
@@ -138,6 +143,52 @@ public sealed class DemoListPreferencesTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Pointer_resizing_a_column_is_saved_and_restored_in_a_new_view()
+    {
+        var store = new WorkspacePreferencesService(ConfigPath);
+        using var vm = Create(store);
+        await vm.LoadAsync();
+        var view = new DemoListView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1200, Height = 720 };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            var table = view.FindControl<TableView>("RecordsTable")!;
+            Assert.True(table.CanUserResizeColumns);
+            var before = table.Columns[0].ActualWidth;
+            var handle = table.GetVisualDescendants().OfType<Thumb>()
+                .First(thumb => thumb.Name == "PART_Resizer");
+            Assert.True(handle.IsVisible && handle.IsHitTestVisible);
+            var start = handle.TranslatePoint(new Point(handle.Bounds.Width / 2, handle.Bounds.Height / 2), window)!.Value;
+            // Avalonia 12 TableView 只在分隔线左侧(即前一列表头内)按下才启动拖拽；
+            // 按在 1px 分隔线本体或右侧是原生死区，实测不触发 DragStarted。
+            var grab = new Point(start.X - 4, start.Y);
+            window.MouseMove(grab);
+            window.MouseDown(grab, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+            for (var step = 1; step <= 6; step++)
+            {
+                window.MouseMove(new Point(grab.X + step * 10, grab.Y));
+                Dispatcher.UIThread.RunJobs();
+            }
+            window.MouseUp(new Point(grab.X + 60, grab.Y), MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+            var resized = table.Columns[0].ActualWidth;
+            Assert.True(resized > before + 20, "Pointer drag must change the actual column width.");
+            var saved = new WorkspacePreferencesService(ConfigPath);
+            Assert.Equal(resized, saved.Demo.Columns["Code"].Width, 1);
+            using var reopened = Create(saved);
+            await reopened.LoadAsync();
+            var reopenedView = new DemoListView { DataContext = reopened };
+            window.Content = reopenedView;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(resized, reopenedView.FindControl<TableView>("RecordsTable")!.Columns[0].Width.Value, 1);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task Reset_button_restores_columns_toggles_and_detached_view()
     {
         var store = SavedStore();
@@ -157,7 +208,7 @@ public sealed class DemoListPreferencesTests : IDisposable
             await vm.ResetListCommand.ExecuteAsync(button.CommandParameter);
             Dispatcher.UIThread.RunJobs();
             Assert.All(table.Columns, column => Assert.True(column.IsVisible));
-            Assert.Equal(new double[] { 140, 200, 200, 140, 120 },
+            Assert.Equal(new double[] { 140, 200, 200, 110, 130, 110, 80, 140, 120 },
                 table.Columns.Select(column => column.Width.Value));
             Assert.All(view.FindControl<StackPanel>("ColumnMenu")!.Children.OfType<CheckBox>(),
                 toggle => Assert.True(toggle.IsChecked == true));

@@ -75,7 +75,7 @@
   <data name="settings.theme.hint" xml:space="preserve"><value>Takes effect immediately. "Follow the system" switches with the system light/dark setting.</value></data>
   <data name="settings.saved" xml:space="preserve"><value>Saved</value></data>
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
-  <data name="settings.language.hint" xml:space="preserve"><value>Restart the app for a language change to take effect.</value></data>
+  <data name="settings.language.hint" xml:space="preserve"><value>Changes apply immediately.</value></data>
   <data name="settings.language.saved" xml:space="preserve"><value>Saved. Restart the app to switch the language.</value></data>
   <data name="demo.new" xml:space="preserve"><value>New</value></data>
   <data name="demo.search.placeholder" xml:space="preserve"><value>Search by code or name</value></data>
@@ -84,6 +84,13 @@
   <data name="demo.col.code" xml:space="preserve"><value>Code</value></data>
   <data name="demo.col.name" xml:space="preserve"><value>Name</value></data>
   <data name="demo.col.remark" xml:space="preserve"><value>Remark</value></data>
+  <data name="demo.col.quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="demo.col.dueDate" xml:space="preserve"><value>Due date</value></data>
+  <data name="demo.col.priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="demo.col.active" xml:space="preserve"><value>Active</value></data>
+  <data name="demo.priority.low" xml:space="preserve"><value>Low</value></data>
+  <data name="demo.priority.normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="demo.priority.high" xml:space="preserve"><value>High</value></data>
   <data name="demo.form.title" xml:space="preserve"><value>Edit</value></data>
   <data name="demo.save" xml:space="preserve"><value>Save</value></data>
   <data name="demo.cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -91,6 +98,21 @@
   <data name="demo.delete.confirm" xml:space="preserve"><value>Delete this record? This cannot be undone.</value></data>
   <data name="demo.delete.keep" xml:space="preserve"><value>Keep</value></data>
   <data name="demo.export" xml:space="preserve"><value>Export CSV</value></data>
+  <data name="demo.exportPdf" xml:space="preserve"><value>Export PDF (page)</value></data>
+  <data name="demo.printPdf" xml:space="preserve"><value>Print (page)</value></data>
+  <data name="demo.pdf.pickTitle" xml:space="preserve"><value>Export PDF</value></data>
+  <data name="demo.pdf.title" xml:space="preserve"><value>Demo records</value></data>
+  <data name="demo.pdf.generated" xml:space="preserve"><value>Generated {0}</value></data>
+  <data name="demo.pdf.records" xml:space="preserve"><value>{0} records</value></data>
+  <data name="demo.pdf.code" xml:space="preserve"><value>Code</value></data>
+  <data name="demo.pdf.name" xml:space="preserve"><value>Name</value></data>
+  <data name="demo.pdf.remark" xml:space="preserve"><value>Remark</value></data>
+  <data name="demo.pdf.version" xml:space="preserve"><value>Version</value></data>
+  <data name="demo.pdf.page" xml:space="preserve"><value>Page {0}</value></data>
+  <data name="demo.status.pdfExported" xml:space="preserve"><value>PDF exported to {0}</value></data>
+  <data name="demo.status.pdfFailed" xml:space="preserve"><value>PDF export failed. Details were written to the log.</value></data>
+  <data name="demo.status.printStarted" xml:space="preserve"><value>Sent to the system print handler</value></data>
+  <data name="demo.status.printFailed" xml:space="preserve"><value>Print failed: no PDF print handler is available.</value></data>
   <data name="demo.status.exported" xml:space="preserve"><value>Exported to {0}</value></data>
   <data name="demo.status.exportFailed" xml:space="preserve"><value>Export failed. Details were written to the log.</value></data>
   <data name="demo.status.count" xml:space="preserve"><value>{0} record(s)</value></data>
@@ -100,6 +122,9 @@
   <data name="demo.err.nameRequired" xml:space="preserve"><value>Enter a name.</value></data>
   <data name="demo.err.nameTooLong" xml:space="preserve"><value>The name can be at most {0} characters.</value></data>
   <data name="demo.err.remarkTooLong" xml:space="preserve"><value>The remark can be at most {0} characters.</value></data>
+  <data name="demo.err.quantityRange" xml:space="preserve"><value>The quantity must be a whole number between {0} and {1}.</value></data>
+  <data name="demo.err.dueDateRange" xml:space="preserve"><value>The date must be between {0} and {1}.</value></data>
+  <data name="demo.err.priorityInvalid" xml:space="preserve"><value>Choose a valid priority.</value></data>
   <data name="demo.err.duplicate" xml:space="preserve"><value>The code {0} already exists. Please use another one.</value></data>
   <data name="demo.err.conflict" xml:space="preserve"><value>This record was changed or deleted while you were editing. Preserve your input, cancel and refresh the list.</value></data>
   <data name="demo.err.saveFailed" xml:space="preserve"><value>Could not save. Please try again later. Details were written to the log.</value></data>
@@ -112,6 +137,13 @@
   <data name="logs.col.time" xml:space="preserve"><value>Time</value></data>
   <data name="logs.col.level" xml:space="preserve"><value>Level</value></data>
   <data name="logs.level.all"><value>All levels</value></data>
+  <data name="logs.level.verbose"><value>Verbose</value></data>
+  <data name="logs.level.debug"><value>Debug</value></data>
+  <data name="logs.level.information"><value>Information</value></data>
+  <data name="logs.level.warning"><value>Warning</value></data>
+  <data name="logs.level.error"><value>Error</value></data>
+  <data name="logs.level.fatal"><value>Fatal</value></data>
+  <data name="logs.level.critical"><value>Critical</value></data>
   <data name="logs.col.message" xml:space="preserve"><value>Message</value></data>
   <data name="logs.status.count" xml:space="preserve"><value>Latest {0} entries</value></data>
   <data name="logs.status.empty" xml:space="preserve"><value>No log entries to show.</value></data>
@@ -130,6 +162,7 @@
   <data name="backup.title" xml:space="preserve"><value>Backup and restore</value></data>
   <data name="backup.intro" xml:space="preserve"><value>A ZIP backup contains a consistent database copy, settings and a SHA-256 manifest. Preview and confirm it before scheduling restore on the next startup; safety copies of the current database and settings are kept.</value></data>
   <data name="backup.create" xml:space="preserve"><value>Back up now...</value></data>
+  <data name="backup.serverManaged"><value>Server databases must be backed up and restored on the server; in-app file backup only supports SQLite.</value></data>
   <data name="backup.restore" xml:space="preserve"><value>Restore from backup...</value></data>
   <data name="backup.pickSave" xml:space="preserve"><value>Save backup as</value></data>
   <data name="backup.pickOpen" xml:space="preserve"><value>Choose a backup file</value></data>
@@ -206,6 +239,8 @@
   <data name="demo.list.empty"><value>No matching records</value></data>
   <data name="nav.taskDiagnostics"><value>Tasks and diagnostics</value></data>
   <data name="logs.search"><value>Search</value></data>
+  <data name="common.search"><value>Search</value></data>
+  <data name="common.noMatch"><value>No matches</value></data>
   <data name="logs.module"><value>Module</value></data>
   <data name="logs.taskId"><value>Task ID</value></data>
   <data name="logs.errorCode"><value>Error code</value></data>
@@ -218,6 +253,9 @@
   <data name="logs.copyId"><value>Copy correlation ID</value></data>
   <data name="logs.copy.failed"><value>Could not copy to the clipboard.</value></data>
   <data name="logs.details.empty"><value>Select a log entry to see its full details.</value></data>
+  <data name="calendar.today"><value>Today</value></data>
+  <data name="calendar.clear"><value>Clear</value></data>
+  <data name="date.placeholder"><value>Select a date</value></data>
   <data name="tasks.title"><value>Task centre</value></data>
   <data name="tasks.cancel"><value>Request cancellation</value></data>
   <data name="tasks.name"><value>Task</value></data>
@@ -267,6 +305,8 @@
   <data name="profile.production"><value>Production</value></data>
   <data name="profile.confirm"><value>This operation affects production. Continue?</value></data>
   <data name="common.confirm"><value>Confirm</value></data>
+  <data name="common.yes"><value>Yes</value></data>
+  <data name="common.no"><value>No</value></data>
   <data name="settings.restart"><value>Saved. Restart to apply log retention settings.</value></data>
   <data name="settings.logRetentionDays"><value>Log retention days (1–365)</value></data>
   <data name="settings.logRetainedFiles"><value>Maximum log files (1–100, 10 MB each)</value></data>
@@ -322,6 +362,9 @@
   <data name="tasks.notification"><value>{0}: {1}. See the task centre for all results.</value></data>
   <data name="tasks.notification.view"><value>View task</value></data>
   <data name="tasks.notification.dismiss"><value>Dismiss</value></data>
+  <data name="tasks.notify.succeeded"><value>Task completed</value></data>
+  <data name="tasks.notify.failed"><value>Task failed</value></data>
+  <data name="tasks.notify.cancelled"><value>Task cancelled</value></data>
   <data name="shell.sidePanel"><value>Details and tasks panel</value></data>
   <data name="shell.sidePanel.hide"><value>Hide panel</value></data>
   <data name="shell.details"><value>Details</value></data>
@@ -350,6 +393,7 @@
   <data name="help.version.title"><value>Version, updates and licenses</value></data>
   <data name="help.version.body"><value>The help header and About page show the installed application version. About can check the administrator-configured HTTPS update feed. When an update is available, review the version and address, then choose Open download address to open it in your default browser. The application does not install updates automatically. Checking again clears the old download entry; closing About cancels its check.&#10;&#10;Help → Third-party license notices displays the THIRD_PARTY_NOTICES.md shipped with this build. The same entry is available from About. Development builds may not include this file. Its absence does not mean there are no third-party dependencies or that release compliance passed.</value></data>
   <data name="help.demo.title"><value>Sample records and CSV</value></data>
+  <data name="nav.advancedTable"><value>Advanced table</value></data>
   <data name="help.demo.body"><value>Select a record to edit it in the standard form. Ctrl+N creates a record; Ctrl+S saves; Cancel discards through the unsaved-changes prompt. Code and name are required. A version conflict requires preserving your input and reloading the current record.&#10;&#10;CSV import: choose encoding, delimiter and source column mapping, inspect the preview, then confirm. The preview is limited to 20 data rows; full validation happens before committing. Maximum input is 5000 rows and 5 MiB. A changed file requires a new preview. Validation errors prevent the whole import and can be exported as a report.&#10;&#10;Export uses the current search condition. Imports and exports continue in the task centre if the page closes. Refresh the list after completion.</value></data>
   <data name="help.spreadsheet.title"><value>Text spreadsheet exchange</value></data>
   <data name="help.spreadsheet.body"><value>The optional XLSX page handles bounded plain-text tables, up to 5000 rows and 5 MiB for import. Preview and confirm the validated content before importing. Formulas, macros, external relationships and non-text cells are rejected.&#10;&#10;Cancelling preview or closing the page stops the local preview. A started import or export belongs to the global task centre. Check the final result before retrying. Office compatibility and performance require separate validation for your deployment.</value></data>
@@ -365,6 +409,14 @@
   <data name="license.status.cancelled"><value>Loading cancelled.</value></data>
   <data name="shell.status.user"><value>User: {0}</value></data>
   <data name="shell.status.environment"><value>Environment: {0}</value></data>
+  <data name="shell.environment.development"><value>Development</value></data>
+  <data name="shell.environment.test"><value>Test</value></data>
+  <data name="shell.environment.production"><value>Production</value></data>
+  <data name="shell.quickOpen.placeholder"><value>Search pages (Ctrl+K)</value></data>
+  <data name="shell.quickOpen.name"><value>Quick open pages</value></data>
+  <data name="shell.quickOpen.results"><value>Page results</value></data>
+  <data name="shell.view.missing"><value>No view for page "{0}"; expected {1}.</value></data>
+  <data name="shell.view.missing.hint"><value>Check the view class name, namespace and x:Class (replace ViewModel with View).</value></data>
   <data name="shell.status.activeTasks"><value>Active tasks: {0}</value></data>
   <data name="shell.health.disabled"><value>Remote checks disabled</value></data>
   <data name="shell.health.passed"><value>Health check passed</value></data>
@@ -425,4 +477,43 @@
   <data name="tasks.result.unknown"><value>not determined</value></data>
   <data name="tasks.result.path"><value>Output file: {0}</value></data>
   <data name="shell.module.failed"><value>{0} could not initialize and is disabled for this session. Other modules remain available. Open related logs or contact support. Correlation ID: {1}</value></data>
+  <data name="backup.exit.confirm" xml:space="preserve"><value>Confirm backup and safely exit for upgrade</value></data>
+  <data name="backup.exit.snapshotNote" xml:space="preserve"><value>The backup contains data saved at the time of the consistent SQLite snapshot. After backup succeeds, you will still be prompted about unsaved changes. Changes saved during exit confirmation and writes after the snapshot are not included. To include those changes, save and wait for writes to finish before creating a backup. Cancelling exit keeps the backup and leaves the app running.</value></data>
+  <data name="backup.exit.stayed" xml:space="preserve"><value>Backup saved to {0}; the app is still running and has not exited. Do not start the upgrade yet.</value></data>
+  <data name="advanced.notice" xml:space="preserve"><value>Local synthetic or explicitly imported snapshot only; no business database connection. Import replaces this page's snapshot after full validation (UTF-8 CSV, 8 MiB, 10,000 rows, 16 groups). Details are paged; subtotals and total cover ALL rows in the applied scope. Groups may span pages.</value></data>
+  <data name="advanced.import" xml:space="preserve"><value>Import CSV snapshot</value></data>
+  <data name="advanced.cancel" xml:space="preserve"><value>Cancel import</value></data>
+  <data name="advanced.csvType" xml:space="preserve"><value>CSV files</value></data>
+  <data name="advanced.search" xml:space="preserve"><value>Search ID, group or label</value></data>
+  <data name="advanced.all" xml:space="preserve"><value>All groups</value></data>
+  <data name="advanced.groupFilter" xml:space="preserve"><value>Group filter (blank means all)</value></data>
+  <data name="advanced.apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="advanced.export" xml:space="preserve"><value>Export applied scope (CSV)</value></data>
+  <data name="advanced.previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="advanced.next" xml:space="preserve"><value>Next</value></data>
+  <data name="advanced.colKind" xml:space="preserve"><value>Kind</value></data>
+  <data name="advanced.colGroup" xml:space="preserve"><value>Group</value></data>
+  <data name="advanced.colLabel" xml:space="preserve"><value>Label</value></data>
+  <data name="advanced.colRows" xml:space="preserve"><value>Rows</value></data>
+  <data name="advanced.colQuantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="advanced.colAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="advanced.scope" xml:space="preserve"><value>Applied scope: search '{0}', group {1}; {2:N0} rows</value></data>
+  <data name="advanced.synthetic" xml:space="preserve"><value>Synthetic local pilot snapshot: {0:N0} rows</value></data>
+  <data name="advanced.host" xml:space="preserve"><value>Host-provided pilot source: {0:N0} rows</value></data>
+  <data name="advanced.imported" xml:space="preserve"><value>Imported local CSV snapshot (this page only): {0:N0} rows</value></data>
+  <data name="advanced.empty" xml:space="preserve"><value>No matching rows</value></data>
+  <data name="advanced.page" xml:space="preserve"><value>Page {0} of {1}; details on this page: {2}</value></data>
+  <data name="advanced.exported" xml:space="preserve"><value>Exported applied-scope detail rows (no summaries) to {0}</value></data>
+  <data name="advanced.importSuccess" xml:space="preserve"><value>CSV snapshot imported. Filters reset; showing the complete imported scope from page 1.</value></data>
+  <data name="advanced.cancelled" xml:space="preserve"><value>Cancelled. The previous snapshot and applied scope are preserved.</value></data>
+  <data name="advanced.denied" xml:space="preserve"><value>Access denied. An authenticated host must explicitly map the CSV import permission. The previous snapshot is preserved.</value></data>
+  <data name="advanced.invalid" xml:space="preserve"><value>CSV validation failed. Use UTF-8 and the exact header Id,Group,Label,Quantity,Amount; limits: 8 MiB, 10,000 rows, 16 groups. The previous snapshot and applied scope are preserved.</value></data>
+  <data name="advanced.failed" xml:space="preserve"><value>Operation failed. The previous snapshot and applied scope are preserved. Try again.</value></data>
+  <data name="advanced.kindGroup" xml:space="preserve"><value>Group</value></data>
+  <data name="advanced.kindSubtotal" xml:space="preserve"><value>Scope subtotal</value></data>
+  <data name="advanced.kindTotal" xml:space="preserve"><value>Scope total</value></data>
+  <data name="advanced.kindDetail" xml:space="preserve"><value>Detail</value></data>
+  <data name="advanced.groupLabel" xml:space="preserve"><value>Group: {0}</value></data>
+  <data name="advanced.subtotalLabel" xml:space="preserve"><value>{0} subtotal (entire scope)</value></data>
+  <data name="advanced.totalLabel" xml:space="preserve"><value>Grand total</value></data>
 </root>

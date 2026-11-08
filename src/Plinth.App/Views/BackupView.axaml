@@ -18,6 +18,8 @@
         <TextBlock Text="{loc:T backup.intro}"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+        <TextBlock Text="{Binding ServerBackupNotice}" IsVisible="{Binding IsServerDatabase}"
+                   TextWrapping="Wrap" Foreground="{DynamicResource PlinthErrorBrush}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Content="{loc:T backup.create}" Click="OnBackupClick" IsEnabled="{Binding CanChooseFile}" />
@@ -29,6 +31,9 @@
     <StackPanel IsVisible="{Binding HasBackupPreview}" Spacing="8">
       <TextBlock Text="{Binding CreatePreview}" TextWrapping="Wrap" />
       <Button Content="{loc:T backup.confirmCreate}" Command="{Binding ConfirmBackupCommand}"
+              IsEnabled="{Binding CanChooseFile}" />
+      <TextBlock Text="{loc:T backup.exit.snapshotNote}" TextWrapping="Wrap" />
+      <Button Content="{loc:T backup.exit.confirm}" Click="OnBackupAndExitClick"
               IsEnabled="{Binding CanChooseFile}" />
     </StackPanel>
     <StackPanel IsVisible="{Binding HasRestorePreview}" Spacing="8">

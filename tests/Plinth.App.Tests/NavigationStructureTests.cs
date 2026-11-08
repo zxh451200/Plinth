@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Plinth.App;
 using Plinth.App.Localization;
+using Plinth.App.Modules.AdvancedTable;
 using Plinth.App.Navigation;
 using Plinth.App.Security;
 using Plinth.App.Services;
@@ -163,6 +165,20 @@ public class NavigationStructureTests
         Assert.False(new DeploymentConfiguration().IncludeSampleModules);
     }
 
+
+    [Fact]
+    public void Advanced_table_pilot_is_gated_off_by_default_and_registers_when_added()
+    {
+        // 试验模块受可信部署项独立控制，默认关闭；显式注册才贡献导航项。
+        Assert.False(new DeploymentConfiguration().EnableAdvancedTablePilot);
+
+        using var provider = new ServiceCollection()
+            .AddAdvancedTableModule()
+            .BuildServiceProvider();
+
+        Assert.Contains(provider.GetServices<NavigationItem>(),
+            item => item.Id == "advancedTable.pilot");
+    }
 
     private sealed class FakePermissions(params string[] granted) : IPermissionService
     {

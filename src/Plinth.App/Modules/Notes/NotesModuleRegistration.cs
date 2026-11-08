@@ -14,14 +14,15 @@ public static class NotesModuleRegistration
         services.AddTransient<NoteService>();
         services.AddTransient<NoteViewModel>();
         services.AddSingleton<HelpTopic>(_ => new("notes.editing", Loc.Get("help.notes.title"),
-            Loc.Get("help.notes.body"), PageId));
+            Loc.Get("help.notes.body"), PageId)
+        { TitleKey = "help.notes.title", BodyKey = "help.notes.body" });
         services.AddSingleton(new CommandMenuContribution(PageId, "menu.file.save",
             page => (page as NoteViewModel)?.SaveCommand, PageCommandAction.Save));
         services.AddSingleton(new CommandMenuContribution(PageId, "notes.reload",
             page => (page as NoteViewModel)?.ReloadCommand));
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(PageId, Loc.Get("notes.title"),
             () => provider.GetRequiredService<NoteViewModel>())
-        { Order = 210, Icon = "\uE70B" });
+        { Order = 210, Icon = "\uE70B", TitleKey = "notes.title" });
         return services;
     }
 }

@@ -289,6 +289,14 @@ public sealed class SpreadsheetService
             if (entry.Length > MaxExpandedBytes - expanded)
                 throw new InvalidDataException("XLSX expanded size limit exceeded.");
             expanded += entry.Length;
+            // Office 会写显式目录条目（xl/、docProps/ 等），它们没有内容也不参与解析；
+            // 只允许零长度的目录条目，带数据的同名条目继续拒绝。
+            if (name.EndsWith("/", StringComparison.Ordinal))
+            {
+                if (entry.Length != 0)
+                    throw new InvalidDataException("XLSX directory entries must be empty.");
+                continue;
+            }
             // Restrict to the basic OpenXML package; no macros, OLE, embedded files or executable payloads.
             // .psmdcp 是 System.IO.Packaging 写出的 OPC 核心属性(仍是 XML)，ClosedXML 0.105+ 会生成它。
             if (!(name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) ||

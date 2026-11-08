@@ -79,9 +79,15 @@ def check(root: Path) -> list[str]:
         for path in root.rglob("*.csproj"):
             if {"bin", "obj"} & set(path.parts):
                 continue
-            for reference in ET.parse(path).getroot().iter("PackageReference"):
+            project = ET.parse(path).getroot()
+            project_versions = versions | {
+                node.attrib["Include"]
+                for node in project.iter("PackageVersion")
+                if "Include" in node.attrib
+            }
+            for reference in project.iter("PackageReference"):
                 package = reference.attrib.get("Include")
-                if package and package not in versions:
+                if package and package not in project_versions:
                     errors.append(f"{path.relative_to(root)}: no central version for {package}")
     except (OSError, ET.ParseError) as ex:
         errors.append(f"Package XML: {ex}")

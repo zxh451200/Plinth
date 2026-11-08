@@ -36,13 +36,22 @@ public partial class HelpViewModel : ViewModelBase
         var query = SearchText.Trim();
         Topics.Clear();
         foreach (var topic in _topics.Where(topic => query.Length == 0
-            || topic.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || topic.Body.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || topic.DisplayTitle.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || topic.DisplayBody.Contains(query, StringComparison.OrdinalIgnoreCase)
             || topic.Key.Contains(query, StringComparison.OrdinalIgnoreCase)
             || topic.ErrorCodes?.Any(code => code.Contains(query, StringComparison.OrdinalIgnoreCase)) == true))
             Topics.Add(topic);
         SelectedTopic = selected is not null && Topics.Contains(selected) ? selected : Topics.FirstOrDefault();
         OnPropertyChanged(nameof(HasTopics));
+    }
+
+    public override void OnUiLanguageChanged()
+    {
+        var selected = SelectedTopic?.Key;
+        FilterTopics();
+        if (selected is not null)
+            SelectedTopic = Topics.FirstOrDefault(topic => topic.Key == selected) ?? SelectedTopic;
+        base.OnUiLanguageChanged();
     }
 
     public void ShowTopic(string? key)

@@ -8,6 +8,7 @@
 Unicode true
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "nsDialogs.nsh"
 
 !ifndef VERSION
   !define VERSION "0.0.0"
@@ -35,6 +36,9 @@ Var ExecutableLock
 Var PreviousExecutable
 Var RemoveInstallationLock
 Var InstallationStarted
+Var UpgradeBackupPath
+Var UpgradeHelper
+Var UpgradeBackupInfo
 !include "${UNINSTALL_MANIFEST}"
 
 !insertmacro MUI_PAGE_WELCOME
@@ -128,6 +132,8 @@ FunctionEnd
 
 Function .onGUIEnd
   Call ReleaseInstallationLock
+  ; 不让工作目录占用临时助手目录，便于 NSIS 退出时清理。
+  SetOutPath "$TEMP"
 FunctionEnd
 
 Function .onInstFailed
@@ -150,16 +156,104 @@ FunctionEnd
 
 Section "Install"
   Call AcquireInstallationLock
+  !insertmacro CheckPublishedPaths install_failed
   IfFileExists "$INSTDIR\Plinth.App.exe" upgrade_prompt 0
   ; 旧安装失败后 EXE 可能缺失，仍不能视为首次静默安装。
   IfFileExists "$INSTDIR\Uninstall.exe" upgrade_prompt 0
+  ; 已有交付锁文件也说明是升级/修复；本次新建锁不能误判为已有安装。
+  StrCmp $RemoveInstallationLock "" upgrade_prompt 0
   ReadRegStr $0 HKCU "${UNINSTALL_KEY}" "DisplayVersion"
   StrCmp $0 "" install_begin upgrade_prompt
   upgrade_prompt:
-    ; 静默升级没有人工备份确认，保守拒绝；首次静默安装仍可用。
+    ; 保留既有策略：静默升级一律拒绝，自动备份不能成为绕过入口。
     IfSilent upgrade_silent
-    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "即将覆盖已有程序。升级前请用旧版的“备份与恢复”创建 ZIP，保存在安装目录及数据目录之外，并记录实际保存位置。默认数据目录：$LOCALAPPDATA\Plinth；PLINTH_DATA_DIR 可改变它。$\r$\n$\r$\n如尚未备份，请取消安装，回到旧版完成备份。确认备份后完全退出所有窗口，再点确定继续。本安装器不会直接复制数据库，也不会删除用户数据。" IDCANCEL upgrade_cancel
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "请先保存业务修改并完全退出应用。安装器将尝试调用旧版创建升级前 ZIP；历史版不支持或程序缺失时，必须选择此前由旧应用创建的 ZIP 并通过新版校验。仅处理本进程 PLINTH_DATA_DIR 指定的数据目录（默认 $LOCALAPPDATA\Plinth），其他数据目录请分别备份。是否继续？" IDCANCEL upgrade_cancel
+    ; 完整可信发布依赖只解压到 NSIS 私有临时目录，不加载安装目录的 DLL。
+    ClearErrors
+    InitPluginsDir
+    IfErrors upgrade_backup_failed
+    StrCpy $UpgradeHelper "$PLUGINSDIR\upgrade-helper"
+    ClearErrors
+    SetOutPath "$UpgradeHelper"
+    IfErrors upgrade_backup_failed
+    File /r /x plinth.install.lock "${PUBLISH_DIR}\*.*"
+    IfErrors upgrade_backup_failed
+    ; deployment.json 不随包交付；必须保留旧部署的授权/生产/数据库策略。
+    System::Call 'kernel32::GetFileAttributesW(w "$INSTDIR\deployment.json") i.r0 ?e'
+    Pop $1
+    IntCmpU $0 0xFFFFFFFF upgrade_deployment_missing upgrade_copy_deployment upgrade_copy_deployment
+  upgrade_deployment_missing:
+    ; 仅文件/父目录不存在才采用默认值；访问被拒绝等错误不能降级策略。
+    IntCmp $1 2 upgrade_no_deployment
+    IntCmp $1 3 upgrade_no_deployment upgrade_backup_failed upgrade_backup_failed
+  upgrade_copy_deployment:
+    IntOp $1 $0 & 0x410
+    IntCmp $1 0 0 upgrade_backup_failed upgrade_backup_failed
+    ClearErrors
+    CopyFiles /SILENT "$INSTDIR\deployment.json" "$UpgradeHelper\deployment.json"
+    IfErrors upgrade_backup_failed
+  upgrade_no_deployment:
+    IfFileExists "$INSTDIR\Plinth.App.exe" 0 upgrade_select_backup
+    CreateDirectory "$LOCALAPPDATA\Plinth-Upgrade-Backups"
+    ClearErrors
+    GetTempFileName $UpgradeBackupPath "$LOCALAPPDATA\Plinth-Upgrade-Backups"
+    IfErrors upgrade_backup_failed
+    ClearErrors
+    Delete "$UpgradeBackupPath"
+    IfErrors upgrade_backup_failed
+    StrCpy $UpgradeBackupPath "$UpgradeBackupPath.zip"
+    ; GetTempFileName 只保留原临时名，不保证追加 .zip 后仍是新路径。
+    ; 不允许旧版未执行命令却以 0 退出时，把已有 ZIP 误判为本次备份。
+    IfFileExists "$UpgradeBackupPath" upgrade_backup_failed 0
+    ; 写句柄会阻止 Windows 启动旧 EXE。目录独占锁在整个调用期间保持。
+    System::Call 'kernel32::CloseHandle(p $ExecutableLock)'
+    StrCpy $ExecutableLock ""
+    ClearErrors
+    ExecWait '"$INSTDIR\Plinth.App.exe" --backup-before-upgrade "$UpgradeBackupPath"' $0
+    IfErrors upgrade_select_backup
+    IntCmp $0 0 upgrade_auto_result upgrade_select_backup upgrade_select_backup
+  upgrade_auto_result:
+    ; 某些历史版可能忽略参数并返回 0；没有新 ZIP 时仍可选择既有备份。
+    IfFileExists "$UpgradeBackupPath" upgrade_verify_backup upgrade_select_backup
+  upgrade_select_backup:
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "旧版自动备份未完成或旧 EXE 缺失。请选择已由旧应用创建的最终 ZIP 备份。若尚未备份，请取消安装；修复安装也必须校验备份。不会忽略失败直接覆盖。" IDCANCEL upgrade_cancel
+    ; 官方 nsDialogs API：mode, initial_selection, filter；取消返回空字符串。
+    nsDialogs::SelectFileDialog open "" "Plinth ZIP backup|*.zip"
+    Pop $UpgradeBackupPath
+    StrCmp $UpgradeBackupPath "" upgrade_cancel
+  upgrade_verify_backup:
+    ClearErrors
+    ExecWait '"$UpgradeHelper\Plinth.App.exe" --inspect-backup-before-upgrade "$UpgradeBackupPath" "$UpgradeHelper\backup-report.txt"' $0
+    IfErrors upgrade_backup_failed
+    IntCmp $0 0 upgrade_backup_ready upgrade_backup_failed upgrade_backup_failed
+  upgrade_backup_ready:
+    ; 助手成功意味着 manifest/大小/hash/数据库完整性和兼容性全部通过。
+    ClearErrors
+    FileOpen $1 "$UpgradeHelper\backup-report.txt" r
+    IfErrors upgrade_backup_failed
+    FileReadUTF16LE $1 $2
+    FileReadUTF16LE $1 $3
+    FileReadUTF16LE $1 $4
+    FileClose $1
+    IfErrors upgrade_backup_failed
+    StrCpy $UpgradeBackupInfo "$2$3$4"
+    ; 子进程已退出，重新检查旧版本占用；仍不强杀或安排重启覆盖。
+    IfFileExists "$INSTDIR\Plinth.App.exe" 0 upgrade_backup_confirm
+    ${If} $ExecutableLock != ""
+      System::Call 'kernel32::CloseHandle(p $ExecutableLock)'
+      StrCpy $ExecutableLock ""
+    ${EndIf}
+    System::Call 'kernel32::CreateFileW(w "$INSTDIR\Plinth.App.exe", i 0xC0000000, i 7, p 0, i 3, i 0x80, p 0) p.r0'
+    StrCpy $ExecutableLock $0
+    IntCmp $ExecutableLock -1 upgrade_backup_failed
+  upgrade_backup_confirm:
+    MessageBox MB_OKCANCEL|MB_ICONINFORMATION "备份校验通过：$UpgradeBackupPath$\r$\n$UpgradeBackupInfo$\r$\n请确认该备份属于本次升级的数据目录，且包含最后保存的修改。清单无法证明它属于当前目录或是最新快照。确认后将替换程序文件。" IDCANCEL upgrade_cancel
     Goto install_begin
+  upgrade_backup_failed:
+    Call ReleaseInstallationLock
+    SetErrorLevel 6
+    MessageBox MB_OK|MB_ICONSTOP "升级前备份校验、授权或程序占用检查失败，已停止覆盖。可能生成的备份保留在 $LOCALAPPDATA\Plinth-Upgrade-Backups。请检查 ZIP、磁盘、权限和部署配置。生产确认、身份授权及服务器数据库限制不能通过手选备份绕过。" /SD IDOK
+    Quit
   upgrade_silent:
     Call ReleaseInstallationLock
     SetErrorLevel 6
@@ -200,6 +294,13 @@ Section "Install"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
+  ; 系统通知身份与点击入口（当前用户，不需要管理员）。通知脚本也写同一项，供便携包使用。
+  WriteRegStr HKCU "Software\Classes\AppUserModelId\${APP_NAME}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKCU "Software\Classes\AppUserModelId\${APP_NAME}" "IconUri" "file:///$INSTDIR/Plinth.App.exe"
+  WriteRegDWORD HKCU "Software\Classes\AppUserModelId\${APP_NAME}" "ShowInSettings" 1
+  WriteRegStr HKCU "Software\Classes\plinth" "" "URL:${APP_NAME} 任务中心"
+  WriteRegStr HKCU "Software\Classes\plinth" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\plinth\shell\open\command" "" "$\"$INSTDIR\Plinth.App.exe$\" $\"plinth://tasks$\""
   IfErrors install_failed
   StrCpy $RemoveInstallationLock ""
   Call ReleaseInstallationLock
@@ -230,6 +331,11 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${APP_NAME}\卸载 ${APP_NAME}.lnk"
   RMDir "$SMPROGRAMS\${APP_NAME}"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
+  ; 只删除本应用写入的通知身份，以及仍指向本安装目录的任务中心协议。
+  DeleteRegKey HKCU "Software\Classes\AppUserModelId\${APP_NAME}"
+  ReadRegStr $0 HKCU "Software\Classes\plinth\shell\open\command" ""
+  StrCmp $0 "$\"$INSTDIR\Plinth.App.exe$\" $\"plinth://tasks$\"" 0 +2
+    DeleteRegKey HKCU "Software\Classes\plinth"
   ; 用户数据(%LOCALAPPDATA%\Plinth)保留,重装后还在
   Goto uninstall_done
   uninstall_failed_locked:

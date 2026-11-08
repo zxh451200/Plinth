@@ -37,6 +37,7 @@ public partial class MainViewModel : ViewModelBase
     private bool _released;
     private Guid? _completedTaskId;
     private readonly CommandMenuContribution[] _commandContributions;
+    private readonly Action _languageChangedHandler;
     private INotifyPropertyChanged? _commandPage;
     private IEnumerable<CommandMenu> AllPageCommands =>
         new[] { NewPageCommand, SavePageCommand, DeletePageCommand, CancelPageCommand }.Concat(ModuleCommands);
@@ -102,6 +103,9 @@ public partial class MainViewModel : ViewModelBase
             ordered.Where(item => item.Section == NavigationSection.Footer));
         if (_sessionEvents is not null) _sessionEvents.SessionChanged += OnSessionChanged;
         Tabs.CollectionChanged += (_, _) => OnTabsChanged();
+        // 弱订阅需要订阅方自己持住委托,否则可能被回收。
+        _languageChangedHandler = OnLanguageChanged;
+        Loc.Subscribe(_languageChangedHandler);
 
         if (preferences?.Layout is { } layout)
         {
@@ -113,7 +117,7 @@ public partial class MainViewModel : ViewModelBase
             SidePanelTab = layout.SidePanelTab;
             foreach (var id in layout.OpenTabIds)
             {
-                if (NavigationItems.FirstOrDefault(item => item.Id == id) is { } item) OpenTab(item);
+                if (VisibleNavigationItems().FirstOrDefault(item => item.Id == id) is { } item) OpenTab(item);
             }
             SelectedTab = Tabs.FirstOrDefault(tab => tab.Id == layout.SelectedTabId) ?? Tabs.FirstOrDefault();
         }
@@ -186,7 +190,11 @@ public partial class MainViewModel : ViewModelBase
         if (item.ResultText.Length > 0)
             TaskNotificationText += Environment.NewLine + item.ResultText;
         HasTaskNotification = true;
+        TaskCompletionNotifier.TryNotify(item.Status);
     });
+
+    /// <summary>系统通知点击/协议启动的受控入口;权限过滤后页面不存在时什么也不做。</summary>
+    public void OpenTaskCenter() => OpenRegisteredPage(ShellNavigation.TaskDiagnosticsId);
 
     [RelayCommand]
     private void DismissTaskNotification()
@@ -284,6 +292,24 @@ public partial class MainViewModel : ViewModelBase
         return ordered;
     }
 
+    /// <summary>切换语言后刷新导航/标签标题、状态栏和已打开页面的自生成文字。</summary>
+    private void OnLanguageChanged()
+    {
+        foreach (var item in NavigationItems) item.RefreshTitle();
+        BuildMenuItems(VisibleNavigationItems());
+        foreach (var tab in Tabs)
+        {
+            if (NavigationItems.FirstOrDefault(item => item.Id == tab.Id) is { } source)
+                tab.Title = source.Title;
+            (tab.Content as IUiLanguageAware)?.OnUiLanguageChanged();
+        }
+        ShellStatus?.Refresh();
+        TabCountText = Loc.Format("shell.status.tabCount", Tabs.Count);
+        // 状态行是上一次操作的瞬时文字,切换语言后回到通用就绪提示。
+        StatusMessage = Loc.Get("shell.status.ready");
+        OnPropertyChanged(string.Empty);
+    }
+
     internal static bool ShouldPreserveUnknownNavigation(bool includeSamples, bool moduleFailed) =>
         !includeSamples && !moduleFailed;
 
@@ -346,6 +372,13 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void ShowTaskPanel()
     {
+        // 状态栏按钮是开关:已经在任务页签时再点一下收起,而不是无反应。
+        if (IsSidePanelVisible && SidePanelTab == 1)
+        {
+            IsSidePanelVisible = false;
+            return;
+        }
+
         IsSidePanelVisible = true;
         SidePanelTab = 1;
         RefreshPanelTasks();
@@ -628,6 +661,7 @@ public partial class MainViewModel : ViewModelBase
         if (_optionalModule is not null) _optionalModule.FailedChanged -= OnOptionalModuleFailed;
         if (_tasks is not null) _tasks.Completed -= OnTaskCompleted;
         if (_sessionEvents is not null) _sessionEvents.SessionChanged -= OnSessionChanged;
+        Loc.Unsubscribe(_languageChangedHandler);
         if (_commandPage is not null) _commandPage.PropertyChanged -= OnCommandPageChanged;
         _commandPage = null;
         foreach (var command in AllPageCommands) command.Dispose();
@@ -687,7 +721,7 @@ public partial class MainViewModel : ViewModelBase
 
     private void OpenRegisteredPage(string id)
     {
-        if (NavigationItems.FirstOrDefault(item => item.Id == id) is { } item) OpenTab(item);
+        if (VisibleNavigationItems().FirstOrDefault(item => item.Id == id) is { } item) OpenTab(item);
     }
 
     /// <summary>关于页和其余页面走同一条注册路径:从注入的导航项里按 Id 找,不在 Shell 里造页面。</summary>

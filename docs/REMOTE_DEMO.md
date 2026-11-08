@@ -78,6 +78,27 @@ totalCount 为非负 Int32；page、pageSize 回显请求。items 不超过 page
 
 写请求不自动重试。网络中断、取消、响应格式错误或账号变化都不能证明服务端没有提交；先查询权威结果再决定下一次操作。本示例不提供离线同步、跨库合并、远程批量导入导出或远程备份。
 
+## 真实验收入口
+
+仓库不包含 API、IdP、账号或测试数据。只有拿到部署方提供的专用 HTTPS 测试地址和短期只读令牌后，才执行远端分页 POC；令牌只放在进程环境中，不放在命令行、文件、测试参数或日志中。以下命令只运行真实 socket 请求，不会创建、更新或删除数据：
+
+```powershell
+$env:PLINTH_REMOTE_POC_ENABLED = "true"
+$env:PLINTH_REMOTE_POC_ENVIRONMENT = "test" # 或 staging
+$env:PLINTH_REMOTE_POC_BASE_URL = "<部署方提供的 HTTPS API 地址，以 / 结尾>"
+$env:PLINTH_REMOTE_POC_TOKEN = "<部署方提供的短期只读 token>"
+$env:PLINTH_REMOTE_POC_EXPECTED_TOTAL = "100000" # 或 1000000，需由服务端独立确认
+$env:PLINTH_REMOTE_POC_DEVICE = "<CPU; physical RAM; resolution; scaling; device tier>"
+dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
+  -p:PlinthRunPoc=true -p:TestingPlatformDotnetTestSupport=true `
+  --filter "FullyQualifiedName~RemotePagingPocTests"
+Remove-Item Env:PLINTH_REMOTE_POC_TOKEN
+```
+
+命令失败时只输出固定安全错误；仍须在服务端按 `X-Correlation-ID` 或安全审计记录排查。若变量不完整，测试会明确 Skip，不会回退到 mock 或探测外部地址。该入口只覆盖 API 的读、分页和响应契约，不证明 OIDC 登录、刷新、换号、权限或 Windows UI 已通过。
+
+真实 IdP 验收必须由具备测试租户的 Windows 环境按部署配置完成：浏览器登录、回调、state/nonce、issuer/audience/过期校验、凭据库保存与清除、刷新轮换、退出、换号清理，以及服务端 401/403 权限拒绝。没有授权 IdP 时不执行探测，也不把内存 token 测试当成真实认证证据。
+
 ## 页面与验证
 
 搜索、排序和页大小先作为草稿，点击“应用搜索和排序”才请求。切换记录、翻页、搜索、新建和关闭均经过未保存确认。页面只持有当前页，不在本机数据库保存远程数据。注销／换号后清除旧结果和编辑内容，重新登录后显式刷新；迟到请求不能发布到新账号页面。
@@ -88,4 +109,4 @@ totalCount 为非负 Int32；page、pageSize 回显请求。items 不超过 page
 
 正常令牌刷新会先保存轮换凭据，再验证 UserInfo；等待验证时保持原身份，避免页面把刷新误认为注销并清除草稿。验证失败仍清理会话，验证成功才发布新的身份和权限。
 
-`RemoteDemoTests` 使用内存 HTTP handler 覆盖 URL、分页校验、强 ETag、权限／确认、取消、账号变化和错误脱敏，`DeploymentConfigurationTests` 覆盖地址与身份门槛。测试源码存在不代表已执行；当前环境无 SDK，也没有真实 API／IdP。发布前须运行 C# 测试，再对实际服务执行登录、分页、权限拒绝、冲突、超时后核对、换号清理和 Windows 页面验收，保留实际证据。
+`RemoteDemoTests` 使用内存 HTTP handler 覆盖 URL、分页校验、强 ETag、权限／确认、取消、账号变化和错误脱敏，`DeploymentConfigurationTests` 覆盖地址与身份门槛；两者已随全量回归执行。`RemotePagingPocTests` 已对一台临时专用本机 HTTPS 只读 API 实际执行 100k／1m 首中末页（数字见 [性能 POC](PERFORMANCE_POC.md)），但该服务不是外部第三方 API。发布前仍须对实际服务执行登录、权限拒绝、冲突、超时后核对、换号清理和 Windows 页面验收，保留实际证据；真实 IdP／第三方 API 仍未验收。

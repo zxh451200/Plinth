@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
 using Microsoft.Extensions.Logging.Abstractions;
+using Plinth.App.Localization;
 using Plinth.App.Services;
 using Plinth.App.Security;
 using Plinth.App.ViewModels;
@@ -16,6 +17,7 @@ namespace Plinth.App.Tests;
 /// 设置文件的读写(§3.4):文件坏了、被手改时,程序要平稳地用默认值,不能启动失败,也不能丢掉用户的原文件。
 /// 测试共用同一个临时数据目录,所以每个测试前后都清掉 settings.json。
 /// </summary>
+[Collection("Localization")]
 public sealed class SettingsTests : IDisposable
 {
     private static string SettingsPath => Path.Combine(AppPaths.DataDirectory, "settings.json");
@@ -162,6 +164,45 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(SettingsService.ThemeDark, service.Current.Theme);
         Assert.Equal(SettingsService.ThemeDark, Create().Current.Theme);
         Assert.Equal("已保存", page.StatusText);
+    }
+
+    [Fact]
+    public void Region_options_list_each_region_once_per_language()
+    {
+        var page = new SettingsViewModel(Create());
+        var duplicates = page.Regions
+            .Where(option => option.Key.Length > 0)
+            .GroupBy(option => RegionIdentity(option.Key), StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => string.Join(" / ", group.Select(option => option.Key)))
+            .ToArray();
+
+        Assert.Empty(duplicates);
+        // 中文按地区各留一条(中国、台湾、香港、澳门、新加坡),不再出现简繁两份。
+        var chinese = page.Regions.Where(option => option.Key.StartsWith("zh-", StringComparison.OrdinalIgnoreCase)).ToArray();
+        Assert.Equal(chinese.Length, chinese.Select(option => RegionIdentity(option.Key)).Distinct().Count());
+    }
+
+    [Fact]
+    public void Region_titles_follow_the_interface_language()
+    {
+        Loc.Initialize("zh-CN");
+        try
+        {
+            var anguilla = new SettingsViewModel(Create()).Regions.Single(option => option.Key == "en-AI");
+            Assert.Contains("英语", anguilla.Title, StringComparison.Ordinal);
+            Assert.DoesNotContain("English (Anguilla)", anguilla.Title, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Loc.Initialize(Loc.DefaultLanguage);
+        }
+    }
+
+    private static string RegionIdentity(string name)
+    {
+        var parts = name.Split('-');
+        return parts.Length < 2 ? name : $"{parts[0]}-{parts[^1]}";
     }
 
     [AvaloniaFact]

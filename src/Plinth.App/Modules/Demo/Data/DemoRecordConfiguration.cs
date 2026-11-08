@@ -18,6 +18,8 @@ public class DemoRecordConfiguration : IEntityTypeConfiguration<DemoRecord>
         builder.Property(record => record.CodeKey).IsRequired().HasMaxLength(300);
         builder.Property(record => record.Name).IsRequired().HasMaxLength(200);
         builder.Property(record => record.Remark).IsRequired().HasMaxLength(500);
+        // 枚举按名字存,换库和直接读库都清楚;未知值在读取时由 EF 拒绝。
+        builder.Property(record => record.Priority).HasConversion<string>().HasMaxLength(16);
         builder.Property(record => record.Version).IsConcurrencyToken();
 
         builder.HasIndex(record => record.CodeKey).IsUnique();

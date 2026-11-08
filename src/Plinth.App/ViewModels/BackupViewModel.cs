@@ -28,7 +28,9 @@ public partial class BackupViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(CanChooseFile))]
     [NotifyPropertyChangedFor(nameof(CanConfirmRestore))]
     public partial bool IsBusy { get; private set; }
-    public bool CanChooseFile => !IsBusy;
+    public bool CanChooseFile => !IsBusy && !IsServerDatabase;
+    public bool IsServerDatabase => Data.DatabaseConfiguration.Current.IsServer;
+    public string ServerBackupNotice => Loc.Get("backup.serverManaged");
     [ObservableProperty]
     public partial string CreatePreview { get; private set; } = "";
     public bool HasBackupPreview => _backupPreview is not null;
@@ -112,7 +114,11 @@ public partial class BackupViewModel : ViewModelBase
         _logger = logger;
         _tasks = tasks;
         _operations = operations ?? backup.Operations;
-        if (BackupService.HasPendingRestore())
+        if (IsServerDatabase)
+        {
+            StatusText = Loc.Get("backup.serverManaged");
+        }
+        else if (BackupService.HasPendingRestore())
         {
             StatusText = Loc.Get("backup.status.pending");
         }
@@ -225,14 +231,40 @@ public partial class BackupViewModel : ViewModelBase
 
     public async Task BackupToAsync(string path)
     {
-        if (IsBusy) return;
+        await CreateBackupAsync(path);
+    }
+
+    /// <summary>只消费当前预览；关闭仍由主窗口执行完整的未保存确认和任务收尾。</summary>
+    public async Task ConfirmBackupAndExitAsync(Func<Task<bool>> requestExit)
+    {
+        if (IsBusy || IsServerDatabase || _backupPreview is not { } preview) return;
+        var version = _pageVersion;
+        ClearBackupPreview();
+        if (!await CreateBackupAsync(preview.Destination) || version != _pageVersion) return;
+        IsBusy = true;
+        try
+        {
+            if (!await requestExit() && version == _pageVersion)
+                StatusText = Loc.Format("backup.exit.stayed", preview.Destination);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "备份成功后退出失败");
+            if (version == _pageVersion) StatusText = Loc.Format("backup.exit.stayed", preview.Destination);
+        }
+        finally { IsBusy = false; }
+    }
+
+    private async Task<bool> CreateBackupAsync(string path)
+    {
+        if (IsBusy) return false;
         ClearBackupPreview();
         IsBusy = true;
         var version = _pageVersion;
         try
         {
             var confirmation = await _backup.ConfirmOperationAsync();
-            if (version != _pageVersion) return;
+            if (version != _pageVersion) return false;
             if (_tasks is null)
             {
                 await _backup.BackupAfterConfirmationAsync(path, confirmation, default);
@@ -246,23 +278,27 @@ public partial class BackupViewModel : ViewModelBase
                 });
                 StatusText = Loc.Get("tasks.queued");
                 await _tasks.WaitAsync(id); // 页面离开不会取消全局任务。
+                var item = _tasks.Snapshot().FirstOrDefault(item => item.Id == id);
                 if (version == _pageVersion)
                 {
-                    var item = _tasks.Snapshot().FirstOrDefault(item => item.Id == id);
                     StatusText = item?.Status == WorkStatus.Succeeded
                         ? Loc.Format("backup.status.done", path)
                         : Loc.Get(item?.Status == WorkStatus.Cancelled ? "backup.status.cancelled" : "backup.status.failed");
                 }
+                if (item?.Status != WorkStatus.Succeeded) return false;
             }
+            return true;
         }
         catch (OperationCanceledException)
         {
             if (version == _pageVersion) StatusText = Loc.Get("backup.status.cancelled");
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "备份失败:{Path}", path);
             if (version == _pageVersion) StatusText = Loc.Get("backup.status.failed");
+            return false;
         }
         finally { IsBusy = false; }
     }

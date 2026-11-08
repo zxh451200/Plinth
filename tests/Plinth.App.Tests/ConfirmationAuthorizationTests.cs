@@ -207,6 +207,32 @@ public sealed class ConfirmationAuthorizationTests : IDisposable
     }
 
     [Fact]
+    public async Task Snapshot_claim_validation_is_opt_in_and_does_not_change_legacy_confirmation()
+    {
+        var users = new Users();
+        var audit = new Audit();
+        var permissions = new Permissions(new PermissionService(users, audit));
+        var authorized = new AuthorizedOperation(permissions, users, audit);
+        var operations = new SensitiveOperationService(authorized, audit,
+            authenticationEnabled: true, production: false);
+        var validateSnapshot = authorized.CaptureSnapshotValidation();
+        var validateSession = authorized.CaptureSessionValidation();
+        var confirmation = await operations.PrepareConfirmedAsync("demo:export", "Demo", "export");
+
+        // The existing grant and session remain valid; only snapshot consumers
+        // reject any change in the full set of claims.
+        users.CurrentUser = users.CurrentUser with
+        {
+            Permissions = users.CurrentUser.Permissions.Add("other:read"),
+        };
+        Assert.Throws<UnauthorizedAccessException>(validateSnapshot);
+        validateSession();
+        Assert.Equal(42, await confirmation.ExecuteAsync(_ => Task.FromResult(42)));
+        Assert.Equal(3, permissions.Correlations.Count);
+        Assert.All(audit.Events, entry => Assert.Equal("success", entry.Result));
+    }
+
+    [Fact]
     public async Task Default_offline_demo_save_still_succeeds()
     {
         var service = new DemoService(_database.Factory, NullLogger<DemoService>.Instance);

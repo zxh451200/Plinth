@@ -11,35 +11,41 @@ from supplemental_compliance import load_supplemental
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD",
-           "OFL-1.1", "Unlicense", "CC0-1.0"}
+           "OFL-1.1", "Unlicense", "CC0-1.0", "PostgreSQL"}
+# PostgreSQL policy reviewed against the pinned Npgsql 9.0.3 / EFCore.PG 9.0.4
+# upstream LICENSE and NuGet nuspec; sources and limits: docs/RELEASE_COMPLIANCE.md.
+# Generation still requires each restored package's actual declaration and text.
 # Manually reviewed file-licensed packages, pinned to exact version. The bundled LICENSE
 # is read verbatim: Avalonia's ANGLE natives ship the standard BSD-3-Clause text.
 EXPLICIT_FILE_LICENSES = {
     ("Avalonia.Angle.Windows.Natives", "2.1.27548.20260419"): "BSD-3-Clause",
 }
 SPDX_SOURCE = "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/"
-SPDX_FALLBACK = "https://spdx.org/licenses/"
 SPDX_CACHE = Path.home() / ".cache" / "plinth-spdx"
 
 
 def fetch_spdx_text(license_id):
-    """Fetch SPDX text with a local cache and a second source; network flakiness must not block packaging."""
-    SPDX_CACHE.mkdir(parents=True, exist_ok=True)
-    cached = SPDX_CACHE / f"{license_id}.txt"
-    if cached.is_file() and cached.stat().st_size > 0:
-        return cached.read_text(encoding="utf-8")
-    errors = []
-    for url in (SPDX_SOURCE + license_id + ".txt", SPDX_FALLBACK + license_id + ".txt"):
-        try:
-            with urllib.request.urlopen(url, timeout=30) as response:
-                text = response.read().decode("utf-8")
-            if text.strip():
-                cached.write_text(text, encoding="utf-8")
-                return text
-            errors.append(f"{url}: empty")
-        except (OSError, ValueError) as error:
-            errors.append(f"{url}: {error}")
-    raise ValueError(f"SPDX text unavailable: {license_id} ({'; '.join(errors)})")
+    """Use only the pinned upstream or its isolated cache; fail if neither is available."""
+    # The URL includes the pinned release. Changing it must never reuse another
+    # release's text, or the legacy unversioned <SPDX_CACHE>/<license_id>.txt.
+    source_key = hashlib.sha256(SPDX_SOURCE.encode("utf-8")).hexdigest()
+    cache_directory = SPDX_CACHE / source_key
+    cache_directory.mkdir(parents=True, exist_ok=True)
+    cached = cache_directory / f"{license_id}.txt"
+    if cached.is_file():
+        text = cached.read_text(encoding="utf-8")
+        if text.strip():
+            return text
+    url = SPDX_SOURCE + license_id + ".txt"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            text = response.read().decode("utf-8")
+        if not text.strip():
+            raise ValueError("empty text")
+    except (OSError, ValueError) as error:
+        raise ValueError(f"SPDX text unavailable: {license_id} ({url}: {error})") from error
+    cached.write_text(text, encoding="utf-8")
+    return text
 
 
 def inside(base, relative):
@@ -49,11 +55,74 @@ def inside(base, relative):
     return result
 
 
+def publish_inventory(packages, publish_directory):
+    """Check all publish packages before filtering; SDK exceptions are coverage gaps.
+
+    Only recognize SDK-generated desktop runtimepack identities with a matching
+    active RID target and runtime/native entries. This never approves a license.
+    """
+    restored = {f"{name}/{version}".casefold() for name, version in packages}
+    shipped, missing, gaps = set(), [], []
+    for deps in sorted(Path(publish_directory).glob("*.deps.json")):
+        data = json.loads(deps.read_text(encoding="utf-8-sig"))
+        target_name = data.get("runtimeTarget", {}).get("name", "")
+        rid = target_name.rsplit("/", 1)[1] if "/" in target_name else ""
+        target = {key.casefold(): value for key, value in
+                  data.get("targets", {}).get(target_name, {}).items()}
+        for key, library in data.get("libraries", {}).items():
+            library_type = library.get("type")
+            if library_type not in {"package", "runtimepack"}:
+                continue
+            shipped.add(key.casefold())
+            if key.casefold() in restored:
+                continue
+            name, version = key.rsplit("/", 1)
+            runtime_name = re.fullmatch(
+                r"runtimepack\.Microsoft\.(?:NETCore|WindowsDesktop)\.App\.Runtime\.([A-Za-z0-9.-]+)",
+                name, re.I)
+            entry = target.get(key.casefold(), {})
+            if (library_type == "runtimepack" and runtime_name and version and rid
+                    and runtime_name[1].casefold() == rid.casefold()
+                    and (entry.get("runtime") or entry.get("native"))):
+                gaps.append({
+                    "package": key, "deps": deps.name, "target": target_name,
+                    "reason": "SDK runtime pack present in publish deps but absent from restored assets; "
+                              "license/native contents not covered by the NuGet inventory. "
+                              "Supplemental evidence is listed separately; no automatic coverage inferred.",
+                })
+            else:
+                missing.append(f"{key} ({deps.name})")
+    if not shipped:
+        raise ValueError("No packaged dependencies found in publish output")
+    if missing:
+        raise ValueError("Publish dependencies missing from restored assets: " + "; ".join(sorted(missing)))
+    return ({key: value for key, value in packages.items()
+             if f"{key[0]}/{key[1]}".casefold() in shipped}, gaps)
+
+
+def file_evidence(path, logical_path):
+    """Identify original evidence bytes; text hashes are labelled separately."""
+    path = Path(path)
+    return {"path": logical_path,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+
 def generate(assets, output, supplemental_file=None, publish_directory=None):
+    assets = [Path(asset) for asset in assets]
+    # Input ordinals refer to the supplied assets order, not host directory names.
+    # Hashes identify original bytes (including any BOM/newlines), never rewritten inputs.
+    asset_paths = [f"inputs/assets/{index}/project.assets.json"
+                   for index in range(1, len(assets) + 1)]
     supplemental_notices, supplemental_components = (
         load_supplemental(supplemental_file) if supplemental_file is not None else ([], []))
+    inputs = {"assets": [file_evidence(asset, logical) for asset, logical in zip(assets, asset_paths)],
+              "publish_deps": [file_evidence(path, f"publish/{path.name}") for path in sorted(
+                  Path(publish_directory).glob("*.deps.json"))] if publish_directory is not None else [],
+              "supplemental": file_evidence(supplemental_file, "inputs/supplemental/inventory.json") if supplemental_file is not None else None}
+    package_sources = {}
     packages = {}
-    for asset in assets:
+    asset_identities = {}
+    for asset, asset_path in zip(assets, asset_paths):
         data = json.loads(asset.read_text(encoding="utf-8-sig"))
         folders = [Path(p) for p in data["packageFolders"]]
         for key, library in data["libraries"].items():
@@ -64,24 +133,18 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
                              if inside(folder, library["path"]).is_dir()), None)
             if location is None:
                 raise ValueError(f"Missing restored package: {key}")
-            packages[(name, version)] = (location, library.get("sha512"))
+            identity = (name.casefold(), version.casefold())
+            original = asset_identities.setdefault(identity, (name, version))
+            packages[original] = (location, library.get("sha512"))
+            package_sources.setdefault(original, []).append(asset_path)
     if not packages:
         raise ValueError("No restored package inventory")
     # Only components actually copied to the publish output ship to users. project.assets.json
     # also lists Debug-only packages that Release publish excludes.
+    restored_identities = set(packages)
+    gaps = []
     if publish_directory is not None:
-        shipped = set()
-        for deps in Path(publish_directory).glob("*.deps.json"):
-            data = json.loads(deps.read_text(encoding="utf-8-sig"))
-            for key, library in data.get("libraries", {}).items():
-                if library.get("type") == "package":
-                    shipped.add(key.casefold())
-        if not shipped:
-            raise ValueError("No packaged dependencies found in publish output")
-        packages = {key: value for key, value in packages.items()
-                    if f"{key[0]}/{key[1]}".casefold() in shipped}
-        if not packages:
-            raise ValueError("Publish dependency filter removed every package")
+        packages, gaps = publish_inventory(packages, publish_directory)
     coverage = (
         "Coverage: restored NuGet inventory plus explicitly supplied supplemental components only. "
         "Not a complete distribution inventory or a compliance/review approval. "
@@ -90,18 +153,40 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
         "Coverage: NuGet-only candidate; no supplemental evidence supplied. "
         "SDK runtime packs, native code, fonts/icons and NSIS remain outside coverage. "
         "Not a complete distribution inventory or a compliance/review approval.")
+    if gaps:
+        coverage += f" Explicit publish runtime coverage gaps: {len(gaps)} (see plinth:uncovered-publish-package)."
+    gap_lines = [f"UNCOVERED: {gap['package']} (deps: {gap['deps']}; target: {gap['target']}): "
+                 f"{gap['reason']}" for gap in gaps]
     notices = ["# Third-party notices", "",
                "Generated from project.assets.json and restored .nuspec files.",
                "Scope: NuGet packages (including build/test dependencies if supplied).",
-               coverage, ""]
+               coverage, "Evidence index and pending materials: coverage-report.json", ""]
+    if gaps:
+        notices.extend(["## Uncovered publish SDK runtime packs", "", *gap_lines, ""])
     components = []
+    package_reports = []
     text_cache = {}
     for (name, version), (location, integrity) in sorted(packages.items()):
         nuspecs = list(location.glob("*.nuspec"))
         if len(nuspecs) != 1:
             raise ValueError(f"Expected one nuspec: {name}/{version}")
         metadata = ET.parse(nuspecs[0]).getroot()
-        fields = {node.tag.rsplit("}", 1)[-1]: node for node in metadata.iter()}
+        # Read direct metadata children only: dependency/extension elements must
+        # never override the package's own identity or attribution.
+        metadata_nodes = [node for node in metadata
+                          if node.tag.rsplit("}", 1)[-1] == "metadata"]
+        if len(metadata_nodes) != 1:
+            raise ValueError(f"Expected one nuspec metadata element: {name}/{version}")
+        fields = {}
+        for node in metadata_nodes[0]:
+            field = node.tag.rsplit("}", 1)[-1]
+            if field in fields:
+                raise ValueError(f"Duplicate nuspec metadata field: {name}/{version}: {field}")
+            fields[field] = node
+        copyright_node = fields.get("copyright")
+        copyright_text = copyright_node.text if copyright_node is not None else None
+        copyright_state = ("missing" if copyright_node is None else
+                           "empty" if not (copyright_text or "").strip() else "present")
         declared_name = fields.get("id")
         declared_version = fields.get("version")
         if declared_name is None or declared_version is None:
@@ -140,9 +225,16 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
                         f"License text source: {text_source}",
                         f"License text SHA256: {hashlib.sha256(text.encode()).hexdigest()}", "",
                         text, ""])
+        if copyright_state == "present":
+            notices.extend(["### NuSpec copyright", "", copyright_text, ""])
+        else:
+            notices.extend([f"NuSpec copyright: {copyright_state}; attribution requires evidence review.", ""])
+        package_root = f"nuget/{name}/{version}"
+        bundled_evidence = []
         # Preserve package-specific copyright / native component notices verbatim.
         for file in sorted(location.rglob("*")):
             if file.is_file() and re.match(r"^(license|licence|notice|copyright)([._-]|$)", file.name, re.I):
+                bundled_evidence.append(file_evidence(file, f"{package_root}/{file.relative_to(location).as_posix()}"))
                 content = file.read_text(encoding="utf-8-sig")  # invalid text fails visibly
                 notices.extend([f"### Bundled text: {file.relative_to(location)}", "", content, ""])
         component = {
@@ -151,6 +243,22 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
             "licenses": [{"license": {"id": selected}}],
             "properties": [{"name": "plinth:declared-license", "value": declaration}],
         }
+        if copyright_state == "present":
+            component["copyright"] = copyright_text
+        package_reports.append({
+            "bom-ref": component["bom-ref"], "name": name, "version": version,
+            "assets": sorted(set(package_sources[(name, version)])),
+            "nuspec": file_evidence(nuspecs[0], f"{package_root}/{nuspecs[0].relative_to(location).as_posix()}"),
+            "copyright": {"status": copyright_state, "text": copyright_text},
+            "license": {"declared": declaration, "selected": selected,
+                        "source": text_source, "text_sha256": hashlib.sha256(text.encode()).hexdigest()},
+            "bundled_texts": bundled_evidence,
+            "pending_materials": (["Locate upstream copyright/attribution evidence and check bundled texts; "
+                                   "missing nuspec copyright does not establish a license violation."]
+                                  if copyright_state != "present" else []) + [
+                "Review package-specific attribution and bundled/native notices against shipped contents; "
+                "SPDX template text alone does not establish completeness."],
+        })
         if not integrity:
             raise ValueError(f"Missing restored package SHA512: {name}/{version}")
         raw_hash = base64.b64decode(integrity[7:] if integrity.startswith("sha512-") else integrity,
@@ -166,16 +274,63 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
     notices.extend(supplemental_notices)
     nuget_count = len(components)
     components.extend(supplemental_components)
+    supplemental_reports = []
+    for component in supplemental_components:
+        properties = component["properties"]
+        supplemental_reports.append({
+            "bom-ref": component["bom-ref"], "name": component["name"], "version": component["version"],
+            "category": next(p["value"] for p in properties if p["name"] == "plinth:supplemental-category"),
+            "source": component["externalReferences"][0]["url"],
+            "texts": [{key: value for key, value in json.loads(p["value"]).items()
+                       if key in {"kind", "path", "sha256"}}
+                      for p in properties if p["name"] == "plinth:supplemental-evidence"],
+        })
+    report = {
+        "schema_version": 1, "coverage": coverage,
+        "distribution_inventory_complete": False, "license_review_approved": False,
+        "inputs": inputs,
+        "evidence_paths": {
+            "inputs/assets": "Supplied assets in command-line order (1-based); SHA256 of original bytes.",
+            "inputs/supplemental": "Explicit supplemental inventory; text paths relative to its directory.",
+            "publish": "Paths relative to the publish directory.",
+            "nuget": "NuGet package name/version followed by path relative to the restored package root.",
+        },
+        "scope": "publish deps package identities" if publish_directory is not None else "restored assets (may include build/test packages)",
+        "excluded_restored_packages": [f"{name}/{version}" for name, version in sorted(restored_identities - set(packages))],
+        "nuget_packages": package_reports, "supplemental_components": supplemental_reports,
+        "uncovered_publish_packages": [dict(gap, pending_materials=[
+            "Supply exact SDK runtime version/RID distribution inventory, upstream LICENSE/NOTICE "
+            "and native component attribution; manually reconcile supplemental evidence."])
+            for gap in gaps],
+        # Categories are checks still to perform, never fabricated inventory items.
+        "pending_scope_checks": [{
+            "category": category, "status": "not-established",
+            "supplied_component_refs": [entry["bom-ref"] for entry in supplemental_reports
+                                        if entry["category"] == category],
+            "pending_materials": "Reconcile actual distribution contents and exact versions with upstream "
+                                 "LICENSE/NOTICE/attribution evidence, or record evidenced non-applicability.",
+        } for category in ("runtime", "native", "font", "icon", "nsis")],
+        "pending_materials": (["Supply publish output deps.json to restrict restored packages to shipped package identities."]
+                              if publish_directory is None else []) + [
+            "Reconcile complete release/installer contents; deps.json is not a full file or native component inventory.",
+            "Record human license/attribution review; generation and evidence hashes are not approval."],
+    }
     output.mkdir(parents=True, exist_ok=True)
+    (output / "coverage-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     (output / "THIRD_PARTY_NOTICES.md").write_text("\n".join(notices), encoding="utf-8")
     (output / "sbom.cdx.json").write_text(json.dumps({
         "bomFormat": "CycloneDX", "specVersion": "1.5", "version": 1,
-        "metadata": {"properties": [{"name": "plinth:coverage", "value": coverage}]},
+        "metadata": {"properties": [{"name": "plinth:coverage", "value": coverage},
+                                     {"name": "plinth:coverage-report", "value": "coverage-report.json"}] + [
+            {"name": "plinth:uncovered-publish-package", "value": json.dumps(gap, sort_keys=True)}
+            for gap in gaps]},
         "components": components,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"Generated notices/SBOM for {nuget_count} restored NuGet packages "
           f"and {len(supplemental_components)} supplemental components")
     print(coverage)
+    for line in gap_lines:
+        print(line)
 
 
 if __name__ == "__main__":

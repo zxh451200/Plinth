@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Plinth.App/Modules/RuntimePlugins/PluginProtocol.cs" Link="PluginProtocol.cs" />
+  </ItemGroup>
+</Project>

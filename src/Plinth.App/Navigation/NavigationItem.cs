@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel;
+using Plinth.App.Localization;
 using Plinth.App.ViewModels;
 
 namespace Plinth.App.Navigation;
@@ -24,10 +26,35 @@ public enum NavigationSection
 /// </summary>
 public sealed record NavigationItem(
     string Id,
-    string Title,
+    string title,
     Func<ViewModelBase> CreateViewModel,
-    bool ShowInMenu = true)
+    bool ShowInMenu = true) : INotifyPropertyChanged
 {
+    private string _title = title;
+    private string? _displayGroupTitle;
+    private bool _showGroupHeader;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string Title
+    {
+        get => _title;
+        set
+        {
+            if (string.Equals(_title, value, StringComparison.Ordinal)) return;
+            _title = value;
+            Raise(nameof(Title));
+        }
+    }
+
+    /// <summary>注册时给显示文字的 key;给了就能在运行中切换语言时刷新标题。</summary>
+    public string? TitleKey { get; init; }
+
+    public void RefreshTitle()
+    {
+        if (TitleKey is { } key) Title = Loc.Get(key);
+    }
+
     public NavigationSection Section { get; init; } = NavigationSection.Business;
 
     public int Order { get; init; } = 500;
@@ -42,8 +69,29 @@ public sealed record NavigationItem(
     public string? GroupTitle { get; init; }
 
     /// <summary>Shell 解析后的组标题(含默认组名),供侧栏模板显示。</summary>
-    public string? DisplayGroupTitle { get; set; }
+    public string? DisplayGroupTitle
+    {
+        get => _displayGroupTitle;
+        set
+        {
+            if (string.Equals(_displayGroupTitle, value, StringComparison.Ordinal)) return;
+            _displayGroupTitle = value;
+            Raise(nameof(DisplayGroupTitle));
+        }
+    }
 
     /// <summary>是否在本项之前渲染组标题,由 Shell 计算。</summary>
-    public bool ShowGroupHeader { get; set; }
+    public bool ShowGroupHeader
+    {
+        get => _showGroupHeader;
+        set
+        {
+            if (_showGroupHeader == value) return;
+            _showGroupHeader = value;
+            Raise(nameof(ShowGroupHeader));
+        }
+    }
+
+    private void Raise(string propertyName) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

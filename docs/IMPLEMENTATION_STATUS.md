@@ -1,6 +1,109 @@
 # 实现与验收状态
 
-更新：2026-11-03。源码接入不等于构建通过或产品验收通过。
+更新：2026-11-08。源码接入不等于构建通过或产品验收通过。
+
+阅读口径：本文件包含历史实施记录。下文旧条目中的“缺少 SDK／锁文件”“C# 尚未运行”等描述，已由本页“2026-11-04 Windows 实机执行”“2026-11-08 Windows 实机构建与测试收口”“2026-11-08 真实数据库、升级与签名验收”和 [当前需求核对表](REQUIREMENTS_STATUS.md) 中的执行记录更新，不再代表当前全局状态。后续新增变更仍须另行验证。
+
+## 2026-11-08 类型化单元格编辑补齐
+
+- Demo 记录新增 `Quantity`（int）、`DueDate`（DateOnly?）、`Priority`（枚举，按名字存储）、`Active`（bool）。表格单元格分别使用 Avalonia 核心 `NumericUpDown`、应用内 `DateField`、`ComboBox` 与 `CheckBox`；表单提供同名字段。四类编辑器与文本单元格共用一份草稿快照，显式保存／取消、脏状态、版本冲突和字段级错误（数量范围、日期范围、枚举合法性）与其他列一致，失焦不提交。
+- 迁移：SQLite `20261108125013_DemoTypedColumns`（固定 `ALTER TABLE`，旧行默认 0／空／Normal／true）、MySQL `20261108125056_DemoTypedColumns`、PostgreSQL `20261108125128_DemoTypedColumns`（增列并设默认值）；三个 Provider 的模型快照同步。SQLite 启动结构校验增加最新版本分支，历史库仍先建安全副本再向前迁移。
+- CSV 导出扩展为 7 列（数量、`yyyy-MM-dd` 日期、枚举名、`true|false`），导入仍只映射编码／名称／备注三列，不静默改写类型列；旧三列文件不受影响。PDF 固定模板保持原有列。
+- 回归：`DemoTypedInlineEditingTests` 覆盖草稿隔离、保存持久化、越界字段拒绝、取消丢弃和仅选中行渲染；`DatabaseSafetyTests` 断言旧库升级后的类型列默认值；`sqlite_migration_smoke.py` 新增增列迁移用例（15 项）。全量 App 1183 项（1181 通过、2 项按设计跳过）、`dotnet format`、510 双语键／452 引用键资源检查及源码契约 0 错误。负控制把更新分支的 `Active` 固定为 `true`，专项测试如期转红，随后按字节还原并核对 md5。
+
+## 2026-11-08 XLSX 真实 Office 样本复核
+
+- 用本机 Excel COM（`Visible=false`、`DisplayAlerts=false`、`AutomationSecurity=ForceDisable`）生成真实 Office 文件：文本工作簿、外部链接工作簿、宏启用扩展。服务实测：文本工作簿导入 2 行 0 错误；外部链接工作簿被 `External workbook relationships are not supported.` 拒绝；`.xlsm` 被扩展名拒绝。
+- 发现并修复真实 Excel 包被误拒：Office 会写 `xl/`、`docProps/` 等零长度目录条目，旧白名单只允许 `.xml`／`.rels`／`.psmdcp`，导致所有真实 Excel 保存的 xlsx 被判“非法部件”。现在零长度目录条目跳过，带数据的同名目录条目仍拒绝；`SpreadsheetServiceTests` 新增回归（套件 48 项），负控制移除跳过后如期转红，按字节还原。
+- 宏内容的真实 Office 样本仍受阻：本机 Excel 信任中心不允许访问 VBA 工程对象模型，宏模块未能生成；合成 `vbaProject.bin` 的拒绝路径仍由现有测试覆盖，没有改动该安全设置。
+- 许可证据：`.nuget/packages/closedxml/0.105.1/closedxml.nuspec` 为 `<license type="expression">MIT</license>`，包内无独立 LICENSE 文件；notices／SBOM 由现有发布工具生成。终审仍属发布决策。
+
+- 测试稳定性：全量并行执行时，`SettingsTests.Region_titles_follow_the_interface_language` 会被并发用例把进程级 `Loc` 改回英文而偶发红。现把 19 个会调用 `Loc.Initialize` 的测试类收进 `[CollectionDefinition("Localization", DisableParallelization = true)]` 集合，与其余集合串行隔离；随后全量 1183 项（1181 通过、2 跳过）连续两次通过（约 5／9 分钟），未再出现该竞争。
+
+## 2026-11-08 二开文档照抄验证
+
+- 把当前工作区（排除 `.git`／`bin`／`obj`／`artifacts`）复制到 `D:\tmp\plinth-newcomer`，严格按 GETTING_STARTED 执行：`dotnet restore --configfile scripts/nuget.config` 成功；`dotnet run --project src/Plinth.App -- --version` 输出 `Plinth 0.1.0`、退出 0。
+- 按「新增一个页面」新增 `NewcomerProbeViewModel`／`NewcomerProbeView`、中英资源、`AddTransient` 和 `NavigationItem` 注册；定向回归 `LocalizationTests`、`NavigationStructureTests`、`ShellTests` 共 53 项通过。视图命名与 ViewModel 的 `ViewLocator` 对应关系工作正常。
+- 按文档 `dotnet ef migrations add ... --project ... --startup-project ...` 实际执行失败：`More than one DbContext was found`。项目有 SQLite／MySQL／PostgreSQL 三个上下文，命令必须带 `--context AppDbContext --output-dir Migrations`；改正后生成成功。`pwsh scripts/add-migration.ps1 NewcomerScript`（`dotnet-ef` 在 PATH）也成功。
+- 据此修正文档：GETTING_STARTED 的迁移命令、页面注册示例（`Loc.Get`＋`TitleKey`＋`AddTransient`＋ViewLocator 命名）、项目结构范围说明，以及“不能编译／POC 未跑／Toast 未实现”等过期状态；SECOND_MODULE 的迁移命令与测试执行状态同步修正。临时副本在验证后删除，不进入仓库。
+
+## 2026-11-08 100k／1m 真实分页 POC 执行
+
+- 用本机已受信任的 ASP.NET 开发证书（`localhost`，未改动证书库）在 `127.0.0.1:5443` 起临时 Node HTTPS 只读 API，契约按 REMOTE_DEMO：`GET /api/demo-records?page&pageSize&search&sortField&descending`，只返回 `page/pageSize/totalCount/items`，记录为 `id/code/name/remark/version`。数据集按索引确定性生成，总量分别设为 100000／1000000；Token 只放在进程环境，不写入文件或日志。
+- 按文档执行 Release POC（`-p:PlinthRunPoc=true`，`RemotePagingPocTests`），两档均通过：100k 首／中／末页（1／1000／2000）**3496.8／22.0／9.2ms**；1m（1／10000／20000）**2710.2／14.8／3.9ms**。每次 50 行，总数与页元数据一致，采样页 ID 不重复；测试宿主工作集约 46→58 MB，托管内存约 1.1→1.7 MB。首次请求含 TLS 握手与 JIT。
+- 首轮数据集把第一条记录的 ID 发成空 Guid，客户端按契约拒绝并判失败；修正测试数据后通过。这是测试服务端的数据生成错误，产品代码未改动，同时验证了 `RemoteRecord` 对 Guid.Empty／字段集合的校验。
+- 边界：临时本机 API 不是外部生产服务，结果只证明客户端只取当前页并对齐契约，不代表服务端延迟／吞吐或桌面性能达标；OIDC、冷启动、首屏、滚动与长期资源趋势仍未测。测试服务、证书私钥与临时文件在验证后删除。
+
+## 2026-11-08 真实数据库、升级与签名验收
+
+- **真实 PostgreSQL 服务器验收**：便携版 PostgreSQL 17.5（EDB binaries zip，解压临时目录、独立实例端口 5433、专用账号与密码）上初始化专用库 `plinth_integration`，显式设置 `PLINTH_TEST_DATABASE_ISOLATED=true` 与 `PLINTH_TEST_DATABASE_PURPOSE=plinth-integration` 后，`DatabaseProviderIntegrationTests.PostgreSql_migrates_and_round_trips_a_demo_record` 真实执行通过（24 秒）：独立迁移集应用到真实服务器、重复初始化幂等、`HasPendingModelChanges` 无模型漂移、Demo 记录写入读回（CodeKey 与中文）、本运行数据清理。
+- **真实 MySQL 服务器验收**：官方 MySQL 8.0.46 winx64 zip 便携实例（独立端口、`--initialize-insecure` 仅限本机、专用库 `plinth_integration`；3307 端口与 phpStudy 的 MariaDB 冲突改用高位端口），`MySql_migrates_and_round_trips_a_demo_record` 真实执行通过（1 分 24 秒），同上覆盖迁移、幂等、模型漂移与 CRUD。MariaDB 不等于 MySQL，未用于 MySQL 验收；本机 phpStudy/MariaDB 的 root 凭据不可用，未尝试绕过。
+- **升级与升级前备份完整演练**：以当前源码构建 0.1.0 与 0.1.1（同一提交、仅版本号提升）两个 NSIS 安装包。0.1.0 静默安装并首次启动创建默认数据目录（`%LOCALAPPDATA%\Plinth`）；应用运行中执行安装被拒绝（退出 5，程序文件与数据不变）；空闲后静默升级被拒（退出 6，`plinth.db` SHA256 `F4256F56…` 不变）；交互升级（键盘驱动向导）退出 0：安装器调用旧版 `--backup-before-upgrade` 生成 ZIP，新版 `--inspect-backup-before-upgrade` 校验通过（Application 0.1.0、Schema `20261102000000_CodeIdentityKeys`、3 文件 50015 字节），覆盖安装后版本 0.1.1、数据库哈希不变、备份保留在 `%LOCALAPPDATA%\Plinth-Upgrade-Backups`。演练后卸载并删除数据目录，恢复机器原状。
+- **签名管线**：`New-SelfSignedCertificate`（CurrentUser，CodeSigningCert）+ `Set-AuthenticodeSignature`（SHA256）对 Setup 与 EXE 签名，自签根加入当前用户受信任根后 `Get-AuthenticodeSignature` 返回 **Valid**；修改已签名文件单字节后签名失效。边界：这是自签名管线验证，不是受信任 CA 的正式分发签名（签名方案属正式分发决策，见根规范）；ZIP 不属于 Authenticode 签名对象。
+- **XLSX 收尾**：宏（`xl/vbaProject.bin`）、外部关系（`evil.rels`）、公式缓存（`.FormulaA1`）与 `.xlsm` 扩展名的导入拒绝测试在套件中真实通过（Spreadsheet 47/47 的一部分）；ClosedXML 0.105.1 许可已进入 NuGet 库存与 notices/SBOM 生成，终审仍属发布前人工项。
+- **通知横幅演练观察（2026-11-08）**：0.1.0 静默安装后经随包 `notify.ps1` 发送 toast 成功（exit 0，AUMID `Plinth`）；UIA 桌面搜索未发现弹出横幅（CoreWindow 0、目标文本不存在）——本机疑似开启勿扰/焦点助手，通知只进入系统通知中心，符合文档既有口径"横幅物理点击与勿扰策略下的人工体验需人工验收"。强行自动化通知中心点击属于模拟而非物理点击，不记为已验收。演练后卸载，`plinth://` 协议键与 AUMID 注册表项均被精确清理（卸载清单契约再次验证）。
+- **干净账户与独立小卷磁盘满演练（2026-11-08）**：以本地标准用户 `PlinthClean`（仅 Users 组，非管理员）运行自包含发布版 `artifacts/publish/win-x64/Plinth.App.exe`，数据目录放在独立 300MB 固定 VHDX（NTFS，卷标 `PLINTH_DRILL`，挂载 X:）；运行前清空该用户的 `%LOCALAPPDATA%\Plinth` 与 `%APPDATA%\Plinth`。干净首启：`--version` 退出 0；GUI 首次启动应用 3 个迁移，`X:\clean-drill` 生成 `plinth.db` 4,096 B、`plinth.db-wal` 74,192 B、`plinth.db-shm` 32,768 B 与 `settings.json` 330 B，进程 25 秒后仍在运行（演练主动结束；非交互会话，未做窗口内容验收）。空卷上以同一账户执行 `--backup-before-upgrade`：退出 0，生成 1,820 B ZIP，源库 SHA-256 `52A37144…` 不变。
+- **磁盘满演练结果**：把 X: 填到报告可用空间 0 B 后，GUI 启动在 `DatabaseInitializer.Initialize` 的 `Migrator.Migrate` 处抛出 `Microsoft.Data.Sqlite.SqliteException`（`SQLite Error 13: 'database or disk is full'`），进程以 .NET 未处理异常码 `-532462766`（`0xE0434352`）退出，留下 0 字节 `plinth.db`；未捕获到产品自身的图形化错误提示（进程直接终止，Windows Error Reporting 的交互行为未评估）。同卷 CLI 备份退出 **8**（`升级前备份创建或校验失败。`），不生成 ZIP，源库 SHA-256 不变，只留下空的 `data` 目录。释放空间后，修复前再次启动被该 0 字节库以 `InvalidDataException`（`数据库不符合已知六列或完整审计历史结构，拒绝自动建立迁移基线。`，`ValidateLegacySchema`）拒绝，并同样以 `0xE0434352` 退出。
+- **0 字节库恢复修复（2026-11-09）**：`DatabaseInitializer` 在启动时把 0 字节且无 `-wal`／`-shm`／`-journal` 的库视为未完成初始化，记录 Warning 后删除并重新迁移；只要存在任一 SQLite 日志就继续拒绝，避免丢弃可能含已提交数据的日志。`DatabaseSafetyTests` 新增 1 个重建用例和 3 个带 sidecar 的拒绝用例，`--filter FullyQualifiedName~DatabaseSafetyTests` 31 项通过；以当前源码 Release 构建做应用级复测：0 字节 `plinth.db` 启动后重建为 4,096 B（WAL 74,192 B、SHM 32,768 B），CLI 备份退出 0（1,912 B ZIP），日志记录 `检测到 0 字节数据库且无 SQLite 日志，按未完成初始化处理并重新建库。`。
+- **结论与边界**：CLI 备份在磁盘满时安全失败（非零退出、无产物、源库不变）；GUI 启动为 fail-fast，不以坏库继续运行，但不是图形化优雅失败。失败留下的 0 字节库曾阻塞后续启动，现已按未完成初始化自动重建（见上条修复）。日志目录位于该用户的 `%LOCALAPPDATA%`（C: 有空间），日志目录磁盘满／只读未覆盖；安装器/升级在磁盘满下的失败回滚、旧版升级与重装恢复未覆盖；演练机仍装有 SDK，不是“真实无 SDK 机器”。证据：`D:\tmp\drill-all-result.txt`、`D:\tmp\drill2-result.txt`、`D:\tmp\drill3-result.txt`、`D:\tmp\plinthclean-logs3\`（演练后账户与卷已删除）。
+- **XLSX 内存 POC**：满额上限负载（5000 行 × 3 列 ~450 字符文本）经真实服务 PreviewAsync/ImportAsync，测试进程分页内存峰值 **61 MiB**（基线 43 MiB、增量 18 MiB）——有界，符合 5000 行／5 MiB／32 MiB 展开上限的预检设计。POC 用临时测试采样，跑完已删除，数字如实记录于此。
+- **自建本地 OIDC IdP 与契约 API 的真实端到端**：为关闭"真实 IdP 验收"清单，按"没有环境就自建测试租户"的口径，在 `D:\tmp\idp`（不入库）实现了本地专用 IdP（HTTPS 5443、自签证书、RS256/JWKS、S256 PKCE、授权码一次性、刷新令牌轮换与登出吊销）及符合 [REMOTE_DEMO 契约](REMOTE_DEMO.md) 的 API（服务端分页/排序/搜索、强 If-Match、`demo:read/save/delete` 权限、409/412/401）。使用产品同库的 Duende OidcClient + 产品 `SignedIdentityTokenValidator`（RS256/issuer/audience/过期），经 **13 项断言全部通过**：discovery、授权码+PKCE 交换、id_token 签名/audience/nonce 校验、身份与权限 claim、UserInfo、API 新建 201/分页 200/If-Match 更新/旧版本 412/无令牌 401、刷新轮换且旧令牌拒绝、end_session state 校验、登出后刷新令牌吊销。loopback 回调由测试 IBrowser 承载（产品注释认可的注入方式）：真实 HTTPS authorize 302 + 真实 loopback 监听捕获；真实浏览器 UI 环节（人输入账号）以自动同意测试租户替代。调试中修正的三个 IdP 自身缺陷（id_token aud 误用 API audience、iat 序列化为 ISO 字符串违反 NumericDate 规范、API 排序键大小写）均发生在测试服务端，产品代码未改动。浏览器内人工输入、桌面 UI 登录流程与真实第三方 IdP 租户管理不在本演练范围。
+
+**仍未验收**：日志目录磁盘满／只读与安装器/升级在磁盘满下的失败回滚（应用启动与 CLI 备份已在上条实测，但 GUI 以未处理异常退出）；正式 CA 代码签名；真实 OS DPI/多显示器/高对比度/IME/Narrator 朗读；通知横幅物理点击；真实第三方 IdP 与符合 REMOTE_DEMO 契约的外部 API 端到端（远程模式未交付时为条件项，本仓库不附带生产 API/IdP）；真实 GitHub CI 运行（推送属外发动作，需仓库所有者确认）。
+
+## 2026-11-08 Windows 实机构建与测试收口
+
+本轮在 Windows 11（SDK 10.0.403）对 2026-11-04 之后全部未编译增量完成 restore、Release 构建、全套测试、格式与离线门禁。此前记录的“新增 C#／XAML 未编译”状态就此关闭；以下修复为本次实机执行暴露后逐一修正的结果。
+
+- 编译错误修复：`AdvancedTableRepository` 对数组使用 `.Count` 被解析为方法组（改 `.Length`）；`OfflineSyncViewModel.ReconcileAsync` 因 pilot 返回非泛型 `Task` 无法推断 `ExecuteAsync<T>` 类型参数（lambda 显式返回 bool）。
+- 警告与路由修复：`DemoListViewModel` 分部方法参数名与生成声明不一致（CS8826）；`ViewLocator.CreateView` 收紧为非空参数（CS8602）；Demo 列表右键菜单改 Tunnel 路由——行内编辑把编辑态单元格换成 TextBox，其类处理器在 Bubble 阶段吞掉 ContextRequested，导致右键已选中行不再打开记录菜单（§2.1/§2.2 回归）。
+- 测试缺陷修复（8 组 29 项）：CommandLineTests 升级备份检查在 WAL 连持时以共享读替代 `File.ReadAllBytes`；DatabaseConfigurationTests 脱敏断言改用 `error.Message`（ToString 会含测试方法名）；ShortcutTests 更新为 9 个快捷键（含 ToggleSidebar）；DockOptionalBoundaryTests 异常断言放宽为基类 `ThrowsAny`；NavigationStructureTests 高级表格项按试点门控语义直测 `AddAdvancedTableModule` 并断言默认关闭；UiAccessibilityTests 主操作按钮改取可见项（行内编辑器与表单各有同文案保存按钮）；DemoListPreferencesTests 列宽拖拽按下点移出 Avalonia 12 TableView 分隔线原生死区（实测仅分隔线左侧按压启动拖拽，产品行为符合 §6.2）；RuntimePlugins 超时／取消用例的 PID 文件读端容忍写端独享窗口、夹具写端带重试（Windows 共享冲突）。
+- 试点宿主修复：`tools/Plinth.PluginPilot`／`tools/Plinth.OfflineSyncPilot` 共享源码改为显式文件清单，排除耦合 Shell／本地化／权限的模块注册文件；`Plinth.DockDemo` 关闭复核集合改为 `IDockBusinessPane` 接口类型；DockUiTests 对齐真实窗口时序（窗口挂树后再赋 Factory/Layout），修复文档窗格在 headless 下不渲染内容的问题。
+- 格式：`dotnet format` 修复上一轮新增文件的全部空白格式问题并通过 `--verify-no-changes` 复验。
+
+执行结果：Release 构建 0 错误；App 1174 项（1172 通过、2 项按设计跳过——`PLINTH_TEST_POSTGRES`／`PLINTH_TEST_MYSQL` 未配置不算通过、0 失败）；Spreadsheet、XLSX 启用变体、Dock 15 项、RuntimePlugins 36 项、OfflineSyncPilot 试点套件全部通过；源码契约 0 错误、498 双语键／440 引用键／39 XML 文件检查通过；Python 工具测试 107 项通过（1 项跳过）、SQLite smoke 14 项通过。修复后全量套件复跑仍全绿。本轮环境曾出现 C 盘零空闲导致 Dock 包恢复失败，清理用户 Temp 与 NuGet HTTP 缓存后恢复；不代表磁盘满故障矩阵已验收。
+
+## 2026-11-08 发布与安装链路实机执行
+
+- `publish.ps1`（无 `-RequireInstaller`）完整执行：11 个项目锁校验、solution 与 win-x64 locked restore、自包含发布、91 个还原 NuGet 包的 notices/SBOM/coverage 生成（NuGet-only 候选；runtimepack 覆盖缺口按设计显式列出，不静默）、ZIP 候选包 `Plinth-0.1.0-win-x64.zip`（SHA256 `2d11cff0…`）通过 `release_checks package`。
+- 发布目录命令行契约复验：`--version` 输出 `Plinth 0.1.0` 退出 0；未知参数本地化提示退出 2。
+- 安装器：`installer/plinth.nsi` 工作区副本曾被编辑工具剥掉 UTF-8 BOM（HEAD 版本带 BOM），已恢复；便携版 NSIS 3.11（解压到临时目录，未改系统）编译 `Plinth-Setup-0.1.0-win-x64.exe` 成功（1 个未使用标签警告），SHA256 `57a29f98…`，通过 `release_checks package`。
+- 安装/卸载冒烟（开发者账户，非干净账户）：静默安装 301 个文件含锁资源、notices/SBOM、`notify.ps1`，`--version` 正常；放置未知文件后静默卸载，程序文件与注册表卸载键删除、未知文件保留。0.0.9→0.1.0 升级与升级前备份演练需要历史版本安装包，仍未执行。
+- 性能 POC 复跑：`-p:PlinthRunPoc=true` 的 `PerformancePocTests`（真实 SQLite／CSV 10k 分页／筛选／保存／导出与 5000 行往返）全部场景通过；本轮未重录阶段耗时，最新分阶段数字仍以 [性能 POC](PERFORMANCE_POC.md) 的既有记录为准。
+- XLSX Office POC（本机已装 Microsoft Office Excel，"仅有 WPS"的旧记录不再成立）：按产品纯文本语义用发布目录同版本 ClosedXML 生成 fixture（中文、18 位长数字文本、日期文本、公式注入文本、`@` 文本格式），真实 Excel COM 打开读取全部正确（18 位长数字无损——数值单元格则受 xlsx 双精度限制只保留 15 位有效数字，产品按设计只接受文本单元格并拒绝数值单元格）；Excel 另存 xlsx 后由 ClosedXML 读回全部无损；截断损坏文件被 ClosedXML 拒绝。宏／外部关系在真实 Office 中的行为、内存 POC 与许可审查未完成，故 XLSX 仍保持默认关闭，不据此启用 `PlinthEnableXlsx`。POC 脚本与产物在 `D:\tmp\xlsx-poc\`（临时目录，不入库）。
+- PowerShell 透传与完整验收入口：本机已有 PowerShell 后，Python 工具测试 107 项全部真实执行（原 8 项因缺 PowerShell 跳过的用例已执行，仅剩 `test_nsis_compiles_with_a_generated_publish_manifest` 一项因 PATH 无 makensis 跳过——把便携版 NSIS 3.11 加入 PATH 后该项也真实执行通过，含生成清单编译与升级备份门禁语义的 13 项安装器测试）；`scripts/acceptance.ps1` 完整验收入口（与 CI 同门禁：工具单测→源码契约→资源集成→SQLite smoke→11 项目锁包→restore→构建→Spreadsheet 47/47→App 1174 项 0 失败）首次整体实机执行通过。内存维度按服务预检上限（5000 行／5 MiB／32 MiB 展开）的拒绝路径已有测试覆盖，进程峰值内存采样未做。
+
+仍然未验收：真实 IdP 端到端、真实 MySQL／PostgreSQL 服务器迁移与 CRUD、干净账户／独立小容量卷磁盘满／代码签名、真实 OS DPI／多显示器／高对比度／IME／Narrator、真实文件选择器／剪贴板／托盘／更新浏览器、XLSX 在 Office 中的兼容 POC、通知横幅物理点击、真实 CI 运行与升级前备份／恢复完整演练。列表见 [需求交付核对表](REQUIREMENTS_STATUS.md)。
+
+## 2026-11-04 继续补齐需求
+
+- 安装器升级前自动备份：交互确认后在目录独占锁下调用旧版 `--backup-before-upgrade`，复用 SQLite 一致性 ZIP、权限与生产确认；校验成功并重新取得旧 EXE 写句柄后才覆盖。失败停止且保留备份，静默升级仍返回 6。只覆盖继承的单个数据目录，历史旧版不支持命令时拒绝。Python 离线检查通过（93 项工具测试含 8 项跳过、14 项 SQLite smoke）；本机缺 dotnet／pwsh／makensis，新增 C# 与 NSIS 编译、真实 Windows 升级路径均未执行，历史 Windows 记录不覆盖本次改动，详见 [升级操作](UPGRADING.md)。
+- 列宽调整（§6.2 Must）：发现全局样式禁用拖拽并隐藏把手，现恢复 `CanUserResizeColumns`，把手只透明绘制而保留命中区。新增真实指针拖拽、偏好落盘与新视图恢复回归，并保留无竖线表头效果。独立静态核对未发现确定问题；尚未执行 Avalonia 回归。
+- 备份辅助升级：新增预览后“确认备份并安全退出以便升级”，复用授权、生产确认、全局备份、未保存确认和退出收尾。失败／取消／离页不自动退出；快照后的写入不属于该备份。它不是安装器自动备份，详见 [升级操作](UPGRADING.md)。新增备份及真实窗口回归仍需运行验证。
+- 真实远端分页 POC：新增默认不编译、必须显式配置后才联网的只读入口，使用真实客户端读取 100k／1m 总量下的首中末页，记录逐页耗时和宿主阶段内存，缺配置明确未执行。不是模拟 API，也不代表已经完成性能验收，运行方式见 [性能 POC](PERFORMANCE_POC.md)。
+- 许可材料：新增 nuspec 直接版权归属保留与 `coverage-report.json`，关联输入、包、声明、正文哈希、排除包及未覆盖项；不推造缺失材料或审批结论。公开报告使用逻辑路径，已接入 publish／ZIP／NSIS 文件链，ZIP 检查要求报告存在且结构有效。
+- 独立核验已修正退出预检前版本捕获时序，并补真实窗口重绑／拒绝后重试回归；真实远端 POC 删除按主机名猜测环境的限制，仍要求显式开关、专用测试配置与 HTTPS。
+- 此轮最终离线检查：工具测试 92 项中 84 项通过、8 项因 PowerShell 条件跳过；SQLite smoke 14 项通过；源码契约 0 错误，461 个双语键／414 个引用键／28 个 XML 文件检查通过；`git diff --check` 通过。工具夹具不证明真实发布许可审查完成。
+- 当前新增 C#／XAML／PowerShell 未在本机编译执行，本机仍缺 dotnet／pwsh。此前 Windows 测试结果不能覆盖这些增量。
+
+## 2026-11-04 并行修复增量
+
+- 数据库配置修复：局部 `database.json` 不再用默认 SQLite 覆盖部署 Provider；服务器连接串按对应驱动校验，失败不暴露原始异常；SQLite 路径使用连接串构建器转义。
+- 迁移保护修复：服务器初始化拒绝未知 Provider，已应用迁移必须是已知列表的连续前缀；SQLite 复用历史校验。服务器 Provider 尚缺独立迁移集与真实数据库验收，不能宣称已正式支持。
+- 数据库回归入口补齐：覆盖配置继承、连接参数秘密不外泄、迁移历史；服务器冒烟改走实际初始化入口并通过新上下文读回。尝试运行 C# 测试因本机 `dotnet` 不存在退出 127，本轮 C# 修改尚未编译。
+- 发布工具修复：SPDX 正文只读取固定上游及按来源隔离的缓存，拒用旧无版本缓存，移除未固定版本备用正文。新增 6 项离线回归；合成正文只验证工具行为。
+- 本轮最终离线检查：工具测试发现 69 项，61 项通过、8 项因缺 PowerShell 跳过；SQLite smoke 14 项通过；源码契约 0 错误；458 个双语键、411 个引用键、28 个 XML 文件检查通过。上述结果不替代 Windows／EF／真实许可及发布包验收。
+
+### 后续实现轮次（验证结果另记）
+
+- `RemoteDemoTests.Large_remote_total_keeps_only_the_requested_page_when_navigating` 新增 100k／1m 总量、50／200 条每页四种客户端回归。使用真实服务与 ViewModel，经受控 HTTP 传输连续向前／向后翻页，核对请求参数、一次操作只请求一页、当前页条数／记录范围及总页数。每次只构造当前页数据；这不是外部服务性能、峰值内存或百万行数据实测。本机缺少 dotnet，新增 C# 用例尚未编译执行。
+- MySQL／PostgreSQL 已各自新增迁移上下文、独立初始迁移 ID、固定目标模型与快照及离线设计时工厂。业务 CRUD 保留 AppDbContext；SQLite 的三段历史 SQL／迁移 ID／目标模型不变。服务器启动按对应上下文检查历史及模型漂移；旧试验库中的 SQLite 迁移 ID 被拒绝，不自动改写。源码已实现，EF 编译、模型一致性及真实服务器迁移仍未验收。
+- 发布库存过滤前核对全部 `.deps.json` 的包身份，普通包缺少 assets 对应时阻断；有限识别的 SDK runtime pack 缺口逐项写入声明、SBOM 元数据与终端，既不静默丢失也不生成虚假覆盖组件。新增 12 项离线回归。
+- 依据固定版本公开 nuspec 与上游正文，许可政策增加 `PostgreSQL`；生成仍检查实际还原声明、正文和 hash，不代表最终包材料审查完成，来源见 [许可记录](RELEASE_COMPLIANCE.md)。
+- 恢复故障回归新增 3 个场景：回滚中最后一项写入受阻（原设置存在／不存在）、已提交恢复的清理受阻，核对连续失败保留事务与安全副本、解除故障后重试及启动幂等。未确认需修改的服务缺陷，仅补回归源码；尚未编译运行。
+- 此轮离线检查：工具测试发现 81 项，73 项通过、8 项缺 PowerShell 跳过；SQLite smoke 14 项通过；源码契约与资源检查通过；`git diff --check` 通过。C#、真实 EF／服务器、Windows 发布与安装尚未在此轮执行。
+- 独立核验后继续修正：真实 `.deps.json` 的 `runtimepack` 类型现在进入未覆盖检查，普通 `package` 不能靠相似名称绕过缺包阻断；迁移上下文借用外部连接时不接管所有权，新增四组连接生命周期回归；服务器模型版本元数据改为实际 EF Core 9.0.22。迁移脚本新增 Provider 参数并显式指定上下文，避免多个上下文时默认命令失败。C#／PowerShell 均尚未运行。
+- 修正后的最终离线结果：工具测试发现 83 项，75 项通过、8 项因 PowerShell／Windows 条件跳过；SQLite smoke 14 项通过；源码契约 0 错误、458 个双语键／411 个引用键／28 个 XML 文件检查通过；`git diff --check` 通过。真实发布库存、服务器及 Windows 验收仍保持未完成。
 
 按规范章节核对的完整交付状态与剩余阻塞见 [需求交付核对表](REQUIREMENTS_STATUS.md)；当前仍不能宣称所有需求完成或可以发布。
 
@@ -11,7 +114,9 @@
 - **性能 PoC**：真实 SQLite／CSV 的 10k 建库、分页／筛选、保存、全量导出及 5000 行新增／更新往返入口已落盘，默认不编译，须显式 `-p:PlinthRunPoc=true`。当前没有耗时、内存或性能达标结论；本环境因 `dotnet` 缺失未编译运行。
 - **补充许可**：显式 runtime／native／font／icon／NSIS 库存的路径、正文、UTF-8、原始字节 SHA-256、重复项及 NuGet 身份冲突校验，以及 notices／CycloneDX SBOM 合并已落盘。补充许可专项 17 项通过，但材料为合成夹具，PowerShell 透传仅静态检查，不能证明真实库存、来源、许可审查或发布包覆盖完整。
 - **当前实际数字与环境阻塞**：Python 工具测试 63 项全部通过（含 8 项 PowerShell 脚本测试），SQLite migration smoke 14 项通过，源码契约 0 个错误。
-- **2026-11-03 Windows 实机执行**：SDK 10.0.403 下 restore、`win-x64` locked restore、Release 构建（0 错误）通过；低危及以上 NuGet 审计无告警；App 测试 897/897、Spreadsheet 47/47、XLSX 启用变体 36/36，TRX 已归档；10k CSV／SQLite 性能 POC 通过；Release ZIP（SHA256 `d07d891d…8e64`）通过 `release_checks`；空目录首次启动、二次启动与命令行退出码符合契约；导航 P1（宿主分区、设置底部、示例模块开关）、P2（图标、36px 密度、48px 折叠轨道、`SidebarCompact` 持久化）与 P3（内缩圆角选中态、Ctrl+K、Alt+数字、系统组权限显隐）已落地，并在 125% 实机截图复核。`dotnet format` 已通过；Setup.exe 已编译并通过安装/升级拒绝/占用拒绝/卸载冒烟。剩余：干净账户故障矩阵、代码签名、UIA／IME／DPI／读屏、真实 API／IdP、系统 Toast。
+- **2026-11-04 Windows 实机执行**：SDK 10.0.403 下 restore、`win-x64` locked restore、Release 构建（0 错误）通过；低危及以上 NuGet 审计无告警；App 测试 917/917、Spreadsheet 47/47、XLSX 启用构建 956/956，TRX 已归档；10k CSV／SQLite 性能 POC 通过；Release ZIP 通过 `release_checks`；空目录首次启动、二次启动与命令行退出码符合契约；导航 P1（宿主分区、设置底部、示例模块开关）、P2（图标、36px 密度、48px 折叠轨道、`SidebarCompact` 持久化）与 P3（内缩圆角选中态、Ctrl+K、Alt+数字、系统组权限显隐）已落地，并在 125% 实机截图复核。`dotnet format` 已通过。安装器通过拒写（5）、提取失败（7）、中途被杀后恢复、静默升级拒绝（6）、交互取消（1）、0.0.9→0.1.0 交互升级、占用卸载拒绝与重装卸载保留数据；系统 Toast 已接入并进入 Windows 通知历史，`plinth://tasks` 冷启动和已有实例均进入任务中心，安装器写入并在卸载时清理 AUMID／协议。UIA 树已实测，快速打开结果的读屏名称修复为页面标题；100/125/150/200% 渲染缩放断言通过。Demo 页新增固定模板 PDF 导出/打印与二维码；SkiaSharp（MIT）+ QRCoder（MIT），文字转矢量轮廓避免嵌入整套 CJK 字体。数据库改为 SQLite 默认、MySQL（Pomelo 9）／PostgreSQL（Npgsql 9）可选，EF Core 固定在 9.0.x；服务器库启动向前迁移，SQLite 历史库路径不变，应用内备份页明确只支持 SQLite。剩余：干净账户／磁盘满矩阵、代码签名、真实 OS DPI／IME／Narrator、真实 API／IdP、通知横幅物理点击、真实打印机与 PDF 阅读器兼容。
+- **2026-11-04 选中底色通栏**：侧栏导航行、快速打开结果、设置页 5 个可搜索下拉的选中／悬停底色改为左右通栏（去掉列表内边距、行内缩进、行圆角与弹层上下留白），悬浮滚动条不占列宽；Fluent 原生 ComboBox／菜单弹层的首尾 4px 内边距用 `ComboBoxDropdownContentMargin`／`MenuFlyoutScrollerMargin` 资源归零。日期字段未选时显示字段名（起始日期／截止日期）并带日历图标，选中值按当前区域短日期格式（`d`）显示，不再暴露 `<yyyy/M/d>` 格式串。`ShellTests`、`SearchSelectTests`、`PopupBleedTests`、`DateFieldTests` 各加门禁，旧样式下均转红。此前 P3 的“内缩圆角选中态”作废。
+- **2026-11-04 交互细节收口**：字段按钮（下拉／日期）按下态改用应用浅灰 #F2F4F7，不再闪 Fluent 的 40% 黑底（白底上呈 #999）；侧栏汉堡图标改为矢量三横线，展开态与导航图标左缘对齐（22），展开／折叠纵向位置一致，消除字体字形的亚像素跳动；移除子菜单弹层的 -4px 手工垂直偏移，面板顶边与父项顶边齐平。
 
 ## 已接入源码
 

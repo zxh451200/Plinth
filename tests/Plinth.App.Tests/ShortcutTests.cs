@@ -17,7 +17,9 @@ public sealed class ShortcutTests
     public void Defaults_are_unique_and_matching_requires_the_exact_modifiers()
     {
         AppShortcuts.Validate(AppShortcuts.All);
-        Assert.Equal(8, AppShortcuts.All.Count);
+        Assert.Equal(9, AppShortcuts.All.Count);
+        Assert.Equal(ShortcutAction.ToggleSidebar, AppShortcuts.Match(
+            new KeyEventArgs { Key = Key.B, KeyModifiers = KeyModifiers.Control }, isTextInput: true));
         Assert.Equal(ShortcutAction.Save, AppShortcuts.Match(
             new KeyEventArgs { Key = Key.S, KeyModifiers = KeyModifiers.Control }, isTextInput: true));
         Assert.Null(AppShortcuts.Match(new KeyEventArgs

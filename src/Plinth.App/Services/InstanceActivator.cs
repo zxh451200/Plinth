@@ -35,19 +35,32 @@ public sealed class InstanceActivator : IDisposable, IAsyncDisposable
     private string PipeName => $"Plinth.Activate.{_instanceId}";
 
     /// <summary>别的实例要求激活本实例时触发(在后台线程触发,订阅者自己回到界面线程)。</summary>
-    public event Action? ActivationRequested;
+    public event Action<ActivationIntent>? ActivationRequested;
 
     /// <summary>通知已经在运行的实例。通知成功返回 true;连不上(没有实例在监听)返回 false。</summary>
-    public static bool TryNotifyRunningInstance() => TryNotifyRunningInstance(TestInstanceId ?? InstanceId);
+    public static bool TryNotifyRunningInstance() => TryNotifyRunningInstance(ActivationIntent.Show);
 
-    internal static bool TryNotifyRunningInstance(string instanceId)
+    /// <summary>通知已有实例并带上受控入口(普通启动或系统通知点击)。</summary>
+    public static bool TryNotifyRunningInstance(ActivationIntent intent) =>
+        TryNotifyRunningInstance(TestInstanceId ?? InstanceId, intent);
+
+    internal static bool TryNotifyRunningInstance(string instanceId, ActivationIntent intent = ActivationIntent.Show)
     {
         try
         {
             using var client = new NamedPipeClientStream(".", $"Plinth.Activate.{instanceId}",
                 PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(1500);
-            // 激活在服务端接受连接时触发；不要再写字节。未读取的管道写入可能永久阻塞。
+            // 服务端读完一个字节才触发回调;写入失败不算通知失败,连接本身已经唤醒监听。
+            try
+            {
+                client.WriteByte((byte)(intent == ActivationIntent.TaskCenter ? 1 : 0));
+                client.Flush();
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or InvalidOperationException)
+            {
+            }
+
             return true;
         }
         catch (Exception ex) when (ex is TimeoutException or System.IO.IOException or UnauthorizedAccessException)
@@ -139,7 +152,24 @@ public sealed class InstanceActivator : IDisposable, IAsyncDisposable
             {
                 server.WaitForConnection();
                 if (cancellationToken.IsCancellationRequested) return;
-                ActivationRequested?.Invoke();
+                var intent = ActivationIntent.Show;
+                try
+                {
+                    // 旧客户端连接后不写字节：短暂等待后按普通激活处理。
+                    // 管道是异步流，不支持 ReadTimeout，用带超时的 ReadAsync 同步等待。
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(400));
+                    var buffer = new byte[1];
+                    var read = server.ReadAsync(buffer, 0, 1, timeout.Token).GetAwaiter().GetResult();
+                    if (read == 1 && buffer[0] == 1)
+                    {
+                        intent = ActivationIntent.TaskCenter;
+                    }
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or OperationCanceledException)
+                {
+                }
+
+                ActivationRequested?.Invoke(intent);
             }
             catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
                 or ObjectDisposedException)

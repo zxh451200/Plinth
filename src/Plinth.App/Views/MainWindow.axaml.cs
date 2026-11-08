@@ -122,6 +122,7 @@ public partial class MainWindow : Window
             ShortcutAction.CloseTab => vm.CloseTabCommand,
             ShortcutAction.Refresh => vm.RefreshCommand,
             ShortcutAction.Help => vm.ShowHelpCommand,
+            ShortcutAction.ToggleSidebar => vm.ToggleSidebarCompactCommand,
             _ => null,
         };
         if (command?.CanExecute(null) == true)
@@ -311,20 +312,37 @@ public partial class MainWindow : Window
         if (!e.Cancel) base.OnClosing(e);
     }
 
-    private async Task RequestCloseAsync(Task<bool> preparation, MainViewModel owner, long contextVersion)
+    // 与窗口关闭共用检查及收尾；不直接 Shutdown，也不提前释放单实例/数据锁。
+    public Task<bool> RequestExitAsync()
+    {
+        if (_closePending || _closeApproved || !IsVisible || DataContext is not MainViewModel vm)
+            return Task.FromResult(false);
+        _closePending = true;
+        vm.SidebarWidth = vm.IsSidebarVisible && !vm.IsSidebarCompact
+            ? ShellGrid.ColumnDefinitions[0].Width.Value : _sidebarWidth;
+        vm.SidePanelWidth = vm.IsSidePanelVisible ? ShellGrid.ColumnDefinitions[4].Width.Value : _sidePanelWidth;
+        // 预检的同步段也可能重绑 DataContext，必须在启动预检前捕获版本。
+        var contextVersion = _closeContextVersion;
+        var preparation = vm.PrepareExitAsync();
+        return RequestCloseAsync(preparation, vm, contextVersion);
+    }
+
+    private async Task<bool> RequestCloseAsync(Task<bool> preparation, MainViewModel owner, long contextVersion)
     {
         try
         {
-            if (!await preparation) return;
-            if (contextVersion != _closeContextVersion || !ReferenceEquals(DataContext, owner)) return;
+            if (!await preparation) return false;
+            if (contextVersion != _closeContextVersion || !ReferenceEquals(DataContext, owner)) return false;
             _closeApproved = true;
             Close();
+            return !IsVisible;
         }
         catch (Exception ex)
         {
             Serilog.Log.Error(ex, "检查工作区关闭条件失败");
             if (contextVersion == _closeContextVersion && ReferenceEquals(DataContext, owner))
                 owner.StatusMessage = Loc.Get("shell.unsaved.failed");
+            return false;
         }
         finally { _closePending = false; }
     }

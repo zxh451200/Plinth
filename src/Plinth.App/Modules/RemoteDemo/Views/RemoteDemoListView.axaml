@@ -11,13 +11,19 @@
       <Button Content="{loc:T remoteDemo.refresh}" Command="{Binding RefreshCommand}" />
     </StackPanel>
     <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" IsEnabled="{Binding CanInteract}">
+      <WrapPanel.Styles>
+        <Style Selector="Button"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+        <Style Selector="TextBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+        <Style Selector="ComboBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+        <Style Selector="CheckBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+      </WrapPanel.Styles>
       <Button Content="{loc:T demo.new}" Command="{Binding NewCommand}" />
       <TextBox x:Name="SearchBox" Width="220" Text="{Binding SearchText}" MaxLength="200"
                PlaceholderText="{loc:T demo.search.placeholder}" AutomationProperties.Name="{loc:T demo.search.name}" />
-      <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}"
+      <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}" Width="150"
                 AutomationProperties.Name="{loc:T demo.list.sort}" />
       <CheckBox Content="{loc:T demo.list.descending}" IsChecked="{Binding Descending}" />
-      <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}"
+      <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" Width="90"
                 AutomationProperties.Name="{loc:T demo.list.pageSize}" />
       <Button Content="{loc:T remoteDemo.search}" Command="{Binding SearchCommand}" />
       <Button Content="{loc:T demo.list.edit}" Click="OnEditRecordClick" IsEnabled="{Binding CanDelete}" />

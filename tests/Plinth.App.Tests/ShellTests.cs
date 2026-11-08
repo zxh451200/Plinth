@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -38,6 +39,61 @@ public class ShellTests
         Assert.True(
             shell.Workspace.Bounds.X <= shell.Sidebar.Bounds.Right + shell.Splitter.Bounds.Width + 1,
             $"工作区起点 {shell.Workspace.Bounds.X} 与侧栏右缘 {shell.Sidebar.Bounds.Right} 之间不该有空白");
+    }
+
+    [AvaloniaFact]
+    public void Navigation_selection_fills_the_sidebar_width()
+    {
+        using var shell = new Shell();
+        shell.Layout();
+
+        var list = shell.NavList;
+        var selected = list.GetVisualDescendants().OfType<ListBoxItem>().First(item => item.IsSelected);
+        var row = selected.GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("navRow"));
+        var origin = row.TranslatePoint(new Avalonia.Point(0, 0), list)!.Value;
+
+        // 选中底色左缘贴住列表、右缘到侧栏边:两侧都不留灰条。
+        Assert.Equal(0, origin.X, 1);
+        Assert.Equal(list.Bounds.Width, row.Bounds.Width, 1);
+    }
+
+    [AvaloniaFact]
+    public void Hamburger_icon_aligns_with_nav_icons_and_does_not_shift_between_states()
+    {
+        using var shell = new Shell();
+        shell.Layout();
+
+        var toggle = shell.Window.FindControl<Button>("NavigationToggle")!;
+        var glyph = toggle.GetVisualDescendants().OfType<Canvas>().Single(canvas => canvas.Name == "NavigationGlyph");
+        var icon = shell.NavList.GetVisualDescendants().OfType<ListBoxItem>().First()
+            .GetVisualDescendants().OfType<TextBlock>().First(block => Math.Abs(block.FontSize - 16) < 0.1);
+
+        var expanded = glyph.TranslatePoint(new Avalonia.Point(0, 0), shell.Window)!.Value;
+        var navIcon = icon.TranslatePoint(new Avalonia.Point(0, 0), shell.Window)!.Value;
+        Assert.Equal(navIcon.X, expanded.X, 1);
+
+        shell.ViewModel.ToggleSidebarCompactCommand.Execute(null);
+        shell.Layout();
+        var compact = glyph.TranslatePoint(new Avalonia.Point(0, 0), shell.Window)!.Value;
+
+        // 矢量图标在两个状态下垂直位置一致;字体字形曾出现 1px 跳动。
+        Assert.Equal(expanded.Y, compact.Y, 1);
+    }
+
+    [AvaloniaFact]
+    public void Quick_open_rows_fill_the_panel_width()
+    {
+        using var shell = new Shell();
+        shell.Press(Key.K, PhysicalKey.K, RawInputModifiers.Control);
+        shell.Layout();
+
+        var panel = shell.Window.FindControl<Border>("QuickOpenPanel")!;
+        var list = shell.Window.FindControl<ListBox>("QuickOpenList")!;
+        var item = list.GetVisualDescendants().OfType<ListBoxItem>().First();
+        var origin = item.TranslatePoint(new Avalonia.Point(0, 0), panel)!.Value;
+
+        Assert.Equal(panel.BorderThickness.Left, origin.X, 1);
+        Assert.Equal(panel.Bounds.Width - panel.BorderThickness.Right, origin.X + item.Bounds.Width, 1);
     }
 
     [AvaloniaFact]
@@ -285,6 +341,55 @@ public class ShellTests
         shell.ClickCenter(closeButton);
 
         Assert.DoesNotContain(shell.ViewModel.Tabs, tab => tab.Title == "概览");
+    }
+
+    [AvaloniaFact]
+    public void Submenu_opens_beside_the_parent_menu_instead_of_covering_it()
+    {
+        using var shell = new Shell();
+        shell.ViewModel.RecentPages.Add(shell.ViewModel.MenuItems[0]);
+        shell.Layout();
+        var file = (MenuItem)shell.Window.GetVisualDescendants().OfType<Menu>().First().Items[0]!;
+        file.IsSubMenuOpen = true;
+        Dispatcher.UIThread.RunJobs();
+        shell.Layout();
+        var recent = file.Items.OfType<MenuItem>().First(item => item.Classes.Contains("submenu"));
+        recent.IsSubMenuOpen = true;
+        Dispatcher.UIThread.RunJobs();
+        shell.Layout();
+
+        var child = (MenuItem)recent.ContainerFromIndex(0)!;
+        var parentLeft = recent.TranslatePoint(new Point(0, 0), shell.Window)!.Value.X;
+        var childLeft = child.TranslatePoint(new Point(0, 0), shell.Window)!.Value.X;
+        Assert.True(childLeft - (parentLeft + recent.Bounds.Width) >= 1,
+            $"子菜单左缘 {childLeft} 应落在父菜单右缘 {parentLeft + recent.Bounds.Width} 之外，不能压住父菜单");
+    }
+
+    [AvaloniaFact]
+    public void Tab_close_button_is_a_small_square_not_a_stretched_pill()
+    {
+        using var shell = new Shell();
+        var closeButton = shell.TabCloseButton("概览");
+
+        Assert.InRange(closeButton.Bounds.Width, 16, 20);
+        Assert.InRange(closeButton.Bounds.Height, 16, 20);
+    }
+
+    [AvaloniaFact]
+    public void Status_bar_keeps_every_field_on_a_single_row()
+    {
+        using var shell = new Shell();
+        shell.Layout();
+        var connection = shell.Window.GetVisualDescendants().OfType<Button>()
+            .Single(button => button.Name == "ConnectionStatusButton");
+        var task = shell.Window.GetVisualDescendants().OfType<Button>()
+            .Single(button => button.Name == "TaskStatusButton");
+        var bar = connection.GetVisualAncestors().OfType<Border>().First();
+
+        Assert.InRange(bar.Bounds.Height, 24, 36);
+        var connectionY = connection.TranslatePoint(new Point(0, 0), bar)!.Value.Y;
+        var taskY = task.TranslatePoint(new Point(0, 0), bar)!.Value.Y;
+        Assert.Equal(connectionY, taskY, 1);
     }
 
     [AvaloniaFact]

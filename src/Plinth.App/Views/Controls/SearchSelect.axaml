@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:Plinth.App.Localization"
+             x:Class="Plinth.App.Views.Controls.SearchSelect">
+
+  <UserControl.Styles>
+    <Style Selector="Button#FieldButton">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.placeholder">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+    </Style>
+    <!-- 选中底色通栏:行本身不缩进、不切角,文字缩进由内部的 Margin 负责 -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <!-- 滚动条收窄并去掉轨道底色,避免列表右侧挂一条灰槽 -->
+    <Style Selector="ListBox ScrollBar">
+      <Setter Property="Width" Value="6" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox ScrollBar:vertical /template/ Thumb">
+      <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="MinHeight" Value="24" />
+    </Style>
+  </UserControl.Styles>
+
+  <Button x:Name="FieldButton" Classes="field" Click="OnFieldClick">
+    <Button.Flyout>
+      <Flyout Placement="BottomEdgeAlignedLeft">
+        <Border x:Name="PopupCard" BorderThickness="0" CornerRadius="8"
+                Padding="0" MinWidth="220" BoxShadow="0 6 16 0 #33000000" ClipToBounds="True">
+          <StackPanel Spacing="8">
+            <!-- 弹层不留内边距:首行贴着上边,搜索框自己缩进 -->
+            <TextBox x:Name="SearchBox" PlaceholderText="{loc:T common.search}" Margin="8,8,8,0" />
+            <TextBlock x:Name="EmptyText" Text="{loc:T common.noMatch}" IsVisible="False"
+                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" Margin="12,8,12,0" />
+            <!-- 列表左右不留白:选中/悬停底色一路铺到弹层边,文字靠行内 Margin 缩进 -->
+            <ListBox x:Name="OptionsList" Background="Transparent" BorderThickness="0" MaxHeight="320"
+                     Padding="0" SelectionChanged="OnOptionSelected" />
+          </StackPanel>
+        </Border>
+      </Flyout>
+    </Button.Flyout>
+    <TextBlock x:Name="ValueText" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+  </Button>
+</UserControl>

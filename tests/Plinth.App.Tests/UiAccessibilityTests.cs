@@ -24,6 +24,7 @@ namespace Plinth.App.Tests;
 /// 真实 Shell 的语义、键盘和布局回归；不代表 Windows UIA、IME 或像素验收。
 /// 六个页面状态 + 一个长标题状态 + 三个语言/尺寸状态，共十个用例。
 /// </summary>
+[Collection("Localization")]
 public sealed class UiAccessibilityTests
 {
     [AvaloniaTheory]
@@ -150,9 +151,11 @@ public sealed class UiAccessibilityTests
                     ShellNavigation.AboutId => "about.update.check",
                     _ => "demo.save",
                 };
+                // 行内编辑器与标准表单可能各有一个同文案主按钮，取当前可见的那个。
                 var action = page.GetVisualDescendants().OfType<Button>()
-                    .Single(button => button.Content as string == Loc.Get(actionKey));
-                Assert.True(IsShown(action), $"{pageId}: {language} 主操作不可见。");
+                    .Where(button => button.Content as string == Loc.Get(actionKey))
+                    .FirstOrDefault(IsShown);
+                Assert.True(action is not null, $"{pageId}: {language} 主操作不可见。");
                 CheckName(action, errors);
                 CheckTabTraversal(shell, [action], RawInputModifiers.None, errors);
                 // 遍历会触发 ScrollViewer 的焦点滚动，再检查目标的实际位置。
@@ -218,7 +221,7 @@ public sealed class UiAccessibilityTests
         visual.IsVisible && visual.GetVisualAncestors().All(ancestor => ancestor.IsVisible);
 
     private static bool IsInput(Control control) =>
-        control is Button or TextBox or ComboBox or NumericUpDown or DatePicker or CalendarDatePicker;
+        control is Button or TextBox or ComboBox or NumericUpDown;
 
     private static Control[] InputControls(Control page) =>
         page.GetVisualDescendants().OfType<Control>()

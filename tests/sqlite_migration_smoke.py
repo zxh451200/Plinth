@@ -32,8 +32,12 @@ NOTES_SOURCE = SOURCE.with_name("20261101010000_NotesEntries.cs").read_text()
 NOTES_DDL = re.search(r'CreateSql = """(.*?)""";', NOTES_SOURCE, re.S).group(1)
 IDENTITY_SOURCE = SOURCE.with_name("20261102000000_CodeIdentityKeys.cs").read_text()
 IDENTITY_SQL = re.search(r'UpgradeSql = """(.*?)""";', IDENTITY_SOURCE, re.S).group(1)
+TYPED_SOURCE = SOURCE.with_name("20261108125013_DemoTypedColumns.cs").read_text()
+TYPED_DDL = re.search(r'AddColumnsSql = """(.*?)""";', TYPED_SOURCE, re.S).group(1)
+TYPED_DESIGNER = SOURCE.with_name("20261108125013_DemoTypedColumns.Designer.cs").read_text()
 NOTES_ID = "20261101010000_NotesEntries"
 IDENTITY_ID = "20261102000000_CodeIdentityKeys"
+TYPED_ID = "20261108125013_DemoTypedColumns"
 TABLES = ("demo_records", "notes_entries")
 
 
@@ -115,19 +119,43 @@ class SqliteMigrationSmoke(unittest.TestCase):
     def test_snapshot_and_new_frozen_target_match(self):
         # 静态检查不代替 EF HasPendingModelChanges 或 C# 编译。
         snapshot = SOURCE.with_name("AppDbContextModelSnapshot.cs").read_text()
-        pattern = r"protected override void %s\(ModelBuilder modelBuilder\)\s*\{(.*?)\n    \}"
-        migration_model = re.search(pattern % "BuildTargetModel", IDENTITY_SOURCE, re.S).group(1)
+        pattern = r"protected override void %s\(ModelBuilder modelBuilder\)\s*\{(.*?)\n        \}"
+        migration_model = re.search(pattern % "BuildTargetModel", TYPED_DESIGNER, re.S).group(1)
         snapshot_model = re.search(pattern % "BuildModel", snapshot, re.S).group(1)
         self.assertEqual(re.sub(r"\s+", " ", migration_model).strip(),
                          re.sub(r"\s+", " ", snapshot_model).strip())
-        self.assertEqual(migration_model.count('entity.HasIndex("CodeKey").IsUnique();'), 2)
-        self.assertEqual(migration_model.count(
-            'entity.Property<string>("CodeKey").IsRequired().HasMaxLength(300).HasColumnType("TEXT");'), 2)
+        self.assertIn('b.Property<string>("Priority")', migration_model)
+        self.assertIn('b.Property<DateOnly?>("DueDate")', migration_model)
+        self.assertIn("b.HasIndex(\"CodeKey\")", migration_model)
+        self.assertEqual(migration_model.count('b.Property<string>("CodeKey")'), 2)
+        self.assertEqual(migration_model.count(".HasMaxLength(300)"), 2)
         self.assertNotIn("UseCollation", migration_model)
         self.assertNotIn('HasIndex("Code")', migration_model)
         self.assertNotIn("BuildInitialModel", migration_model)
         self.assertNotIn("BuildNotesModel", migration_model)
-        self.assertIn("throw new NotSupportedException", IDENTITY_SOURCE)
+        self.assertIn("throw new NotSupportedException", TYPED_SOURCE)
+
+    def test_typed_columns_upgrade_preserves_existing_text_rows(self):
+        with managed_connect(":memory:") as db:
+            db.executescript(DDL + NOTES_DDL + IDENTITY_SQL)
+            insert_record(db, "demo_records", "one", "A1", keyed=True)
+            db.commit()
+            before = db.execute("SELECT Code,Name,Remark FROM demo_records").fetchall()
+            with db:
+                db.execute("BEGIN IMMEDIATE")
+                execute_statements(db, TYPED_DDL)
+            self.assertEqual(db.execute("SELECT Code,Name,Remark FROM demo_records").fetchall(), before)
+            self.assertEqual(db.execute(
+                "SELECT Quantity,DueDate,Priority,Active FROM demo_records").fetchall(),
+                [(0, None, "Normal", 1)])
+            columns = {row[1]: row[2:4] for row in db.execute("PRAGMA table_info(demo_records)")}
+            self.assertEqual(columns["Quantity"], ("INTEGER", 1))
+            self.assertEqual(columns["DueDate"], ("TEXT", 0))
+            self.assertEqual(columns["Priority"], ("TEXT", 1))
+            self.assertEqual(columns["Active"], ("INTEGER", 1))
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute("UPDATE demo_records SET Priority=NULL")
+            self.assertEqual(db.execute("PRAGMA integrity_check").fetchall(), [("ok",)])
 
     def test_identity_upgrade_preserves_every_old_value_and_adds_only_keys(self):
         codes = ["  AbC  ", "É", "é", "Σ", "σ", "ς", "İ", "i", "ß", "SS",

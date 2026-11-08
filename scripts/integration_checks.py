@@ -46,8 +46,15 @@ def main():
     versions = {e.attrib["Include"]: e.attrib["Version"] for e in
                 ET.parse(ROOT / "Directory.Packages.props").getroot().iter("PackageVersion")}
     for project in ROOT.rglob("*.csproj"):
-        for package in ET.parse(project).getroot().iter("PackageReference"):
-            assert package.attrib["Include"] in versions
+        project_root = ET.parse(project).getroot()
+        project_versions = versions.copy()
+        project_versions.update({
+            e.attrib["Include"]: e.attrib["Version"]
+            for e in project_root.iter("PackageVersion")
+            if "Include" in e.attrib and "Version" in e.attrib
+        })
+        for package in project_root.iter("PackageReference"):
+            assert package.attrib["Include"] in project_versions
             assert "Version" not in package.attrib and "VersionOverride" not in package.attrib
     print(f"PASS: {len(english)} bilingual keys, {len(used)} referenced keys, "
           f"{xml_count} XML files, Python AST and central package references.")

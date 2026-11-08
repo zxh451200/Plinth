@@ -62,6 +62,13 @@ public partial class BackupView : UserControl
         finally { _picking = false; }
     }
 
+    private async void OnBackupAndExitClick(object? sender, RoutedEventArgs e)
+    {
+        if (_picking || DataContext is not BackupViewModel viewModel ||
+            TopLevel.GetTopLevel(this) is not MainWindow window) return;
+        await viewModel.ConfirmBackupAndExitAsync(window.RequestExitAsync);
+    }
+
     private async void OnRestoreClick(object? sender, RoutedEventArgs e)
     {
         if (_picking || DataContext is not BackupViewModel viewModel || viewModel.IsBusy ||

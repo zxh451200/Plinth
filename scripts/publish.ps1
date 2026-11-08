@@ -58,7 +58,7 @@ try {
     }
     & $python @pythonArguments
     if ($LASTEXITCODE -ne 0) { throw 'License/notice/SBOM generation failed' }
-    Copy-Item "$complianceDir/THIRD_PARTY_NOTICES.md", "$complianceDir/sbom.cdx.json" -Destination $publishDir
+    Copy-Item "$complianceDir/THIRD_PARTY_NOTICES.md", "$complianceDir/sbom.cdx.json", "$complianceDir/coverage-report.json" -Destination $publishDir
     if ($BrandingFile) {
         Copy-Item -LiteralPath $BrandingFile -Destination "$publishDir/branding.json"
         foreach ($asset in @(@('LogoFile', 'png'), @('IconFile', 'ico'))) {

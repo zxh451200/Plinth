@@ -14,6 +14,24 @@ public sealed class AuthorizedOperation(
     IRemoteUserContext users,
     ISecurityAudit audit)
 {
+    internal Plinth.App.Auth.IIdentitySessionEvents? SessionEvents =>
+        users as Plinth.App.Auth.IIdentitySessionEvents;
+
+    internal Action CaptureSnapshotValidation()
+    {
+        var validate = CaptureSessionValidation();
+        var user = users.CurrentUser;
+        return () =>
+        {
+            validate();
+            var current = users.CurrentUser;
+            if (!user.Roles.SetEquals(current.Roles) || !user.Permissions.SetEquals(current.Permissions))
+                throw new UnauthorizedAccessException("security.permission_denied");
+        };
+    }
+
+    internal void Demand(string permission) => permissions.Demand(permission, Guid.NewGuid().ToString("N"));
+
     internal Action CaptureSessionValidation()
     {
         var subject = users.CurrentUser.Subject;

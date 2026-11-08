@@ -19,6 +19,7 @@ public partial class App : Application
 {
     private ServiceProvider? _services;
     private TrayIcon? _tray;
+    private Action? _trayLanguageHandler;
 
     public override void Initialize()
     {
@@ -60,10 +61,19 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
             // 模板原本直接 new MainViewModel,这里改为从容器解析(§4.6.1 偏差表)
+            var mainViewModel = _services.GetRequiredService<MainViewModel>();
             var mainWindow = new MainWindow
             {
-                DataContext = _services.GetRequiredService<MainViewModel>(),
+                DataContext = mainViewModel,
                 Icon = branding.CreateWindowIcon(),
+            };
+            // 系统通知点击冷启动时只进入任务中心;普通启动保持原标签恢复。
+            mainWindow.Opened += (_, _) =>
+            {
+                if (Program.StartupIntent == ActivationIntent.TaskCenter)
+                {
+                    mainViewModel.OpenTaskCenter();
+                }
             };
             desktopLifetime.MainWindow = mainWindow;
             _services.GetRequiredService<SensitiveOperationService>().ConfirmProductionAsync =
@@ -82,13 +92,22 @@ public partial class App : Application
 
             CreateTrayIcon(desktopLifetime, mainWindow, _services.GetRequiredService<BrandingService>());
 
-            // 用户又启动了一次程序时,把已有的窗口带到前台
+            // 用户又启动了一次程序时,把已有的窗口带到前台;通知点击还要进入任务中心
             if (Program.SingleInstance is { } singleInstance)
             {
-                singleInstance.ActivationRequested += () => Dispatcher.UIThread.Post(() => BringToFront(desktopLifetime.MainWindow));
+                singleInstance.ActivationRequested += intent => Dispatcher.UIThread.Post(() =>
+                {
+                    BringToFront(desktopLifetime.MainWindow);
+                    if (intent == ActivationIntent.TaskCenter
+                        && desktopLifetime.MainWindow?.DataContext is MainViewModel viewModel)
+                    {
+                        viewModel.OpenTaskCenter();
+                    }
+                });
             }
         }
 
+        SettingsViewModel.Prewarm();
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -108,6 +127,14 @@ public partial class App : Application
             show.Click += (_, _) => BringToFront(mainWindow);
             var exit = new NativeMenuItem(Loc.Get("tray.exit"));
             exit.Click += (_, _) => mainWindow.Close();
+
+            // 托盘菜单是原生对象,不会跟着 {loc:T} 绑定刷新,切换语言时手动更新。
+            _trayLanguageHandler = () =>
+            {
+                show.Header = Loc.Get("tray.show");
+                exit.Header = Loc.Get("tray.exit");
+            };
+            Loc.Subscribe(_trayLanguageHandler);
 
             _tray = new TrayIcon
             {

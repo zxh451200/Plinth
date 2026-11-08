@@ -52,9 +52,11 @@ Demo 示例提供当前选中记录的五个字段；Notes 提供已保存的便
 今后改实体时在有 SDK 的环境生成新迁移，检查 Up/Down 与 snapshot，再运行真实迁移测试：
 
 ```bash
-dotnet ef migrations add Notes_YourChange --project src/Plinth.App --startup-project src/Plinth.App
+dotnet ef migrations add Notes_YourChange --project src/Plinth.App --context AppDbContext --output-dir Migrations
 dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -p:TestingPlatformDotnetTestSupport=true
 ```
+
+项目有 SQLite／MySQL／PostgreSQL 三个迁移上下文，必须用 `--context` 指定；服务器 Provider 的迁移另按 [快速入门](../GETTING_STARTED.md) 逐项生成。
 
 当前迁移使用明确固定的 SQLite DDL 和目标模型，未声称通过 `dotnet ef` 生成或真实 EF 验证。Python smoke 验证 DDL、旧数据保留、唯一索引与冻结模型声明；EF 模型一致性由 DatabaseSafetyTests 另行验证。
 
@@ -64,4 +66,4 @@ dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -p:TestingPlatformDot
 
 彻底移除表时，需要有计划的数据处理与新的删除迁移，同时更新模型 snapshot、数据库结构校验和相关测试。尚未分发的新项目也建议保留原始迁移，再用新迁移演进，方便读懂历史。
 
-测试入口：`NoteModuleTests.cs` 覆盖真实 SQLite 保存、并发、权限、生产取消、未保存确认、DI 和视图解析；`CloseNavigationTests.cs` 覆盖三种关闭入口的错误页面定位。测试源码存在不代表已运行通过。
+测试入口：`NoteModuleTests.cs` 覆盖真实 SQLite 保存、并发、权限、生产取消、未保存确认、DI 和视图解析；`CloseNavigationTests.cs` 覆盖三种关闭入口的错误页面定位。两者已随全量回归通过（1181/1183，2 项为外部数据库未配置的跳过）；真实 Windows 桌面交互仍需人工验收。

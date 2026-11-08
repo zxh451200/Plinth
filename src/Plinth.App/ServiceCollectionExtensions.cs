@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Plinth.App.Data;
+using Plinth.App.Modules.AdvancedTable;
 using Plinth.App.Modules.Demo;
 using Plinth.App.Modules.Notes;
 using Plinth.App.Modules.RemoteDemo;
+using Plinth.App.Modules.RuntimePlugins;
 using Plinth.App.Navigation;
 using Plinth.App.Services;
 using Plinth.App.ViewModels;
@@ -60,7 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SensitiveOperationService>();
 
         // 数据库:SQLite 文件放在用户数据目录。每次操作从工厂拿一个新的 DbContext,用完释放
-        services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite($"Data Source={AppPaths.DatabasePath}"));
+        services.AddDbContextFactory<AppDbContext>(options => DatabaseConfiguration.Current.Configure(options));
 
         services.AddTransient<MainViewModel>();
         services.AddTransient<OverviewViewModel>();
@@ -89,19 +91,19 @@ public static class ServiceCollectionExtensions
             ShellNavigation.OverviewId,
             Loc.Get("nav.overview"),
             () => provider.GetRequiredService<OverviewViewModel>())
-        { Section = NavigationSection.Workbench, Order = 100, Icon = "\uE80F" });
+        { Section = NavigationSection.Workbench, Order = 100, Icon = "\uE80F", TitleKey = "nav.overview" });
 
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             "shell.taskDiagnostics",
             Loc.Get("nav.taskDiagnostics"),
             () => ActivatorUtilities.CreateInstance<TaskDiagnosticsViewModel>(provider))
-        { Section = NavigationSection.Runtime, Order = 400, Icon = "\uE7C4" });
+        { Section = NavigationSection.Runtime, Order = 400, Icon = "\uE7C4", TitleKey = "nav.taskDiagnostics" });
 
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             ShellNavigation.SettingsId,
             Loc.Get("nav.settings"),
             () => CreateSettingsPage(provider))
-        { Section = NavigationSection.Footer, Order = 900, Icon = "\uE713" });
+        { Section = NavigationSection.Footer, Order = 900, Icon = "\uE713", TitleKey = "nav.settings" });
 
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             ShellNavigation.LogsId,
@@ -111,6 +113,7 @@ public static class ServiceCollectionExtensions
             Section = NavigationSection.System,
             Order = 600,
             Icon = "\uE7BA",
+            TitleKey = "nav.logs",
             RequiredAnyPermission = ["logs:read", "audit:read"]
         });
 
@@ -122,18 +125,19 @@ public static class ServiceCollectionExtensions
             Section = NavigationSection.System,
             Order = 610,
             Icon = "\uE81C",
+            TitleKey = "nav.backup",
             RequiredAnyPermission = ["backup:export", "backup:restore"]
         });
 
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             ShellNavigation.HelpId, Loc.Get("help.title"),
             () => provider.GetRequiredService<HelpViewModel>(), ShowInMenu: false)
-        { Icon = "\uE897" });
+        { Icon = "\uE897", TitleKey = "help.title" });
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
             ShellNavigation.LicensesId, Loc.Get("license.title"),
             // Shell 释放页面；避免根容器跟踪每次打开的 IDisposable 瞬态实例。
             () => ActivatorUtilities.CreateInstance<LicenseViewModel>(provider), ShowInMenu: false)
-        { Icon = "\uE8A5" });
+        { Icon = "\uE8A5", TitleKey = "license.title" });
 
         // 关于页照常注册,但不占侧栏一行:入口在「帮助」菜单
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(
@@ -141,7 +145,7 @@ public static class ServiceCollectionExtensions
             Loc.Get("nav.about"),
             () => ActivatorUtilities.CreateInstance<AboutViewModel>(provider),
             ShowInMenu: false)
-        { Icon = "\uE946" });
+        { Icon = "\uE946", TitleKey = "nav.about" });
 
         // 示例模块(不含业务)默认关闭;部署需要时显式打开 PLINTH_IncludeSampleModules
         if (ShouldRegisterSampleModules(deployment))
@@ -149,7 +153,12 @@ public static class ServiceCollectionExtensions
             services.AddDemoModule();
             services.AddNotesModule();
         }
+        if (deployment.EnableAdvancedTablePilot)
+            services.AddAdvancedTableModule();
+        if (deployment.EnableRuntimePlugins)
+            services.AddRuntimePluginsModule();
         // 业务模块:新增模块时在这里加一行 services.AddXxxModule();
+        // OfflineSync remains unregistered until a production/ trusted transportFactory exists.
         if (deployment.DemoApiBaseUrl.Length > 0)
         {
             var baseUri = new Uri(deployment.DemoApiBaseUrl);
@@ -157,7 +166,8 @@ public static class ServiceCollectionExtensions
             {
                 staged.AddRemoteDemoModule(baseUri);
                 staged.AddSingleton(new HelpTopic("remoteDemo.editing", Loc.Get("help.remoteDemo.title"),
-                    Loc.Get("help.remoteDemo.body"), RemoteDemoModuleRegistration.PageId));
+                    Loc.Get("help.remoteDemo.body"), RemoteDemoModuleRegistration.PageId)
+                { TitleKey = "help.remoteDemo.title", BodyKey = "help.remoteDemo.body" });
             });
         }
 

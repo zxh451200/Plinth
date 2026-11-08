@@ -14,32 +14,134 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Plinth.App/Styles/DesignTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- 下拉与菜单弹层的首尾留白归零,选中/悬停底色贴边 -->
+            <Thickness x:Key="ComboBoxDropdownContentMargin">0</Thickness>
+            <Thickness x:Key="MenuFlyoutScrollerMargin">0</Thickness>
+            <!-- 主题默认让子菜单压住父菜单 4px,会盖掉父项最右的箭头;改成留 2px 间隙 -->
+            <x:Double x:Key="MenuFlyoutSubItemPopupHorizontalOffset">2</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
-        <Style Selector="Button:not(.tabClose)">
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{DynamicResource PlinthFontFamily}" />
+            <Setter Property="FontSize" Value="{DynamicResource PlinthBodySize}" />
+        </Style>
+        <Style Selector="Button:not(.tabClose):not(#NavigationToggle)">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
+        </Style>
+        <!-- 桌面工具栏按钮：默认 Fluent 的实心按钮块太重，改成透明底 + 悬停浅底 -->
+        <Style Selector="Button.toolbar">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+        <Style Selector="Button.toolbar:pointerover">
+            <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
         </Style>
         <Style Selector="TextBox">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
         </Style>
         <Style Selector="ComboBox">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
         </Style>
         <Style Selector="NumericUpDown">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
         </Style>
         <Style Selector="CheckBox">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
         </Style>
+        <Style Selector="TabItem">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="FontSize" Value="{DynamicResource PlinthBodySize}" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- 弹层表面由 presenter 负责:圆角 + 投影,不要 1px 边框;
+             弹层在独立根里,主题字典画刷取不到,所以这里不覆盖 Background。 -->
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <!-- 字段按钮(下拉/日期)的按下与悬停统一用应用浅灰:Fluent 的 40% 黑底在白底上呈 #999,发脏 -->
+        <Style Selector="Button.field:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+        </Style>
+        <Style Selector="Button.field:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+        </Style>
         <Style Selector="TableViewRow">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthRowPadding}" />
+        </Style>
+        <Style Selector="TableViewRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource PlinthRowHoverBrush}" />
+        </Style>
+        <Style Selector="TableViewRow:selected">
+            <Setter Property="Background" Value="{DynamicResource PlinthRowSelectedBrush}" />
+        </Style>
+        <Style Selector="TableViewColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource PlinthTableHeaderBrush}" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- 表头外层灰带是 Fluent 表格自带的模板层(值写在模板里,样式改不动):用负外边距让表头铺满整条带 -->
+        <Style Selector="TableViewColumnHeadersPresenter">
+            <Setter Property="Margin" Value="-6,-9,-6,-12" />
+        </Style>
+        <!-- 保留列宽拖拽命中区和光标,仅去掉把手绘制的竖线。 -->
+        <Style Selector="TableView">
+            <Setter Property="CanUserResizeColumns" Value="True" />
+        </Style>
+        <Style Selector="TableViewColumnHeader /template/ Thumb#PART_Resizer">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+        <!-- 表格自己已经包在卡片 Border 里，不再画 Streamlit 式双层大边框；焦点用选中行表达。 -->
+        <Style Selector="TableView">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+        <Style Selector="TableViewRow">
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+        <!-- 勾选与子菜单箭头在 Fluent 模板里是写死的 16x16 / 8x16 盒子（模板优先级高于 Style，
+             Width/Height 覆盖不生效），只能居中缩放实际绘制：勾 16x13→10x8，箭头 8x16→6x8。 -->
+        <Style Selector="MenuItem /template/ ContentControl#PART_ToggleIconPresenter">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <ScaleTransform ScaleX="0.625" ScaleY="0.625" />
+            </Setter>
+        </Style>
+        <Style Selector="MenuItem /template/ Path#PART_ChevronPath">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <ScaleTransform ScaleX="0.75" ScaleY="0.5" />
+            </Setter>
+        </Style>
+        <!-- 可选中文本(关于页等):主题不提供选中前景色,灰字会直接压在选中底色上;
+             静态文字不占 Tab 位(鼠标点选仍会获得焦点),避免把键盘流拖长。 -->
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="KeyboardNavigation.IsTabStop" Value="False" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource PlinthAccentBrush}" />
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource PlinthSelectionForegroundBrush}" />
+        </Style>
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
         </Style>
     </Application.Styles>
 </Application>

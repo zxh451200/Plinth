@@ -42,7 +42,14 @@ public partial class LogViewModel : ViewModelBase, IRefreshable, IDisposable
 
     [ObservableProperty]
     public partial bool OnlyProblems { get; set; }
-    public string[] EventKinds { get; } =
+    private string[] _eventKinds = BuildEventKinds();
+    public string[] EventKinds
+    {
+        get => _eventKinds;
+        private set { _eventKinds = value; OnPropertyChanged(); }
+    }
+
+    private static string[] BuildEventKinds() =>
         [Loc.Get("logs.kind.technical"), Loc.Get("logs.kind.audit"), Loc.Get("logs.kind.task"),
             Loc.Get("logs.kind.operational")];
     [ObservableProperty] public partial int EventKindIndex { get; set; }
@@ -63,13 +70,34 @@ public partial class LogViewModel : ViewModelBase, IRefreshable, IDisposable
 
     [ObservableProperty] public partial string Search { get; set; } = "";
     [ObservableProperty] public partial string Level { get; set; } = "";
-    public string[] LevelOptions { get; } = [Loc.Get("logs.level.all"), .. LogLevels.Names];
+    // 下拉显示当前语言的名字,筛选值仍用日志里的英文级别标记。
+    private string[] _levelOptions = BuildLevelOptions();
+    public string[] LevelOptions
+    {
+        get => _levelOptions;
+        private set { _levelOptions = value; OnPropertyChanged(); }
+    }
+
+    private static string[] BuildLevelOptions() =>
+        [Loc.Get("logs.level.all"), .. LogLevels.Names.Select(LogLevels.DisplayName)];
+
+    public override void OnUiLanguageChanged()
+    {
+        EventKinds = BuildEventKinds();
+        LevelOptions = BuildLevelOptions();
+        // 级别等派生文字按访问时取当前语言,重建集合让已加载的行重新绑定。
+        var loaded = _loaded.ToArray();
+        Entries.Clear();
+        foreach (var entry in loaded) Entries.Add(entry);
+        base.OnUiLanguageChanged();
+    }
     [ObservableProperty] public partial int LevelIndex { get; set; }
-    partial void OnLevelIndexChanged(int value) => Level = value <= 0 ? "" : LevelOptions[value];
+    partial void OnLevelIndexChanged(int value) =>
+        Level = value is > 0 && value <= LogLevels.Names.Length ? LogLevels.Names[value - 1] : "";
     partial void OnLevelChanged(string value)
     {
-        var index = Array.IndexOf(LevelOptions, value);
-        LevelIndex = index > 0 ? index : 0;
+        var index = Array.IndexOf(LogLevels.Names, value);
+        LevelIndex = index >= 0 ? index + 1 : 0;
     }
     [ObservableProperty] public partial string Module { get; set; } = "";
     [ObservableProperty] public partial string TaskId { get; set; } = "";

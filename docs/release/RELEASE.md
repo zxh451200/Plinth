@@ -2,15 +2,22 @@
 
 本文覆盖 `.github`、`scripts`、`installer` 范围。自动化生成的是候选包，不会向 GitHub Release 或其他外部服务上传发布。
 
-## 当前交接结论（2026-11-03，Windows 实机）
+## 历史交接记录（2026-11-04，外部 Windows 实机）
 
-当前源码已在 Windows 11 + .NET SDK 10.0.403 上完成真实 restore、locked restore、Release 构建、自动测试、10k 性能 POC 与 ZIP 发布。固定 SDK、`pwsh`、NuGet 与 NSIS 3.13（便携安装在 `D:/tmp/nsis`）均可用，安装器已编译并完成基础安装冒烟。
+本节是此前 Windows 实机交接记录的原样保留，不能作为当前工作区的执行证据。当前宿主缺少 、 和 ；本轮未重新执行 C# 构建、Windows 安装升级或 NSIS 编译。下文的历史数字必须在具备对应工具的 Windows 环境中重新生成并与日志、产物逐项核对后才能引用。
+
+当前源码已在 Windows 11 + .NET SDK 10.0.403 上完成真实 restore、locked restore、Release 构建、自动测试、10k 性能 POC、ZIP 发布与安装器故障矩阵。固定 SDK、`pwsh`、NuGet 与 NSIS 3.13（便携解压在 `D:/tmp/plinth-boundary/nsis`）均可用。
 
 - restore 生成 3 个 `packages.lock.json`（含应用 `win-x64` 目标）；solution 与 RID 的 locked restore 均通过；低危及以上 NuGet 审计无告警。
 - Release 构建 0 错误。`dotnet format --verify-no-changes` 退出 0；测试项目中的 xUnit 建议类分析器（xUnit1051/2031/2017）在 `.editorconfig` 中降为建议，不再阻断格式门禁，仍保留 IDE 提示。
-- App 测试 897/897、Spreadsheet 47/47 通过，TRX 已归档；XLSX 启用变体 36/36 通过。此前 6 个失败已修复：标签条键盘可达、远程拒绝切换后表格回退、WAL 用例保持写连接、单实例通知测试内联续体、XLSX CRLF 归一化。
+- App 测试 917/917、Spreadsheet 47/47 通过，TRX 已归档（`artifacts/test-results-final/`）；XLSX 启用构建 956/956 通过。此前 6 个失败已修复：标签条键盘可达、远程拒绝切换后表格回退、WAL 用例保持写连接、单实例通知测试内联续体、XLSX CRLF 归一化。
 - 性能 POC 通过，数字见 [PERFORMANCE_POC.md](../PERFORMANCE_POC.md)。
-- ZIP 与 Setup.exe 均已生成并通过 `release_checks`；安装、静默升级拒绝（6）、运行中安装拒绝（5）、`/D=` 拒绝（4）、卸载保留用户数据均通过冒烟。干净账户链接测试、磁盘满/失败回滚、旧版本真实升级、重装恢复、代码签名、真实 UIA／IME／DPI／读屏、真实 API／IdP 与系统 Toast 仍未执行。
+- ZIP `5cc6669c…4ea3` 与 Setup.exe `e250690a…0f3f` 均已生成并通过 `release_checks`。
+- 安装器矩阵已执行：安装 0、锁文件存在、`--version` 正常；`/D=` 拒绝（4）、运行中安装拒绝（5）、安装目录拒写（5）、提取阶段写入失败（7，不写注册表）、静默升级拒绝（6）、交互升级取消（1，文件不变）、真实 0.0.9→0.1.0 交互升级（0，数据 hash 不变）、junction 拒绝（4）、占用时卸载拒绝（20 秒内文件不变）、释放后卸载并保留用户数据、卸载后重装数据库 md5 不变；安装写入 AUMID／`plinth://tasks` 协议，卸载清理两者。
+- 系统 Toast：固定状态文案进入 Windows 通知历史（`Setting=Enabled`），冷启动与已有实例均通过 `plinth://tasks` 进入任务中心，证据见 [通知接入记录](../WINDOWS_NOTIFICATIONS.md)。
+- 便携包：ZIP 解压后 316 文件、无测试程序集，`--version`、GUI、两个数据目录并行启动通过；PATH 仅保留 System32 时版本与 GUI 仍可启动（近似无 SDK 环境，机器仍装有 SDK）。
+- 卸装边界：未知文件与未知目录在卸载后保留、重装后仍在，数据库 hash 不变；两个安装器并发退出 0/5 且最终安装可用；目录 junction 拒绝 4 且目标零写入。环境、NuGet 审计与 SQLite smoke 已归档。
+- 未执行：安装器/升级在干净用户账户与磁盘满下的完整矩阵（应用首启与 CLI 备份已于 2026-11-08 实测，见 [实现记录](../IMPLEMENTATION_STATUS.md)）、代码签名（本机无代码签名证书，产物 `NotSigned`）、真实 OS DPI 设置切换／IME／Narrator 朗读、真实 API／IdP、通知横幅物理点击。
 
 ## 提交级门禁
 
@@ -111,7 +118,12 @@ python scripts/release_checks.py package artifacts/Plinth-0.1.0-win-x64.zip
 - 保持主窗口已运行，再调用版本查询或错误参数；确认不唤醒原窗口。使用独立临时数据目录，确认查询不创建数据目录；对已有目录另核对数据库、设置和待恢复包未变化。
 - 在无显示器的构建环境运行托管入口用例，保留退出码、stdout/stderr 与目录副作用断言的结果。Windows 原生包与无显示器托管入口分别记录证据。
 
-## 本次环境证据（2026-11-01）
+## 当前环境证据（2026-11-07）
+
+- 宿主未发现 、 或 ；因此本轮没有运行 C# restore/build/test、PowerShell 发布、NSIS 编译或 Windows 安装器验收。
+- 本轮只允许把 Python 契约测试和源码阅读结果报告为已完成；它们不能代替 C# 编译、真实服务、Windows 文件选择器或安装升级验收。
+
+## 先前环境记录（2026-11-01）
 
 - 宿主 `dotnet`、`pwsh` 不在 PATH，因此未运行应用 restore/format/build/test/publish、PowerShell 或 NSIS 实际执行。
 - Docker client/server 均为 1.13.1，现有镜像列表没有 .NET SDK。
@@ -146,16 +158,16 @@ python scripts/release_checks.py package artifacts/Plinth-0.1.0-win-x64.zip
 | 锁还原 | solution 与 RID 均加 `--locked-mode` | 均通过 |
 | 构建 | `dotnet build Plinth.sln -c Release --no-restore -warnaserror:nullable` | 0 错误 |
 | 格式 | `dotnet format Plinth.sln --verify-no-changes --no-restore` | 退出 0；xUnit 建议类分析器已降为建议 |
-| 测试 | `dotnet test Plinth.sln -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true` | App 897/897、Spreadsheet 47/47；VSTest 模式 TRX 在 `artifacts/test-results/*-final.trx` |
+| 测试 | `dotnet test Plinth.sln -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true` | App 917/917、Spreadsheet 47/47；TRX 在 `artifacts/test-results/` |
 | XLSX 变体 | `-p:PlinthEnableXlsx=true` + `--filter FullyQualifiedName~Spreadsheet` | 36/36 通过 |
 | 依赖审计 | `dotnet restore ... -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -p:TreatWarningsAsErrors=true` | 通过，低危及以上无告警 |
 | 性能 | `-p:PlinthRunPoc=true` + `PerformancePocTests` | 通过，见 [PERFORMANCE_POC.md](../PERFORMANCE_POC.md) |
-| 发布 | `pwsh scripts/publish.ps1 -BrandingFile ./branding.example.json -RequireInstaller` | ZIP `484d63c3…aa9e`；Setup `34b22eb6…5ae6` |
-| 安装冒烟 | Setup `/S`；`/D=` 其他目录；运行中再安装/卸载 | 安装 0、锁文件存在、`--version` 正常；`/D=` 返回 4；运行中安装返回 5；卸载保留 9 个用户数据文件；未知文件保留（前一轮） |
+| 发布 | `pwsh scripts/publish.ps1 -BrandingFile ./branding.example.json -RequireInstaller` | ZIP `5cc6669c…4ea3`；Setup `e250690a…0f3f` |
+| 安装冒烟 | Setup `/S`；`/D=` 其他目录；运行中再安装/卸载；拒写/提取失败/中途被杀/0.0.9 升级 | 安装 0、锁文件存在、`--version` 正常；`/D=` 4；运行中安装 5；拒写 5；提取失败 7；被杀后静默重装 0；静默升级 6；交互取消 1；0.0.9→0.1.0 升级 0 且数据不变；卸载保留数据并清理 AUMID／协议 |
 | 包检查 | `python scripts/release_checks.py locks` / `package <zip>` | 均退出 0；发布目录 293 文件 / 227 MB，无测试程序集或源码 |
 | 命令行 | 发布 EXE `--version`；`--version --unknown`；重复 `--version` | `Plinth 0.1.0`／退出 0；usage 走 stderr／退出 2；重复参数退出 2；不创建数据目录、不写日志 |
 | 启动冒烟 | 空数据目录首次启动、同目录二次启动、窗口运行时查询版本 | 首次建库/设置/日志；二次启动设置不变；窗口运行时查询正常退出且不打断原窗口 |
 
 许可策略：`Avalonia.Angle.Windows.Natives 2.1.27548.20260419` 的包内 `LICENSE` 为标准 BSD-3-Clause，已加入版本锁定的显式文件许可白名单；`third_party.py --publish-directory` 只统计发布 `deps.json` 中实际分发的 84 个包，Debug-only 的 `AvaloniaUI.DiagnosticsSupport` 不再进入清单。
 
-未执行：代码签名、干净账户下的目录链接/磁盘满/失败回滚/旧版本升级/重装恢复全矩阵、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX Office 抽查、系统 Toast。
+未执行：代码签名、安装器在干净账户下的目录链接/磁盘满/失败回滚/旧版本升级/重装恢复全矩阵（应用首启与 CLI 备份已实测）、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX Office 抽查、系统 Toast。

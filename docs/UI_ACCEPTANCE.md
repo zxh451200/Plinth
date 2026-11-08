@@ -4,16 +4,17 @@
 
 ## 当前验证状态
 
-2026-11-03 已在 Windows 11 + .NET SDK 10.0.403 上实际编译并执行自动回归：
-`Plinth.App.Tests` 897/897、`Plinth.Spreadsheet.Tests` 47/47、XLSX 启用变体 36/36 全部通过，
+2026-11-04 已在 Windows 11 + .NET SDK 10.0.403 上实际编译并执行自动回归：
+`Plinth.App.Tests` 917/917、`Plinth.Spreadsheet.Tests` 47/47、XLSX 启用构建 956/956 全部通过，
 TRX 在 `artifacts/test-results/`。标签条键盘可达性通过：Avalonia 12 的 TabControl 容器不在
 窗口 Tab 顺序内，`MainWindow` 在焦点位于标签条时把 Tab 路由到当前标签的关闭按钮；导航列表、
 表格和 TabItem 已显式可聚焦。
 
-折叠轨道与内缩圆角选中态已在 125% 实机截图复核（`artifacts/acceptance/screens/nav-p3-selected-125.png`、`nav-p3-compact-125.png`）；`Ctrl+K` 快速打开、`Alt+1..9` 页面切换、`Alt+0` 设置由自动回归覆盖。
+折叠轨道与内缩圆角选中态已在 125% 实机截图复核（`nav-p3-selected-125.png`、`nav-p3-compact-125.png`），深色主题见 `nav-dark-125.png`；真实 UIAutomation 树已抓取（`uia-current-alt2.txt`、`uia-menu-quickopen.json`），窗口 DPI 为 120（125%），标签页名称修复为页面标题，装饰分组标题不进入 UIA 树，快速打开结果的读屏名称也已改为页面标题。真实 `Alt+2` 已把窗口切到“示例数据”；真实菜单“查看→快速打开”已展开并显示“快速打开页面／页面搜索结果”。`Ctrl+K`、`Alt+1..9`、`Alt+0` 另有自动回归覆盖。2026-11-04 起导航行、快速打开结果与设置页下拉的选中／悬停底色改为左右通栏，Fluent 原生下拉／菜单弹层的首尾 4px 留白也由资源归零，上文“内缩圆角选中态”截图作废；几何门禁见 `ShellTests.Navigation_selection_fills_the_sidebar_width`、`ShellTests.Quick_open_rows_fill_the_panel_width`、`PopupBleedTests` 与 `SearchSelectTests.Option_rows_span_the_full_popup_width`。
 
-快速打开覆盖层的真实按键截图受合成输入限制未单独留证，自动回归已断言面板可见；真实 Windows 人工矩阵仍未执行：DPI 100/125/150/200%、多显示器、IME 组合态、UIA／Narrator／
-NVDA 朗读、高对比度、截图基线与安装升级卸载。自动回归通过不能替代这些项目。
+渲染缩放 100/125/150/200% 由 `ScaleRenderingTests` 断言：截图像素尺寸与缩放同比例，侧栏与工作区不越界，日志／任务／设置页面级容器不横向溢出；截图见 `dpi-100.png`、`dpi-150.png`、`dpi-200.png`。这是 Avalonia 渲染缩放，不等同于修改 Windows 显示设置。
+
+真实 Windows 人工矩阵仍未执行：OS 级 DPI 设置切换、多显示器、IME 组合态、Narrator／NVDA 朗读、高对比度、截图基线与安装升级卸载。自动回归通过不能替代这些项目。
 
 `UiAccessibilityTests` 提供代表性自动回归源码，其他专项测试见下文。完整规范映射见 [需求交付核对表](REQUIREMENTS_STATUS.md)，实现记录见 [实现与验收状态](IMPLEMENTATION_STATUS.md)；这些文件和测试源码不能代替实际执行证据。
 
@@ -34,23 +35,27 @@ NVDA 朗读、高对比度、截图基线与安装升级卸载。自动回归通
 
 复合控件允许焦点落在模板子控件中，但必须由真实 Tab 输入到达；测试只对导航起点调用 `Focus()`。遍历最多 256 次，未达目标即失败，不以直接聚焦目标伪装键盘验证。禁用或隐藏控件不属于当前状态的遍历目标；按 `TemplatedParent` 排除滚动条等模板内部按钮，并将复合控件内部输入归属外层控件。表格名称检查不代表表格单元格的读屏与方向键行为已经验证。
 
+类型化单元格（2026-11-08 起）：Demo 的数量、截止日期、优先级、启用四列在选中行内分别渲染 `NumericUpDown`／`DateField`／`ComboBox`／`CheckBox`，未选中行只读。Windows 实测需覆盖数量越界与小数输入、日期弹层在表格内的定位与清除、枚举下拉键盘选择、布尔切换、三档密度与中英文、Esc／取消丢弃草稿、保存失败保留草稿、切换行／分页／搜索后的草稿规则，以及读屏名称与焦点顺序。`DemoTypedInlineEditingTests` 只证明控件树、草稿与校验接线，不证明真实弹层、IME 与读屏。
+
 尺寸测试在本文件中独立设置窗口宽高并执行 Measure/Arrange，因为已有 `Shell.Layout()` 固定 1200×720。测试中的窗口尺寸是 DIP，不是 Windows 显示缩放或物理像素。几何断言只检查所列目标边界，不能证明所有文本未截断、所有兄弟元素未重叠或实际绘制未被祖先裁剪。
 
 有 SDK 的环境中执行：
 
 ```bash
-dotnet test /home/work/data/xxx/Plinth-main/tests/Plinth.App.Tests/Plinth.App.Tests.csproj --filter FullyQualifiedName~UiAccessibilityTests
+  dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj --filter FullyQualifiedName~UiAccessibilityTests
 ```
 
 主代理应保留原始构建与测试日志；如果编译失败，应先确认下述 API 风险，不能删除断言、跳过失败用例或替换成静态 XML 检查来获得通过。
 
 ## Windows 实测矩阵
 
+列宽调整回归：表格现允许拖动列头边界，拖拽把手不绘制竖线但保留命中区。`DemoListPreferencesTests.Pointer_resizing_a_column_is_saved_and_restored_in_a_new_view` 使用窗口指针输入而非直接设置 Width，核对宽度变化、保存及新视图恢复；本轮尚未编译运行。Windows 实测还需核对边界光标、100/125/150/200% DPI 下的拖拽、列隐藏／显示、恢复默认及偏好写入失败提示。
+
 列表偏好需核对搜索词、分页大小、排序和列宽／显隐在重开后恢复。“恢复列表默认值”取消未保存确认时保留草稿及原偏好；允许后恢复空搜索、第一页、50 条、编码升序及全部列默认宽度，列菜单勾选同步。偏好文件无法写入时必须提示，旧文件不变，恢复可写后可再次保存。切换标签期间恢复默认后，切回的视图不能显示旧列布局。`DemoListPreferencesTests` 包含 8 个参数场景源码，其中视图场景检查命令绑定与布局属性，未模拟真实鼠标点击；当前没有 C# 或 Windows 验收证据。
 
 更新入口需单独验收：默认不联网；手动检查发现新版本后显示地址和“打开下载地址”，只在点击时调用默认浏览器。无默认浏览器或启动失败时显示安全提示，可重试。重新检查开始即撤下旧入口，失败／已最新／未配置时保持隐藏；非法协议、含账号或片段的地址不得打开。检查挂起时关闭关于页，旧结果不得回填或恢复按钮，重开得到新页面。`AboutUpdateTests` 提供 11 个参数场景源码，当前没有 C# 或真实浏览器验收证据。
 
-使用产品支持的 Windows 版本，至少 Windows 11；如宣称支持 Windows 10，补测其受支持版本。使用干净的测试数据目录，记录应用版本、提交标识或源码归档校验、Windows 版本、.NET 版本、主题、字体、屏幕分辨率、缩放、语言和测试者。设置语言后按产品要求重启。
+使用产品支持的 Windows 版本，至少 Windows 11；如宣称支持 Windows 10，补测其受支持版本。使用干净的测试数据目录，记录应用版本、提交标识或源码归档校验、Windows 版本、.NET 版本、主题、字体、屏幕分辨率、缩放、语言和测试者。切换语言后界面应立即切换（含已打开页面、导航和状态栏），不需要重启。
 
 | 维度 | 最低覆盖与通过标准 |
 | --- | --- |
@@ -179,7 +184,7 @@ Windows 实测时，在表格、表单输入、搜索框及下拉控件中分别
 
 | 项目 | 本次状态 / 主代理下一步 |
 | --- | --- |
-| 新增测试编译与执行 | 已执行：App 897/897、Spreadsheet 47/47、XLSX 变体 36/36。 |
+| 新增测试编译与执行 | 已执行：App 917/917、Spreadsheet 47/47、XLSX 变体 36/36。 |
 | Avalonia API | 已编译；Avalonia 12 下 `ListBox`／`TableView`／`TabItem` 默认不可聚焦，已在 XAML 显式设 `Focusable=True`；标签条通过显式 Tab 路由到达关闭按钮。 |
 | 生成的 VM API | 已编译，命令与视图构造通过自动回归。 |
 | 异步加载 | 已执行；未发现依赖任意延时的失败。 |

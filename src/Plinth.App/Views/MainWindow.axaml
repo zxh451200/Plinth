@@ -31,7 +31,8 @@
                    AutomationProperties.AccessibilityView="Raw"
                    FontSize="11"
                    Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
-                   Margin="10,10,10,2">
+                   Margin="12,14,12,4"
+                   FontWeight="SemiBold">
           <TextBlock.IsVisible>
             <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
               <Binding Path="ShowGroupHeader" />
@@ -40,7 +41,8 @@
             </MultiBinding>
           </TextBlock.IsVisible>
         </TextBlock>
-        <Border Classes="navRow" Margin="4,1" MinHeight="34" Padding="8,0" CornerRadius="6">
+        <Border Classes="navRow" Margin="0,1" MinHeight="38" Padding="22,0"
+                CornerRadius="0">
           <StackPanel Classes="navItemRow" Orientation="Horizontal"
                       Spacing="8"
                       AutomationProperties.Name="{Binding Title}"
@@ -86,6 +88,27 @@
       <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
       <Setter Property="Padding" Value="12,0" />
     </Style>
+    <!-- 标签关闭:Fluent 的 Button 自带 MinHeight=32,会把 ✕ 撑成 17x32 的竖条;
+         这里定成 18x18 的方块,悬停底色用应用浅灰而不是主题默认的深灰。 -->
+    <Style Selector="Button.tabClose">
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tabClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="Button.tabClose:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
     <!-- 导航行密度:图标轨道与展开态统一 36,避免行高随内容跳动 -->
     <Style Selector="ListBox#NavigationList ListBoxItem" x:DataType="nav:NavigationItem">
       <Setter Property="MinHeight" Value="36" />
@@ -95,9 +118,29 @@
       <Setter Property="MinHeight" Value="36" />
       <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
     </Style>
-    <!-- 侧栏两态:展开态左对齐留边;折叠成 48px 图标轨道时图标水平居中,行内边距让位 -->
+    <!-- 快速打开结果也是页面入口，读屏名称用页面标题而不是整条 record。 -->
+    <Style Selector="ListBox#QuickOpenList ListBoxItem" x:DataType="nav:NavigationItem">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+    </Style>
+    <!-- 侧栏两态都用满宽:展开态内容左对齐(缩进由行内边距给),折叠成图标轨道时图标水平居中 -->
     <Style Selector="ListBox#NavigationList, ListBox#NavigationFooter">
-      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <!-- 选中/悬停只由 navRow 画一次；ListBoxItem 自带底色会在右侧留出一条色带。 -->
+    <Style Selector="ListBox#NavigationList ListBoxItem, ListBox#NavigationFooter ListBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem:selected, ListBox#NavigationFooter ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#NavigationList ListBoxItem:pointerover, ListBox#NavigationFooter ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="ListBox#NavigationList ListBoxItem Border.navRow, ListBox#NavigationFooter ListBoxItem Border.navRow">
       <Setter Property="Background" Value="Transparent" />
@@ -108,22 +151,23 @@
     <Style Selector="ListBox#NavigationList ListBoxItem:selected Border.navRow, ListBox#NavigationFooter ListBoxItem:selected Border.navRow">
       <Setter Property="Background" Value="{DynamicResource PlinthNavSelectedBrush}" />
     </Style>
-    <Style Selector="ListBox#NavigationList ListBoxItem:focus Border.navRow, ListBox#NavigationFooter ListBoxItem:focus Border.navRow">
+    <!-- 键盘焦点才画细线；鼠标点选已有选中底色，不再叠一整圈边框。 -->
+    <Style Selector="ListBox#NavigationList ListBoxItem:focus-visible Border.navRow, ListBox#NavigationFooter ListBoxItem:focus-visible Border.navRow">
       <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <!-- 开关与导航行共用同一块底色:展开态左缘 10(列表内边距 6 + 行内缩 4),折叠态 4 -->
+    <!-- 开关按钮保持内缩,与通栏的导航选中行区分:它是工具按钮,不是导航目的地 -->
     <Style Selector="Button#NavigationToggle">
+      <Setter Property="Height" Value="40" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="Margin" Value="10,8,10,0" />
-      <Setter Property="Height" Value="34" />
-      <Setter Property="Padding" Value="8,0" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Margin" Value="8,6,8,0" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Border.compact Button#NavigationToggle">
-      <Setter Property="Margin" Value="4,8,4,1" />
+      <Setter Property="Margin" Value="6,6,6,4" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
@@ -139,9 +183,34 @@
     </Style>
     <Style Selector="Border.compact ListBox#NavigationList ListBoxItem Border.navRow, Border.compact ListBox#NavigationFooter ListBoxItem Border.navRow">
       <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,1" />
     </Style>
     <Style Selector="Border.compact StackPanel.navItemRow">
       <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="MinWidth" Value="20" />
+    </Style>
+    <!-- 状态栏:能点的两项平时也是纯文本,只在悬停/按下时出现底色;不能点的两项不再和它们长成一个样 -->
+    <Style Selector="Button.statusItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.statusItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="Button.statusItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="Button.statusItem.warning">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthWarningBrush}" />
+    </Style>
+    <Style Selector="TextBlock.statusMeta">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
   </Window.Styles>
 
@@ -156,7 +225,7 @@
       <MenuItem Header="{loc:T menu.file}">
         <MenuItem Header="{loc:T menu.file.new}" Command="{Binding NewPageCommand}" InputGesture="{x:Static nav:AppShortcuts.New}" />
         <MenuItem Header="{loc:T menu.file.save}" Command="{Binding SavePageCommand}" InputGesture="{x:Static nav:AppShortcuts.Save}" />
-        <MenuItem Header="{loc:T shell.navigation.recent}" ItemsSource="{Binding RecentPages}"
+        <MenuItem Classes="submenu" Header="{loc:T shell.navigation.recent}" ItemsSource="{Binding RecentPages}"
                   IsEnabled="{Binding HasRecentPages}">
           <MenuItem.ItemContainerTheme>
             <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
@@ -167,7 +236,6 @@
           </MenuItem.ItemContainerTheme>
         </MenuItem>
         <MenuItem Header="{loc:T shell.navigation.clearRecent}" Command="{Binding ClearRecentPagesCommand}" />
-        <Separator />
         <MenuItem Header="{loc:T menu.file.closeTab}"
                   Command="{Binding CloseTabCommand}"
                   InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
@@ -185,7 +253,8 @@
         <MenuItem Header="{loc:T menu.view.quickOpen}" Command="{Binding OpenQuickOpenCommand}" />
         <Separator />
         <MenuItem Header="{loc:T shell.layout.reset}" Command="{Binding ResetLayoutCommand}" />
-        <MenuItem Header="{Binding SidebarToggleText}" Command="{Binding ToggleSidebarCompactCommand}" />
+        <MenuItem Header="{Binding SidebarToggleText}" Command="{Binding ToggleSidebarCompactCommand}"
+                  InputGesture="{x:Static nav:AppShortcuts.Sidebar}" />
         <MenuItem Header="{loc:T menu.view.sidebar}"
                   ToggleType="CheckBox"
                   IsChecked="{Binding IsSidebarVisible, Mode=TwoWay}" />
@@ -195,7 +264,7 @@
       </MenuItem>
       <MenuItem Header="{loc:T menu.data}">
         <MenuItem Header="{loc:T menu.data.refresh}" Command="{Binding RefreshCommand}" InputGesture="{x:Static nav:AppShortcuts.Refresh}" />
-        <MenuItem Header="{loc:T menu.data.pageCommands}" ItemsSource="{Binding ModuleCommands}"
+        <MenuItem Classes="submenu" Header="{loc:T menu.data.pageCommands}" ItemsSource="{Binding ModuleCommands}"
                   IsVisible="{Binding HasModuleCommands}">
           <MenuItem.ItemContainerTheme>
             <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:CommandMenu">
@@ -217,25 +286,12 @@
         <MenuItem Header="{loc:T shell.navigation.toggleFavorite}" ToggleType="CheckBox"
                   IsChecked="{Binding IsCurrentPageFavorite, Mode=OneWay}"
                   Command="{Binding ToggleFavoriteCommand}" />
-        <MenuItem Header="{loc:T shell.navigation.favorites}" ItemsSource="{Binding FavoritePages}"
+        <MenuItem Classes="submenu" Header="{loc:T shell.navigation.favorites}" ItemsSource="{Binding FavoritePages}"
                   IsEnabled="{Binding HasFavoritePages}">
           <MenuItem.ItemContainerTheme>
             <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
               <Setter Property="Header" Value="{Binding Title}" />
               <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenTabCommand}" />
-              <Setter Property="CommandParameter" Value="{Binding}" />
-            </ControlTheme>
-          </MenuItem.ItemContainerTheme>
-        </MenuItem>
-        <Separator />
-        <MenuItem Header="{loc:T menu.file.closeTab}" Command="{Binding CloseTabCommand}" InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
-        <MenuItem Header="{loc:T menu.file.closeAll}" Command="{Binding CloseAllTabsCommand}" />
-        <MenuItem Header="{loc:T menu.window.openPages}" ItemsSource="{Binding Tabs}" IsEnabled="{Binding HasTabs}">
-          <MenuItem.ItemContainerTheme>
-            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:WorkspaceTabViewModel">
-              <Setter Property="Header" Value="{Binding Title}" />
-              <Setter Property="Command"
-                      Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).SelectTabCommand}" />
               <Setter Property="CommandParameter" Value="{Binding}" />
             </ControlTheme>
           </MenuItem.ItemContainerTheme>
@@ -255,16 +311,16 @@
             BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="0,0,0,1">
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Content="{loc:T toolbar.refresh}"
+        <Button Classes="toolbar" Content="{loc:T toolbar.refresh}"
                 Command="{Binding RefreshCommand}"
                 ToolTip.Tip="{loc:T toolbar.refresh.tip}" />
-        <Button Content="{loc:T toolbar.closeTab}"
+        <Button Classes="toolbar" Content="{loc:T toolbar.closeTab}"
                 Command="{Binding CloseTabCommand}"
                 ToolTip.Tip="{loc:T toolbar.closeTab.tip}" />
-        <Button Content="{loc:T toolbar.logs}"
+        <Button Classes="toolbar" Content="{loc:T toolbar.logs}"
                 Command="{Binding ShowLogsCommand}"
                 ToolTip.Tip="{loc:T toolbar.logs.tip}" />
-        <Button Content="{loc:T tasks.title}" Command="{Binding ShowTaskPanelCommand}" />
+        <Button Classes="toolbar" Content="{loc:T tasks.title}" Command="{Binding ShowTaskPanelCommand}" />
       </StackPanel>
     </Border>
 
@@ -295,35 +351,36 @@
       </Grid>
     </Border>
 
-    <!-- 状态栏 -->
+    <!-- 状态栏:单行(架构基线 §状态栏),左侧消息沿用省略号,右侧按"连接/任务/用户/环境/计数"顺序排 -->
     <Border DockPanel.Dock="Bottom"
             Padding="12,5"
             Background="{DynamicResource PlinthPanelBrush}"
             BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6">
+      <Grid ColumnDefinitions="*,Auto">
         <TextBlock Text="{Binding StatusMessage}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
                    Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14">
-          <TextBlock Text="{Binding TabCountText}"
-                     Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBlock Text="{Binding VersionText}"
-                     Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-        </StackPanel>
-        <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
-          <Button x:Name="ConnectionStatusButton" Content="{Binding ShellStatus.ConnectionText}"
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <Button x:Name="ConnectionStatusButton" Classes="statusItem" Content="{Binding ShellStatus.ConnectionText}"
+                  Classes.warning="{Binding ShellStatus.IsConnectionWarning}"
                   Command="{Binding ShowSettingsCommand}" ToolTip.Tip="{Binding ShellStatus.ConnectionHint}"
                   AutomationProperties.Name="{Binding ShellStatus.ConnectionText}"
-                  MinHeight="0" Padding="4,2" Margin="0,0,12,0" />
-          <TextBlock Text="{Binding ShellStatus.UserText}" ToolTip.Tip="{Binding ShellStatus.UserText}"
-                     MaxWidth="200" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock Text="{Binding ShellStatus.EnvironmentText}" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <Button x:Name="TaskStatusButton" Content="{Binding ShellStatus.TaskText}"
+                  MinHeight="0" />
+          <Button x:Name="TaskStatusButton" Classes="statusItem" Content="{Binding ShellStatus.TaskText}"
                   Command="{Binding ShowTaskPanelCommand}" ToolTip.Tip="{loc:T tasks.title}"
-                  AutomationProperties.Name="{Binding ShellStatus.TaskText}" MinHeight="0" Padding="4,2" />
-        </WrapPanel>
+                  AutomationProperties.Name="{Binding ShellStatus.TaskText}" MinHeight="0" />
+          <TextBlock Classes="statusMeta" Text="{Binding ShellStatus.UserText}" ToolTip.Tip="{Binding ShellStatus.UserText}"
+                     MaxWidth="200" TextTrimming="CharacterEllipsis" />
+          <TextBlock Classes="statusMeta" Text="{Binding ShellStatus.EnvironmentText}" />
+          <TextBlock Text="{Binding TabCountText}"
+                     VerticalAlignment="Center"
+                     Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+          <TextBlock Text="{Binding VersionText}"
+                     VerticalAlignment="Center"
+                     Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -340,26 +397,35 @@
       <Border Grid.Column="0"
               Classes.compact="{Binding IsSidebarCompact}"
               IsVisible="{Binding IsSidebarVisible}"
-              Background="{DynamicResource PlinthPanelBrush}"
+              Background="{DynamicResource PlinthSidebarBrush}"
               BorderBrush="{DynamicResource PlinthBorderBrush}"
               BorderThickness="0,0,1,0">
         <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <!-- 汉堡图标用矢量条:字体字形在缩放/状态切换时会有亚像素偏移,看起来像在跳 -->
           <Button x:Name="NavigationToggle"
                   Grid.Row="0"
-                  Content="&#xE700;"
-                  FontFamily="Segoe Fluent Icons,Segoe MDL2 Assets"
-                  FontSize="14"
                   Command="{Binding ToggleSidebarCompactCommand}"
                   AutomationProperties.Name="{Binding SidebarToggleText}"
                   ToolTip.Tip="{Binding SidebarToggleText}"
                   Background="Transparent"
-                  BorderThickness="0" />
+                  BorderThickness="0">
+            <Canvas x:Name="NavigationGlyph" Width="20" Height="14"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+              <Rectangle Canvas.Left="2" Canvas.Top="1" Width="16" Height="2" RadiusX="1"
+                         Fill="{DynamicResource PlinthForegroundBrush}" />
+              <Rectangle Canvas.Left="2" Canvas.Top="6" Width="16" Height="2" RadiusX="1"
+                         Fill="{DynamicResource PlinthForegroundBrush}" />
+              <Rectangle Canvas.Left="2" Canvas.Top="11" Width="16" Height="2" RadiusX="1"
+                         Fill="{DynamicResource PlinthForegroundBrush}" />
+            </Canvas>
+          </Button>
           <TextBlock x:Name="NavigationTitle"
                      Grid.Row="1"
                      Text="{loc:T shell.nav.title}"
                      IsVisible="{Binding IsSidebarCompact, Converter={x:Static conv:BoolConverters.Not}}"
-                     Margin="14,12,14,4"
-                     FontSize="11"
+                     Margin="16,4,16,4"
+                     FontSize="10"
+                     FontWeight="SemiBold"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
           <ListBox x:Name="NavigationList"
              ItemContainerTheme="{StaticResource NavigationItemTheme}"
@@ -386,6 +452,8 @@
                      Focusable="True"
                      Background="Transparent"
                      BorderThickness="0"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      Tapped="OnNavigationTapped" />
           </Border>
         </Grid>
@@ -436,11 +504,7 @@
                            ToolTip.Tip="{Binding Title}" />
                 <Button Content="✕" Classes="tabClose"
                         AutomationProperties.Name="{Binding Title}"
-                        Padding="4,0"
-                        FontSize="10"
                         VerticalAlignment="Center"
-                        Background="Transparent"
-                        BorderThickness="0"
                         ToolTip.Tip="{loc:T shell.tab.close}"
                         Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloseTabItemCommand}"
                         CommandParameter="{Binding}" />
@@ -534,7 +598,7 @@
           HorizontalAlignment="Center"
           VerticalAlignment="Top"
           Margin="0,96,0,0"
-          Padding="12"
+          Padding="0,12"
           Background="{DynamicResource PlinthPanelBrush}"
           BorderBrush="{DynamicResource PlinthBorderBrush}"
           BorderThickness="1"
@@ -543,16 +607,19 @@
     <DockPanel>
       <TextBox x:Name="QuickOpenBox"
                DockPanel.Dock="Top"
+               Margin="12,0"
                Text="{Binding QuickOpenText, Mode=TwoWay}"
-               PlaceholderText="搜索页面（Ctrl+K）"
-               AutomationProperties.Name="快速打开页面"
+               PlaceholderText="{loc:T shell.quickOpen.placeholder}"
+               AutomationProperties.Name="{loc:T shell.quickOpen.name}"
                KeyDown="OnQuickOpenKeyDown" />
       <ListBox x:Name="QuickOpenList"
                Margin="0,8,0,0"
                MaxHeight="340"
+               Background="Transparent"
+               BorderThickness="0"
                ItemsSource="{Binding QuickOpenItems}"
                SelectedItem="{Binding QuickOpenSelection, Mode=TwoWay}"
-               AutomationProperties.Name="页面搜索结果">
+               AutomationProperties.Name="{loc:T shell.quickOpen.results}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="nav:NavigationItem">
             <StackPanel Orientation="Horizontal" Spacing="8">

@@ -23,6 +23,9 @@ class SupplementalTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(dir=ROOT)
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        cache_patch = patch.object(third_party, "SPDX_CACHE", self.root / "spdx-cache")
+        cache_patch.start()
+        self.addCleanup(cache_patch.stop)
         self.evidence = self.root / "evidence"
         self.evidence.mkdir()
         self.raw = b"SYNTHETIC TEST LICENSE ONLY\r\nCopyright test fixture\r\n"
@@ -235,10 +238,215 @@ class SupplementalTests(unittest.TestCase):
         self.assertIn("$supplementalOptions.SupplementalComplianceFile = (Resolve-Path", acceptance)
         self.assertIn("-PythonExecutable $python @supplementalOptions", acceptance)
         self.assertIn("SupplementalComplianceFile requires -Package", acceptance)
-        copy_step = publish.index('Copy-Item "$complianceDir/THIRD_PARTY_NOTICES.md", "$complianceDir/sbom.cdx.json" -Destination $publishDir')
+        copy_step = publish.index('Copy-Item "$complianceDir/THIRD_PARTY_NOTICES.md", "$complianceDir/sbom.cdx.json", "$complianceDir/coverage-report.json" -Destination $publishDir')
         self.assertLess(copy_step, publish.index("Compress-Archive"))
         self.assertLess(copy_step, publish.index("scripts/installer_manifest.py"))
         self.assertIn('"/DPUBLISH_DIR=$publishDir"', publish)
+
+
+class PublishInventoryTests(unittest.TestCase):
+    assets = SupplementalTests.assets
+    write_inventory = SupplementalTests.write_inventory
+    # All identities, hashes and license bodies here are synthetic fixtures only.
+    runtime = "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.0"
+    target = ".NETCoreApp,Version=v10.0/win-x64"
+
+    def setUp(self):
+        SupplementalTests.setUp(self)
+        self.asset = self.assets()
+        self.publish = self.root / "publish"
+        self.publish.mkdir()
+        self.output = self.root / "publish-output"
+        self.network_patch = patch("third_party.urllib.request.urlopen",
+                                   side_effect=AssertionError("offline test attempted network"))
+        self.network = self.network_patch.start()
+        self.addCleanup(self.network_patch.stop)
+        self.text_patch = patch.object(third_party, "fetch_spdx_text",
+                                       return_value="SYNTHETIC SPDX TEST ONLY")
+        self.text_patch.start()
+        self.addCleanup(self.text_patch.stop)
+
+    def deps(self, keys, filename="App.deps.json", target=None, entries=None, types=None):
+        target = self.target if target is None else target
+        types = types or {}
+        libraries = {key: {"type": types.get(key, "runtimepack" if
+                     key.casefold().startswith("runtimepack.") else "package")}
+                     for key in keys}
+        data = {"libraries": libraries,
+                "runtimeTarget": {"name": target},
+                "targets": {target: entries if entries is not None else {
+                    key: {"runtime": {"fixture.dll": {}}} for key in keys}}}
+        path = self.publish / filename
+        path.write_text(json.dumps(data), encoding="utf-8-sig")
+        return path
+
+    def run_publish(self, supplemental=False, assets=None):
+        stdout = io.StringIO()
+        with patch("sys.stdout", stdout):
+            third_party.generate(assets or [self.asset], self.output,
+                                 self.manifest if supplemental else None, self.publish)
+        sbom = json.loads((self.output / "sbom.cdx.json").read_text())
+        notice = (self.output / "THIRD_PARTY_NOTICES.md").read_text()
+        return sbom, notice, stdout.getvalue()
+
+    def test_release_filter_and_case_insensitive_multi_assets_deduplication(self):
+        data = json.loads(self.asset.read_text())
+        # An excluded Debug-only package must not reach license policy evaluation.
+        data["libraries"]["DebugOnly/1.0"] = dict(data["libraries"]["Fixture/1.0"])
+        self.asset.write_text(json.dumps(data))
+        other = self.root / "other.assets.json"
+        other.write_text(json.dumps({**data, "libraries": {
+            "FIXTURE/1.0": data["libraries"]["Fixture/1.0"]}}))
+        self.deps(["fIxTuRe/1.0"])
+        sbom, notice, _ = self.run_publish(assets=[self.asset, other])
+        self.assertEqual([c["name"] for c in sbom["components"]], ["Fixture"])
+        self.assertNotIn("DebugOnly", notice)
+        self.assertNotIn("UNCOVERED", notice)
+
+    def test_missing_ordinary_package_blocks_before_output_or_license_fetch(self):
+        self.deps(["Fixture/1.0"])
+        self.deps(["Missing/2.0", "Other/3.0"], filename="Plugin.deps.json")
+        with patch.object(third_party, "fetch_spdx_text") as fetch:
+            with self.assertRaisesRegex(ValueError, "missing from restored assets") as error:
+                self.run_publish()
+        for identity in ("Missing/2.0", "Other/3.0", "Plugin.deps.json"):
+            self.assertIn(identity, str(error.exception))
+        fetch.assert_not_called()
+        self.assertFalse(self.output.exists())
+
+    def test_supplemental_identity_cannot_replace_ordinary_assets(self):
+        self.entry.update(name="Missing", version="2.0")
+        self.write_inventory([self.entry])
+        self.deps(["Fixture/1.0", "Missing/2.0"])
+        with self.assertRaisesRegex(ValueError, "Missing/2.0"):
+            self.run_publish(supplemental=True)
+        self.assertFalse(self.output.exists())
+
+    def test_runtime_gap_is_traceable_in_all_outputs_without_fake_component(self):
+        path = self.deps(["Fixture/1.0", self.runtime])
+        self.assertEqual(json.loads(path.read_text(encoding="utf-8-sig"))[
+            "libraries"][self.runtime]["type"], "runtimepack")
+        sbom, notice, stdout = self.run_publish(supplemental=True)
+        gaps = [json.loads(p["value"]) for p in sbom["metadata"]["properties"]
+                if p["name"] == "plinth:uncovered-publish-package"]
+        self.assertEqual(len(gaps), 1)
+        self.assertEqual(gaps[0]["package"], self.runtime)
+        self.assertEqual(gaps[0]["deps"], "App.deps.json")
+        self.assertEqual(gaps[0]["target"], self.target)
+        self.assertIn("absent from restored assets", gaps[0]["reason"])
+        self.assertEqual(len(sbom["components"]), 2)
+        for text in (notice, stdout):
+            self.assertIn("UNCOVERED: " + self.runtime, text)
+            self.assertIn("App.deps.json", text)
+            self.assertIn(self.target, text)
+        self.assertFalse(any(c["name"].startswith("runtimepack.") for c in sbom["components"]))
+
+    def test_runtime_boundaries_fail_closed(self):
+        for key, target, entries in (
+            (self.runtime.replace("runtimepack.", ""), self.target, None),
+            (self.runtime.replace("NETCore", "Unreviewed"), self.target, None),
+            (self.runtime + ".extra", self.target, {}),
+            (self.runtime.replace("win-x64", "linux-x64"), self.target, None),
+            (self.runtime, ".NETCoreApp,Version=v10.0", None),
+            (self.runtime, self.target, {}),
+            (self.runtime, self.target, {self.runtime: {"runtime": {}}}),
+        ):
+            with self.subTest(key=key, target=target, entries=entries):
+                self.deps(["Fixture/1.0", key], target=target, entries=entries,
+                          types={key: "runtimepack"})
+                with self.assertRaisesRegex(ValueError, "missing from restored assets"):
+                    self.run_publish()
+                self.assertFalse(self.output.exists())
+
+    def test_package_cannot_claim_runtimepack_exception(self):
+        for key in (self.runtime, self.runtime.replace("NETCore", "WindowsDesktop")):
+            with self.subTest(key=key):
+                self.deps(["Fixture/1.0", key], types={key: "package"})
+                with patch.object(third_party, "fetch_spdx_text") as fetch:
+                    with self.assertRaisesRegex(ValueError, "missing from restored assets"):
+                        self.run_publish()
+                fetch.assert_not_called()
+                self.assertFalse(self.output.exists())
+
+    def test_runtime_entries_in_inactive_target_do_not_qualify(self):
+        path = self.deps(["Fixture/1.0", self.runtime], entries={})
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+        data["targets"][".NETCoreApp,Version=v10.0/other-rid"] = {
+            self.runtime: {"runtime": {"fixture.dll": {}}}}
+        path.write_text(json.dumps(data), encoding="utf-8-sig")
+        with self.assertRaisesRegex(ValueError, "missing from restored assets"):
+            self.run_publish()
+        self.assertFalse(self.output.exists())
+
+    def test_runtime_case_and_windowsdesktop_native_target(self):
+        key = self.runtime.replace("NETCore", "WindowsDesktop").upper()
+        self.deps(["Fixture/1.0", key], entries={
+            key.lower(): {"native": {"fixture.dll": {}}}})
+        sbom, notice, _ = self.run_publish()
+        self.assertEqual(len(sbom["components"]), 1)
+        self.assertIn("UNCOVERED: " + key, notice)
+
+    def test_runtime_with_real_assets_uses_normal_license_validation(self):
+        data = json.loads(self.asset.read_text())
+        data["libraries"][self.runtime] = dict(data["libraries"]["Fixture/1.0"])
+        self.asset.write_text(json.dumps(data))
+        self.deps(["Fixture/1.0", self.runtime])
+        # Pointing at an unrelated restored package cannot fabricate coverage.
+        with self.assertRaisesRegex(ValueError, "NuSpec identity mismatch"):
+            self.run_publish()
+        self.assertFalse(self.output.exists())
+
+    def test_runtime_with_matching_restored_identity_has_no_gap(self):
+        data = json.loads(self.asset.read_text())
+        library = data["libraries"].pop("Fixture/1.0")
+        data["libraries"][self.runtime] = library
+        self.asset.write_text(json.dumps(data))
+        name, version = self.runtime.rsplit("/", 1)
+        nuspec = self.root / "packages/fixture/1.0/fixture.nuspec"
+        nuspec.write_text(
+            f'<package><metadata><id>{name}</id><version>{version}</version>'
+            '<license type="expression">MIT</license></metadata></package>')
+        self.deps([self.runtime])
+        sbom, notice, _ = self.run_publish()
+        self.assertEqual(sbom["components"][0]["name"], name)
+        self.assertEqual(sbom["components"][0]["version"], version)
+        self.assertEqual(sbom["components"][0]["licenses"], [{"license": {"id": "MIT"}}])
+        self.assertNotIn("UNCOVERED", notice)
+        self.assertFalse(any(p["name"] == "plinth:uncovered-publish-package"
+                             for p in sbom["metadata"]["properties"]))
+
+    def test_missing_restored_directory_is_not_a_runtime_exception(self):
+        data = json.loads(self.asset.read_text())
+        data["libraries"][self.runtime] = {
+            "type": "package", "path": "missing/10.0.0", "sha512": ""}
+        self.asset.write_text(json.dumps(data))
+        self.deps(["Fixture/1.0", self.runtime])
+        with self.assertRaisesRegex(ValueError, "Missing restored package"):
+            self.run_publish()
+
+    def test_empty_or_missing_deps_blocks(self):
+        for write_deps in (False, True):
+            if write_deps:
+                self.deps([])
+            with self.assertRaisesRegex(ValueError, "No packaged dependencies"):
+                self.run_publish()
+
+    def test_runtime_only_publish_keeps_explicit_gap(self):
+        self.deps([self.runtime])
+        sbom, notice, _ = self.run_publish()
+        self.assertEqual(sbom["components"], [])
+        self.assertIn("UNCOVERED: " + self.runtime, notice)
+
+    def test_cli_missing_package_is_blocked_offline(self):
+        self.deps(["Fixture/1.0", "Missing/2.0"])
+        result = subprocess.run([
+            sys.executable, str(ROOT / "scripts/third_party.py"),
+            "--assets", str(self.asset), "--publish-directory", str(self.publish),
+            "--output", str(self.output)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("BLOCKED: Publish dependencies missing from restored assets", result.stderr)
+        self.assertIn("Missing/2.0", result.stderr)
+        self.assertFalse(self.output.exists())
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ namespace Plinth.App.Tests;
 /// 绑定告警门禁:打开每个页面和任务面板都不允许产生 Avalonia Binding 告警。
 /// 告警会写进日志页,噪声会盖住真故障,所以按零容忍处理。
 /// </summary>
+[Collection("Localization")]
 public sealed class BindingWarningTests
 {
     [AvaloniaFact]

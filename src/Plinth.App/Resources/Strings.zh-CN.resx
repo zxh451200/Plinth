@@ -84,7 +84,7 @@
   <data name="settings.theme.hint" xml:space="preserve"><value>改了立即生效。「跟随系统」会随系统的浅色/深色切换。</value></data>
   <data name="settings.saved" xml:space="preserve"><value>已保存</value></data>
   <data name="settings.language" xml:space="preserve"><value>语言</value></data>
-  <data name="settings.language.hint" xml:space="preserve"><value>改了语言要重启程序才生效。</value></data>
+  <data name="settings.language.hint" xml:space="preserve"><value>选择后立即生效。</value></data>
   <data name="settings.language.saved" xml:space="preserve"><value>已保存,重启程序后生效。</value></data>
   <data name="demo.new" xml:space="preserve"><value>新增</value></data>
   <data name="demo.search.placeholder" xml:space="preserve"><value>按编码或名称搜索</value></data>
@@ -93,6 +93,13 @@
   <data name="demo.col.code" xml:space="preserve"><value>编码</value></data>
   <data name="demo.col.name" xml:space="preserve"><value>名称</value></data>
   <data name="demo.col.remark" xml:space="preserve"><value>备注</value></data>
+  <data name="demo.col.quantity" xml:space="preserve"><value>数量</value></data>
+  <data name="demo.col.dueDate" xml:space="preserve"><value>截止日期</value></data>
+  <data name="demo.col.priority" xml:space="preserve"><value>优先级</value></data>
+  <data name="demo.col.active" xml:space="preserve"><value>启用</value></data>
+  <data name="demo.priority.low" xml:space="preserve"><value>低</value></data>
+  <data name="demo.priority.normal" xml:space="preserve"><value>普通</value></data>
+  <data name="demo.priority.high" xml:space="preserve"><value>高</value></data>
   <data name="demo.form.title" xml:space="preserve"><value>编辑</value></data>
   <data name="demo.save" xml:space="preserve"><value>保存</value></data>
   <data name="demo.cancel" xml:space="preserve"><value>取消</value></data>
@@ -100,6 +107,21 @@
   <data name="demo.delete.confirm" xml:space="preserve"><value>确认删除这条记录?删除后无法恢复。</value></data>
   <data name="demo.delete.keep" xml:space="preserve"><value>保留</value></data>
   <data name="demo.export" xml:space="preserve"><value>导出 CSV</value></data>
+  <data name="demo.exportPdf" xml:space="preserve"><value>导出 PDF（当前页）</value></data>
+  <data name="demo.printPdf" xml:space="preserve"><value>打印（当前页）</value></data>
+  <data name="demo.pdf.pickTitle" xml:space="preserve"><value>导出 PDF</value></data>
+  <data name="demo.pdf.title" xml:space="preserve"><value>示例数据</value></data>
+  <data name="demo.pdf.generated" xml:space="preserve"><value>生成时间 {0}</value></data>
+  <data name="demo.pdf.records" xml:space="preserve"><value>共 {0} 条</value></data>
+  <data name="demo.pdf.code" xml:space="preserve"><value>编码</value></data>
+  <data name="demo.pdf.name" xml:space="preserve"><value>名称</value></data>
+  <data name="demo.pdf.remark" xml:space="preserve"><value>备注</value></data>
+  <data name="demo.pdf.version" xml:space="preserve"><value>版本</value></data>
+  <data name="demo.pdf.page" xml:space="preserve"><value>第 {0} 页</value></data>
+  <data name="demo.status.pdfExported" xml:space="preserve"><value>已导出 PDF：{0}</value></data>
+  <data name="demo.status.pdfFailed" xml:space="preserve"><value>导出 PDF 失败,详细原因已写入日志。</value></data>
+  <data name="demo.status.printStarted" xml:space="preserve"><value>已发送到系统打印</value></data>
+  <data name="demo.status.printFailed" xml:space="preserve"><value>打印失败：没有可用的 PDF 打印程序。</value></data>
   <data name="demo.status.exported" xml:space="preserve"><value>已导出到 {0}</value></data>
   <data name="demo.status.exportFailed" xml:space="preserve"><value>导出失败,详细原因已写入日志。</value></data>
   <data name="demo.status.count" xml:space="preserve"><value>共 {0} 条</value></data>
@@ -109,6 +131,9 @@
   <data name="demo.err.nameRequired" xml:space="preserve"><value>请填写名称。</value></data>
   <data name="demo.err.nameTooLong" xml:space="preserve"><value>名称最多 {0} 个字符。</value></data>
   <data name="demo.err.remarkTooLong" xml:space="preserve"><value>备注最多 {0} 个字符。</value></data>
+  <data name="demo.err.quantityRange" xml:space="preserve"><value>数量必须是 {0} 到 {1} 之间的整数。</value></data>
+  <data name="demo.err.dueDateRange" xml:space="preserve"><value>日期必须在 {0} 到 {1} 之间。</value></data>
+  <data name="demo.err.priorityInvalid" xml:space="preserve"><value>请选择有效的优先级。</value></data>
   <data name="demo.err.duplicate" xml:space="preserve"><value>编码 {0} 已经存在,请换一个。</value></data>
   <data name="demo.err.conflict" xml:space="preserve"><value>这条记录在你编辑期间被修改或删除了。请先保留输入，再取消并刷新列表。</value></data>
   <data name="demo.err.saveFailed" xml:space="preserve"><value>保存失败,请稍后再试。详细原因已写入日志。</value></data>
@@ -121,6 +146,13 @@
   <data name="logs.col.time" xml:space="preserve"><value>时间</value></data>
   <data name="logs.col.level" xml:space="preserve"><value>级别</value></data>
   <data name="logs.level.all"><value>全部级别</value></data>
+  <data name="logs.level.verbose"><value>详细</value></data>
+  <data name="logs.level.debug"><value>调试</value></data>
+  <data name="logs.level.information"><value>信息</value></data>
+  <data name="logs.level.warning"><value>警告</value></data>
+  <data name="logs.level.error"><value>错误</value></data>
+  <data name="logs.level.fatal"><value>致命</value></data>
+  <data name="logs.level.critical"><value>严重</value></data>
   <data name="logs.col.message" xml:space="preserve"><value>内容</value></data>
   <data name="logs.status.count" xml:space="preserve"><value>最近 {0} 条</value></data>
   <data name="logs.status.empty" xml:space="preserve"><value>没有可显示的日志。</value></data>
@@ -141,6 +173,7 @@
   <data name="backup.title" xml:space="preserve"><value>备份与恢复</value></data>
   <data name="backup.intro" xml:space="preserve"><value>ZIP 备份包含一致的数据库副本、设置和 SHA-256 清单。请预览并确认后安排下次启动恢复；当前数据库和设置会保留安全副本。</value></data>
   <data name="backup.create" xml:space="preserve"><value>立即备份...</value></data>
+  <data name="backup.serverManaged"><value>服务器数据库请在服务器端备份和恢复；应用内文件备份仅支持 SQLite。</value></data>
   <data name="backup.restore" xml:space="preserve"><value>从备份恢复...</value></data>
   <data name="backup.pickSave" xml:space="preserve"><value>备份另存为</value></data>
   <data name="backup.pickOpen" xml:space="preserve"><value>选择备份文件</value></data>
@@ -206,6 +239,8 @@
   <data name="demo.list.empty"><value>没有匹配的记录</value></data>
   <data name="nav.taskDiagnostics"><value>任务与诊断</value></data>
   <data name="logs.search"><value>搜索</value></data>
+  <data name="common.search"><value>搜索</value></data>
+  <data name="common.noMatch"><value>没有匹配项</value></data>
   <data name="logs.module"><value>模块</value></data>
   <data name="logs.taskId"><value>任务 ID</value></data>
   <data name="logs.errorCode"><value>错误码</value></data>
@@ -218,6 +253,9 @@
   <data name="logs.copyId"><value>复制关联 ID</value></data>
   <data name="logs.copy.failed"><value>无法复制到剪贴板。</value></data>
   <data name="logs.details.empty"><value>选中一条日志查看完整详情。</value></data>
+  <data name="calendar.today"><value>今天</value></data>
+  <data name="calendar.clear"><value>清除</value></data>
+  <data name="date.placeholder"><value>选择日期</value></data>
   <data name="tasks.title"><value>任务中心</value></data>
   <data name="tasks.cancel"><value>请求取消</value></data>
   <data name="tasks.name"><value>任务</value></data>
@@ -267,6 +305,8 @@
   <data name="profile.production"><value>生产环境</value></data>
   <data name="profile.confirm"><value>此操作作用于生产环境，是否继续？</value></data>
   <data name="common.confirm"><value>确认</value></data>
+  <data name="common.yes"><value>是</value></data>
+  <data name="common.no"><value>否</value></data>
   <data name="settings.restart"><value>已保存，重启后应用日志保留设置。</value></data>
   <data name="settings.logRetentionDays"><value>日志保留天数（1–365）</value></data>
   <data name="settings.logRetainedFiles"><value>日志文件数量上限（1–100，每份 10 MB）</value></data>
@@ -322,6 +362,9 @@
   <data name="tasks.notification"><value>{0}：{1}。全部结果可在任务中心查看。</value></data>
   <data name="tasks.notification.view"><value>查看任务</value></data>
   <data name="tasks.notification.dismiss"><value>关闭提示</value></data>
+  <data name="tasks.notify.succeeded"><value>任务已完成</value></data>
+  <data name="tasks.notify.failed"><value>任务失败</value></data>
+  <data name="tasks.notify.cancelled"><value>任务已取消</value></data>
   <data name="shell.sidePanel"><value>详情与任务面板</value></data>
   <data name="shell.sidePanel.hide"><value>隐藏面板</value></data>
   <data name="shell.details"><value>详情</value></data>
@@ -350,6 +393,7 @@
   <data name="help.version.title"><value>版本、更新与许可证</value></data>
   <data name="help.version.body"><value>帮助页顶部和关于页显示当前应用版本。关于页可检查管理员配置的 HTTPS 更新源。发现新版本后，请核对版本和地址，点击“打开下载地址”交给默认浏览器；程序不会自动安装更新。重新检查会清除旧下载入口，关闭关于页会取消本页检查。&#10;&#10;“帮助 → 第三方许可证声明”显示此构建随包携带的 THIRD_PARTY_NOTICES.md，关于页也有同一入口。开发构建可能没有此文件；缺少文件不代表没有第三方依赖，也不代表发布合规检查已经通过。</value></data>
   <data name="help.demo.title"><value>示例记录与 CSV</value></data>
+  <data name="nav.advancedTable"><value>高级表格</value></data>
   <data name="help.demo.body"><value>选中记录后在标准表单编辑。Ctrl+N 新增，Ctrl+S 保存；取消编辑会经过未保存确认。编码和名称必填。发生版本冲突时，先保留输入，再重新加载当前记录。&#10;&#10;CSV 导入需选择编码、分隔符和源列映射，核对预览后确认。预览最多显示 20 条数据，正式提交前仍会完整校验；输入上限为 5000 行、5 MiB。文件变化后需重新预览。校验失败时整批不导入，可导出错误报告。&#10;&#10;导出采用当前搜索条件。导入导出进入全局任务中心，关闭页面仍会继续；完成后请刷新列表。</value></data>
   <data name="help.spreadsheet.title"><value>文本电子表格交换</value></data>
   <data name="help.spreadsheet.body"><value>可选 XLSX 页面处理有上限的纯文本表格，导入最多 5000 行、5 MiB。请先预览并确认已校验内容；公式、宏、外部关系和非文本单元格会被拒绝。&#10;&#10;取消预览或关闭页面会停止本地预览；已启动的导入导出归全局任务中心管理。重试前请确认最终结果。Office 兼容与性能仍需针对实际部署另行验证。</value></data>
@@ -365,6 +409,14 @@
   <data name="license.status.cancelled"><value>已取消读取。</value></data>
   <data name="shell.status.user"><value>用户：{0}</value></data>
   <data name="shell.status.environment"><value>环境：{0}</value></data>
+  <data name="shell.environment.development"><value>开发</value></data>
+  <data name="shell.environment.test"><value>测试</value></data>
+  <data name="shell.environment.production"><value>生产</value></data>
+  <data name="shell.quickOpen.placeholder"><value>搜索页面（Ctrl+K）</value></data>
+  <data name="shell.quickOpen.name"><value>快速打开页面</value></data>
+  <data name="shell.quickOpen.results"><value>页面搜索结果</value></data>
+  <data name="shell.view.missing"><value>找不到页面「{0}」对应的界面，需要名为 {1} 的视图。</value></data>
+  <data name="shell.view.missing.hint"><value>检查视图类名、命名空间与 x:Class 是否一致（名称把 ViewModel 换成 View）。</value></data>
   <data name="shell.status.activeTasks"><value>活动任务：{0}</value></data>
   <data name="shell.health.disabled"><value>远程检查已关闭</value></data>
   <data name="shell.health.passed"><value>健康检查通过</value></data>
@@ -425,4 +477,43 @@
   <data name="tasks.result.unknown"><value>尚未确定</value></data>
   <data name="tasks.result.path"><value>输出文件：{0}</value></data>
   <data name="shell.module.failed"><value>{0} 初始化失败，本次运行已禁用。其他模块仍可使用。请打开相关日志或联系支持。关联 ID：{1}</value></data>
+  <data name="backup.exit.confirm" xml:space="preserve"><value>确认备份并安全退出以便升级</value></data>
+  <data name="backup.exit.snapshotNote" xml:space="preserve"><value>备份仅包含创建 SQLite 一致性快照时已保存的数据。备份成功后仍会询问未保存修改；在退出确认中才保存的修改，以及快照之后的写入，不包含在本次备份内。若需备份这些修改，请先保存并等待写入完成，再创建备份。取消退出会保留备份并继续运行。</value></data>
+  <data name="backup.exit.stayed" xml:space="preserve"><value>备份已保存到 {0}；应用仍在运行，尚未退出，请勿开始升级。</value></data>
+  <data name="advanced.notice" xml:space="preserve"><value>仅使用本地合成或显式导入快照，不连接业务数据库。导入完整校验成功后才替换本页快照（UTF-8 CSV，最多 8 MiB、10,000 行、16 组）。明细分页展示；小计和总计覆盖已应用范围的全部行，分组可能跨页。</value></data>
+  <data name="advanced.import" xml:space="preserve"><value>导入 CSV 快照</value></data>
+  <data name="advanced.cancel" xml:space="preserve"><value>取消导入</value></data>
+  <data name="advanced.csvType" xml:space="preserve"><value>CSV 文件</value></data>
+  <data name="advanced.search" xml:space="preserve"><value>搜索 ID、分组或标签</value></data>
+  <data name="advanced.all" xml:space="preserve"><value>全部分组</value></data>
+  <data name="advanced.groupFilter" xml:space="preserve"><value>分组筛选（留空表示全部）</value></data>
+  <data name="advanced.apply" xml:space="preserve"><value>应用</value></data>
+  <data name="advanced.export" xml:space="preserve"><value>导出已应用范围（CSV）</value></data>
+  <data name="advanced.previous" xml:space="preserve"><value>上一页</value></data>
+  <data name="advanced.next" xml:space="preserve"><value>下一页</value></data>
+  <data name="advanced.colKind" xml:space="preserve"><value>类型</value></data>
+  <data name="advanced.colGroup" xml:space="preserve"><value>分组</value></data>
+  <data name="advanced.colLabel" xml:space="preserve"><value>标签</value></data>
+  <data name="advanced.colRows" xml:space="preserve"><value>行数</value></data>
+  <data name="advanced.colQuantity" xml:space="preserve"><value>数量</value></data>
+  <data name="advanced.colAmount" xml:space="preserve"><value>金额</value></data>
+  <data name="advanced.scope" xml:space="preserve"><value>已应用范围：搜索“{0}”，分组 {1}；{2:N0} 行</value></data>
+  <data name="advanced.synthetic" xml:space="preserve"><value>本地合成试点快照：{0:N0} 行</value></data>
+  <data name="advanced.host" xml:space="preserve"><value>宿主提供的试点数据源：{0:N0} 行</value></data>
+  <data name="advanced.imported" xml:space="preserve"><value>导入的本地 CSV 快照（仅本页）：{0:N0} 行</value></data>
+  <data name="advanced.empty" xml:space="preserve"><value>没有匹配的行</value></data>
+  <data name="advanced.page" xml:space="preserve"><value>第 {0} / {1} 页；本页明细 {2} 行</value></data>
+  <data name="advanced.exported" xml:space="preserve"><value>已导出已应用范围的明细（不含汇总）至 {0}</value></data>
+  <data name="advanced.importSuccess" xml:space="preserve"><value>CSV 快照已导入。筛选已重置，从第 1 页展示完整导入范围。</value></data>
+  <data name="advanced.cancelled" xml:space="preserve"><value>已取消，保留原快照及已应用范围。</value></data>
+  <data name="advanced.denied" xml:space="preserve"><value>访问被拒绝。启用认证的宿主须显式映射 CSV 导入权限，原快照已保留。</value></data>
+  <data name="advanced.invalid" xml:space="preserve"><value>CSV 校验失败。请使用 UTF-8，表头须严格为 Id,Group,Label,Quantity,Amount；最多 8 MiB、10,000 行、16 组。原快照及已应用范围已保留。</value></data>
+  <data name="advanced.failed" xml:space="preserve"><value>操作失败，保留原快照及已应用范围，请重试。</value></data>
+  <data name="advanced.kindGroup" xml:space="preserve"><value>分组</value></data>
+  <data name="advanced.kindSubtotal" xml:space="preserve"><value>范围小计</value></data>
+  <data name="advanced.kindTotal" xml:space="preserve"><value>范围总计</value></data>
+  <data name="advanced.kindDetail" xml:space="preserve"><value>明细</value></data>
+  <data name="advanced.groupLabel" xml:space="preserve"><value>分组：{0}</value></data>
+  <data name="advanced.subtotalLabel" xml:space="preserve"><value>{0} 小计（全部范围）</value></data>
+  <data name="advanced.totalLabel" xml:space="preserve"><value>总计</value></data>
 </root>

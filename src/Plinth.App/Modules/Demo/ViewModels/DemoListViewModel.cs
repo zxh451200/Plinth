@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,8 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     private DemoListPreferences _listPreferences = new();
     private readonly TaskService? _tasks;
     private readonly CancellationTokenSource _lifetimeCts = new();
-    private (string Code, string Name, string Remark) _original;
+    private (string Code, string Name, string Remark, decimal? Quantity, DateTimeOffset? DueDate,
+        DemoPriority Priority, bool Active) _original;
     private bool _updatingSelection;
     private bool _disposed;
     private bool _leaving;
@@ -50,6 +52,9 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     private string _codeBusinessError = string.Empty;
     private string _nameBusinessError = string.Empty;
     private string _remarkBusinessError = string.Empty;
+    private string _quantityBusinessError = string.Empty;
+    private string _dueDateBusinessError = string.Empty;
+    private string _priorityBusinessError = string.Empty;
 
     public DemoListViewModel(DemoService service, ILogger<DemoListViewModel> logger,
         UnsavedChangesService? changes = null, WorkspacePreferencesService? preferences = null,
@@ -77,17 +82,39 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
             new(Loc.Get("demo.col.code"), item.Code),
             new(Loc.Get("demo.col.name"), item.Name),
             new(Loc.Get("demo.col.remark"), item.Remark),
+            new(Loc.Get("demo.col.quantity"), item.Quantity.ToString(System.Globalization.CultureInfo.CurrentCulture)),
+            new(Loc.Get("demo.col.dueDate"), item.DueDateText),
+            new(Loc.Get("demo.col.priority"), PriorityLabel(item.Priority)),
+            new(Loc.Get("demo.col.active"), item.Active ? Loc.Get("common.yes") : Loc.Get("common.no")),
             new(Loc.Get("demo.col.updatedAt"), item.UpdatedAtText),
             new(Loc.Get("demo.col.updatedBy"), item.UpdatedBy),
         ]
         : [];
     public string[] SortFields { get; } = ["Code", "Name", "Remark", "UpdatedAt", "UpdatedBy"];
+    /// <summary>列偏好按这个顺序和表格列一一对应；排序字段只是其中一部分。</summary>
+    public string[] ColumnKeys { get; } =
+        ["Code", "Name", "Remark", "Quantity", "DueDate", "Priority", "Active", "UpdatedAt", "UpdatedBy"];
     public int[] PageSizes { get; } = [25, 50, 100, 200];
-    public string[] SortLabels { get; } =
+    private string[] _sortLabels = BuildSortLabels();
+    public string[] SortLabels
+    {
+        get => _sortLabels;
+        private set { _sortLabels = value; OnPropertyChanged(); }
+    }
+
+    private static string[] BuildSortLabels() =>
     [
         Loc.Get("demo.col.code"), Loc.Get("demo.col.name"), Loc.Get("demo.col.remark"),
         Loc.Get("demo.col.updatedAt"), Loc.Get("demo.col.updatedBy"),
     ];
+
+    public override void OnUiLanguageChanged()
+    {
+        SortLabels = BuildSortLabels();
+        OnPropertyChanged(nameof(PriorityLabels));
+        OnPropertyChanged(nameof(Details));
+        base.OnUiLanguageChanged();
+    }
     public int SortIndex
     {
         get => Array.IndexOf(SortFields, SortField);
@@ -138,8 +165,10 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     public int TotalCount { get; private set; }
     public int PageCount => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
     public string PageText => $"{Page} / {PageCount}";
-    public bool IsDirty => IsEditing && _original != (EditCode, EditName, EditRemark);
+    public bool IsDirty => IsEditing
+        && _original != (EditCode, EditName, EditRemark, EditQuantity, EditDueDate, EditPriority, EditActive);
     public bool IsEmpty => !IsLoading && Items.Count == 0;
+    public bool CanInlineEdit => IsEditing && !IsBatchSelecting && HasEditPermission && CanUseSelectedRecord;
     public bool CanUseSelectedRecord => !_disposed && !_leaving && !IsLoading && !IsSaving
         && SelectedItem is { } item && item.Id == _editingId;
     public bool HasEditPermission => !DeploymentConfiguration.Current.Authentication.Enabled
@@ -151,6 +180,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     {
         OnPropertyChanged(nameof(HasEditPermission));
         OnPropertyChanged(nameof(HasDeletePermission));
+        OnPropertyChanged(nameof(CanInlineEdit));
     }
     public string CodeError => !_showValidation ? string.Empty
         : string.IsNullOrWhiteSpace(EditCode) ? Loc.Get("demo.err.codeRequired")
@@ -162,12 +192,47 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     public string RemarkError => _showValidation && EditRemark.Trim().Length > DemoService.MaxRemarkLength
         ? Loc.Format("demo.err.remarkTooLong", DemoService.MaxRemarkLength)
         : _showValidation ? _remarkBusinessError : string.Empty;
+    public string QuantityError => !_showValidation ? string.Empty
+        : EditQuantity is not { } quantity
+          || quantity < DemoService.MinQuantity || quantity > DemoService.MaxQuantity
+          || quantity != decimal.Truncate(quantity)
+            ? Loc.Format("demo.err.quantityRange", DemoService.MinQuantity, DemoService.MaxQuantity)
+            : _quantityBusinessError;
+    public string DueDateError => !_showValidation ? string.Empty
+        : EditDueDate is { } due
+          && (DateOnly.FromDateTime(due.Date) < DemoService.MinDueDate
+              || DateOnly.FromDateTime(due.Date) > DemoService.MaxDueDate)
+            ? Loc.Format("demo.err.dueDateRange", DemoService.MinDueDate.ToString("d"), DemoService.MaxDueDate.ToString("d"))
+            : _dueDateBusinessError;
+    public string PriorityError => !_showValidation ? string.Empty
+        : !Enum.IsDefined(EditPriority) ? Loc.Get("demo.err.priorityInvalid") : _priorityBusinessError;
+
+    public string[] PriorityLabels => [PriorityLabel(DemoPriority.Low), PriorityLabel(DemoPriority.Normal),
+        PriorityLabel(DemoPriority.High)];
+
+    public decimal QuantityMinimum => DemoService.MinQuantity;
+    public decimal QuantityMaximum => DemoService.MaxQuantity;
+
+    public static string PriorityLabel(DemoPriority priority) => priority switch
+    {
+        DemoPriority.Low => Loc.Get("demo.priority.low"),
+        DemoPriority.High => Loc.Get("demo.priority.high"),
+        _ => Loc.Get("demo.priority.normal"),
+    };
+
+    public int SelectedPriorityIndex
+    {
+        get => (int)EditPriority;
+        set { if (value is >= 0 and <= 2) EditPriority = (DemoPriority)value; }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseSelectedRecord))]
+    [NotifyPropertyChangedFor(nameof(CanInlineEdit))]
     public partial bool IsLoading { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseSelectedRecord))]
+    [NotifyPropertyChangedFor(nameof(CanInlineEdit))]
     public partial bool IsSaving { get; set; }
     [ObservableProperty]
     public partial bool PreferencesSaveFailed { get; set; }
@@ -197,9 +262,24 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         if (value) UpdateBatchSelection([]);
     }
     partial void OnIsSavingChanged(bool value) => NotifyBatchAvailability();
+    partial void OnIsEditingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanInlineEdit));
+        OnPropertyChanged(nameof(IsDirty));
+    }
     partial void OnEditCodeChanged(string value) { _codeBusinessError = string.Empty; OnPropertyChanged(nameof(IsDirty)); OnPropertyChanged(nameof(CodeError)); }
     partial void OnEditNameChanged(string value) { _nameBusinessError = string.Empty; OnPropertyChanged(nameof(IsDirty)); OnPropertyChanged(nameof(NameError)); }
     partial void OnEditRemarkChanged(string value) { _remarkBusinessError = string.Empty; OnPropertyChanged(nameof(IsDirty)); OnPropertyChanged(nameof(RemarkError)); }
+    partial void OnEditQuantityChanged(decimal? value) { _quantityBusinessError = string.Empty; OnPropertyChanged(nameof(IsDirty)); OnPropertyChanged(nameof(QuantityError)); }
+    partial void OnEditDueDateChanged(DateTimeOffset? value) { _dueDateBusinessError = string.Empty; OnPropertyChanged(nameof(IsDirty)); OnPropertyChanged(nameof(DueDateError)); }
+    partial void OnEditPriorityChanged(DemoPriority value)
+    {
+        _priorityBusinessError = string.Empty;
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(PriorityError));
+        OnPropertyChanged(nameof(SelectedPriorityIndex));
+    }
+    partial void OnEditActiveChanged(bool value) => OnPropertyChanged(nameof(IsDirty));
 
     private void QueryChanged()
     {
@@ -231,6 +311,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Details))]
     [NotifyPropertyChangedFor(nameof(CanUseSelectedRecord))]
+    [NotifyPropertyChangedFor(nameof(CanInlineEdit))]
     public partial DemoRecord? SelectedItem { get; set; }
 
     /// <summary>表单是否显示。</summary>
@@ -245,6 +326,19 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
     [ObservableProperty]
     public partial string EditRemark { get; set; } = string.Empty;
+
+    /// <summary>数字单元格用 decimal? 承接 NumericUpDown;保存前校验为整数。</summary>
+    [ObservableProperty]
+    public partial decimal? EditQuantity { get; set; }
+
+    [ObservableProperty]
+    public partial DateTimeOffset? EditDueDate { get; set; }
+
+    [ObservableProperty]
+    public partial DemoPriority EditPriority { get; set; } = DemoPriority.Normal;
+
+    [ObservableProperty]
+    public partial bool EditActive { get; set; } = true;
 
     /// <summary>保存或删除失败的原因,显示在表单里。保存失败时用户填的内容保留。</summary>
     [ObservableProperty]
@@ -268,13 +362,13 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         QueryChanged();
     }
 
-    partial void OnSelectedItemChanged(DemoRecord? oldValue, DemoRecord? value)
+    partial void OnSelectedItemChanged(DemoRecord? oldValue, DemoRecord? newValue)
     {
-        if (_updatingSelection || _disposed || IsBatchSelecting || value is null) return;
+        if (_updatingSelection || _disposed || IsBatchSelecting || newValue is null) return;
         _updatingSelection = true;
         SelectedItem = oldValue;
         _updatingSelection = false;
-        _ = ObserveSelectionAsync(value);
+        _ = ObserveSelectionAsync(newValue);
     }
 
     private async Task ObserveSelectionAsync(DemoRecord record)
@@ -289,8 +383,15 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
     public async Task<bool> SelectRecordAsync(DemoRecord record)
     {
-        if (IsBatchSelecting) return false;
-        if (_disposed || record.Id == _editingId) return !_disposed;
+        if (_disposed || IsBatchSelecting || !Items.Any(item => item.Id == record.Id)) return false;
+        if (record.Id == _editingId)
+        {
+            // 刷新或清空选择后重新选回同一行，只恢复选择，不能重建并覆盖草稿。
+            _updatingSelection = true;
+            try { SelectedItem = Items.First(item => item.Id == record.Id); }
+            finally { _updatingSelection = false; }
+            return true;
+        }
         if (!await TryLeaveAsync()) return false;
         // 保存未提交输入会刷新列表，目标必须重新取当前页中的实例。
         var current = Items.FirstOrDefault(item => item.Id == record.Id);
@@ -413,6 +514,10 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         EditCode = string.Empty;
         EditName = string.Empty;
         EditRemark = string.Empty;
+        EditQuantity = 0;
+        EditDueDate = null;
+        EditPriority = DemoPriority.Normal;
+        EditActive = true;
         ErrorMessage = string.Empty;
         IsConfirmingDelete = false;
         IsEditing = true;
@@ -431,14 +536,20 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         ErrorMessage = string.Empty;
         _showValidation = true;
         NotifyValidation();
-        if (CodeError.Length > 0 || NameError.Length > 0 || RemarkError.Length > 0) return false;
+        if (CodeError.Length > 0 || NameError.Length > 0 || RemarkError.Length > 0
+            || QuantityError.Length > 0 || DueDateError.Length > 0 || PriorityError.Length > 0) return false;
         var editingId = _editingId;
         var version = _editingVersion;
-        var snapshot = (Code: EditCode, Name: EditName, Remark: EditRemark);
+        var quantity = checked((int)(EditQuantity ?? 0));
+        var snapshot = (Code: EditCode, Name: EditName, Remark: EditRemark, Quantity: EditQuantity,
+            DueDate: EditDueDate, Priority: EditPriority, Active: EditActive);
         var input = new DemoSaveInput(editingId ?? Guid.NewGuid(), version,
-            snapshot.Code, snapshot.Name, snapshot.Remark, MustExist: editingId.HasValue);
+            snapshot.Code, snapshot.Name, snapshot.Remark, MustExist: editingId.HasValue,
+            Quantity: quantity, DueDate: EditDueDate is { } due ? DateOnly.FromDateTime(due.Date) : null,
+            Priority: EditPriority, Active: EditActive);
         bool MatchesSnapshot() => !_disposed && IsEditing && _editingId == editingId
-            && _editingVersion == version && snapshot == (EditCode, EditName, EditRemark);
+            && _editingVersion == version
+            && snapshot == (EditCode, EditName, EditRemark, EditQuantity, EditDueDate, EditPriority, EditActive);
         IsSaving = true;
         try
         {
@@ -468,6 +579,9 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
                     case DemoSaveField.Code: _codeBusinessError = error.Message; break;
                     case DemoSaveField.Name: _nameBusinessError = error.Message; break;
                     case DemoSaveField.Remark: _remarkBusinessError = error.Message; break;
+                    case DemoSaveField.Quantity: _quantityBusinessError = error.Message; break;
+                    case DemoSaveField.DueDate: _dueDateBusinessError = error.Message; break;
+                    case DemoSaveField.Priority: _priorityBusinessError = error.Message; break;
                     default: ErrorMessage = error.Message; break;
                 }
                 NotifyValidation();
@@ -514,6 +628,53 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         {
             _logger.LogError("导出示例数据失败。ExceptionType {ExceptionType}", ex.GetType().Name);
             if (!_disposed) StatusText = Loc.Get("demo.status.exportFailed");
+        }
+    }
+
+    /// <summary>导出当前页为固定模板 PDF；文件由界面的保存框选好后传进来。</summary>
+    public async Task ExportPdfAsync(string path)
+    {
+        try
+        {
+            var records = Items.ToArray();
+            var bytes = await Task.Run(() => DemoPdfExporter.Render(records, DateTimeOffset.Now), _lifetimeCts.Token);
+            await File.WriteAllBytesAsync(path, bytes, _lifetimeCts.Token);
+            if (!_disposed) StatusText = Loc.Format("demo.status.pdfExported", path);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError("导出 PDF 失败。ExceptionType {ExceptionType}", ex.GetType().Name);
+            if (!_disposed) StatusText = Loc.Get("demo.status.pdfFailed");
+        }
+    }
+
+    /// <summary>生成当前页 PDF 后交给系统默认打印动作；没有 PDF 处理程序时只提示，不影响任务。</summary>
+    public async Task PrintPdfAsync()
+    {
+        try
+        {
+            var records = Items.ToArray();
+            var bytes = await Task.Run(() => DemoPdfExporter.Render(records, DateTimeOffset.Now), _lifetimeCts.Token);
+            var path = Path.Combine(Path.GetTempPath(),
+                $"plinth-demo-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.pdf");
+            await File.WriteAllBytesAsync(path, bytes, _lifetimeCts.Token);
+            if (_disposed) return;
+            if (PdfPrinter.TryPrint(path, out var error))
+            {
+                StatusText = Loc.Get("demo.status.printStarted");
+            }
+            else
+            {
+                _logger.LogWarning("打印 PDF 失败。Reason {Reason}", error);
+                StatusText = Loc.Get("demo.status.printFailed");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError("打印 PDF 失败。ExceptionType {ExceptionType}", ex.GetType().Name);
+            if (!_disposed) StatusText = Loc.Get("demo.status.printFailed");
         }
     }
 
@@ -628,12 +789,17 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         EditCode = record.Code;
         EditName = record.Name;
         EditRemark = record.Remark;
+        EditQuantity = record.Quantity;
+        EditDueDate = record.DueDate is { } due ? new DateTimeOffset(due.ToDateTime(TimeOnly.MinValue)) : null;
+        EditPriority = record.Priority;
+        EditActive = record.Active;
         ErrorMessage = string.Empty;
         IsConfirmingDelete = false;
         IsEditing = true;
         MarkClean();
         OnPropertyChanged(nameof(CanDelete));
         OnPropertyChanged(nameof(CanUseSelectedRecord));
+        OnPropertyChanged(nameof(CanInlineEdit));
     }
 
     private void CloseForm()
@@ -651,7 +817,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
     private void MarkClean()
     {
-        _original = (EditCode, EditName, EditRemark);
+        _original = (EditCode, EditName, EditRemark, EditQuantity, EditDueDate, EditPriority, EditActive);
         ClearBusinessErrors();
         _showValidation = false;
         NotifyValidation();
@@ -661,6 +827,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     private void ClearBusinessErrors()
     {
         _codeBusinessError = _nameBusinessError = _remarkBusinessError = string.Empty;
+        _quantityBusinessError = _dueDateBusinessError = _priorityBusinessError = string.Empty;
     }
 
     private void NotifyValidation()
@@ -668,5 +835,8 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         OnPropertyChanged(nameof(CodeError));
         OnPropertyChanged(nameof(NameError));
         OnPropertyChanged(nameof(RemarkError));
+        OnPropertyChanged(nameof(QuantityError));
+        OnPropertyChanged(nameof(DueDateError));
+        OnPropertyChanged(nameof(PriorityError));
     }
 }

@@ -24,9 +24,14 @@ internal static class Program
     /// </summary>
     internal static InstanceActivator? SingleInstance { get; private set; }
 
+    /// <summary>首个实例启动时要打开的受控入口;系统通知点击只允许任务中心。</summary>
+    internal static ActivationIntent StartupIntent { get; private set; }
+
     [STAThread]
     public static int Main(string[] args)
     {
+        (StartupIntent, args) = StartupArguments.Parse(args);
+
         // 必须先于单实例、数据目录、日志、恢复和 Avalonia，供无显示器环境查询。
         if (args.Length > 0)
         {
@@ -51,10 +56,12 @@ internal static class Program
         using var singleInstanceLock = new Mutex(initiallyOwned: true, $@"Local\Plinth.{InstanceActivator.InstanceId}", out var isFirstInstance);
         if (!isFirstInstance)
         {
-            // 已经有一个在运行了:通知它把窗口带到前台,自己直接退出
-            InstanceActivator.TryNotifyRunningInstance();
+            // 已经有一个在运行了:通知它把窗口带到前台（系统通知点击还要打开任务中心），自己直接退出
+            InstanceActivator.TryNotifyRunningInstance(StartupIntent);
             return 0;
         }
+
+        TaskCompletionNotifier.Enabled = true;
 
         var fallback = new LogWriteFallback(Console.Error);
         SelfLog.Enable(fallback.ReportFailure);

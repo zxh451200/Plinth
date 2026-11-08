@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <PlinthEnableDockBusiness Condition="'$(PlinthEnableDockBusiness)' == ''">false</PlinthEnableDockBusiness>
+  </PropertyGroup>
+  <!-- Keep Dock's dependency graph local to this opt-in executable. -->
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Dock.Serializer.SystemTextJson" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Reuse the boundary without referencing the application or its composition root. -->
+    <Compile Include="../Plinth.App/Modules/DockOptional/DockLayoutStore.cs" Link="Boundary/DockLayoutStore.cs" />
+    <Compile Include="../Plinth.App/Modules/DockOptional/DockOptionalSession.cs" Link="Boundary/DockOptionalSession.cs" />
+    <None Update="Dock.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Business/**/*.cs" />
+  </ItemGroup>
+</Project>

@@ -66,6 +66,7 @@ public partial class DemoListViewModel
 
     private void NotifyBatchAvailability()
     {
+        OnPropertyChanged(nameof(CanInlineEdit));
         OnPropertyChanged(nameof(CanManageBatch));
         OnPropertyChanged(nameof(CanCopyBatch));
     }

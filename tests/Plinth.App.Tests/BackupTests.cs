@@ -264,6 +264,135 @@ public sealed class BackupTests : IDisposable
         Assert.False(File.Exists(first));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Upgrade_exit_only_runs_after_valid_backup_and_can_be_cancelled(bool queued, bool allowExit)
+    {
+        var factory = CreateBackupFactory();
+        var tasks = queued ? new TaskService(NullLogger<TaskService>.Instance) : null;
+        var vm = new BackupViewModel(new BackupService(factory, Operations()),
+            NullLogger<BackupViewModel>.Instance, tasks);
+        var target = Path.Combine(_directory, "upgrade.zip");
+        var exits = 0;
+        Task<bool> Exit()
+        {
+            exits++;
+            Assert.True(vm.IsBusy);
+            Assert.Contains("database.db", BackupService.Inspect(target).Files.Select(file => file.Path));
+            if (tasks is not null) Assert.Equal(WorkStatus.Succeeded, Assert.Single(tasks.Snapshot()).Status);
+            return Task.FromResult(allowExit);
+        }
+        try
+        {
+            await vm.ConfirmBackupAndExitAsync(Exit); // 没有预览不能退出。
+            Assert.Equal(0, exits);
+            await vm.PreviewBackupAsync(target);
+            await vm.ConfirmBackupAndExitAsync(Exit);
+            Assert.Equal(1, exits);
+            Assert.False(vm.HasBackupPreview);
+            Assert.False(vm.IsBusy);
+            Assert.True(File.Exists(target));
+            if (!allowExit)
+                Assert.Equal(Plinth.App.Localization.Loc.Format("backup.exit.stayed", target), vm.StatusText);
+            await vm.ConfirmBackupAndExitAsync(Exit);
+            Assert.Equal(1, exits); // 预览只消费一次。
+        }
+        finally { if (tasks is not null) await tasks.StopAsync(); }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Upgrade_backup_failure_or_production_rejection_never_requests_exit(bool queued, bool rejectProduction)
+    {
+        var factory = CreateBackupFactory();
+        var operations = Operations(production: rejectProduction);
+        operations.ConfirmProductionAsync = () => Task.FromResult(false);
+        var tasks = queued ? new TaskService(NullLogger<TaskService>.Instance) : null;
+        var vm = new BackupViewModel(new BackupService(factory, operations),
+            NullLogger<BackupViewModel>.Instance, tasks);
+        var target = Path.Combine(_directory, "upgrade.zip");
+        var exits = 0;
+        try
+        {
+            await vm.PreviewBackupAsync(target);
+            if (!rejectProduction) File.WriteAllText(target, "keep existing target");
+            await vm.ConfirmBackupAndExitAsync(() => { exits++; return Task.FromResult(true); });
+            Assert.Equal(0, exits);
+            Assert.False(vm.IsBusy);
+            Assert.False(vm.HasBackupPreview);
+            if (rejectProduction) Assert.False(File.Exists(target));
+            else Assert.Equal("keep existing target", File.ReadAllText(target));
+        }
+        finally { if (tasks is not null) await tasks.StopAsync(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Upgrade_background_cancel_or_page_departure_never_requests_exit(bool cancel)
+    {
+        var factory = CreateBackupFactory();
+        var tasks = new TaskService(NullLogger<TaskService>.Instance);
+        var vm = new BackupViewModel(new BackupService(factory, Operations()),
+            NullLogger<BackupViewModel>.Instance, tasks);
+        var target = Path.Combine(_directory, "upgrade.zip");
+        var exits = 0;
+        await vm.PreviewBackupAsync(target);
+        factory.Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = vm.ConfirmBackupAndExitAsync(() => { exits++; return Task.FromResult(true); });
+        try
+        {
+            Assert.True(vm.IsBusy);
+            var item = Assert.Single(tasks.Snapshot());
+            if (cancel) Assert.True(tasks.Cancel(item.Id));
+            else vm.PageClosed();
+            if (cancel)
+                await pending.WaitAsync(TimeSpan.FromSeconds(10));
+            else
+            {
+                factory.Gate.SetResult();
+                await pending.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            Assert.Equal(0, exits);
+            Assert.Equal(cancel ? WorkStatus.Cancelled : WorkStatus.Succeeded, Assert.Single(tasks.Snapshot()).Status);
+            Assert.Equal(!cancel, File.Exists(target));
+        }
+        finally { factory.Gate.TrySetResult(); await tasks.StopAsync(); }
+    }
+
+    [Fact]
+    public async Task Upgrade_backup_precedes_changes_saved_by_exit_confirmation()
+    {
+        var factory = CreateBackupFactory();
+        using (var db = factory.CreateDbContext())
+        {
+            db.Add(new DemoRecord { Code = "BEFORE", Name = "saved before backup" });
+            await db.SaveChangesAsync();
+        }
+        var vm = new BackupViewModel(new BackupService(factory, Operations()), NullLogger<BackupViewModel>.Instance);
+        var target = Path.Combine(_directory, "upgrade.zip");
+        await vm.PreviewBackupAsync(target);
+        await vm.ConfirmBackupAndExitAsync(async () =>
+        {
+            using var db = factory.CreateDbContext();
+            db.Add(new DemoRecord { Code = "EXIT", Name = "saved during exit confirmation" });
+            await db.SaveChangesAsync();
+            return false;
+        });
+        var extracted = Path.Combine(_directory, "snapshot");
+        System.IO.Compression.ZipFile.ExtractToDirectory(target, extracted);
+        using var snapshot = DatabaseInitializer.CreateContext(Path.Combine(extracted, "database.db"));
+        Assert.Equal("BEFORE", Assert.Single(await snapshot.Set<DemoRecord>().ToListAsync()).Code);
+        using var current = factory.CreateDbContext();
+        Assert.Equal(2, await current.Set<DemoRecord>().CountAsync());
+    }
+
     public void Dispose()
     {
         _database.Dispose();
@@ -513,6 +642,125 @@ public sealed class BackupTests : IDisposable
         Assert.Equal("old", File.ReadAllText(target));
         Assert.True(File.Exists(target + ".restore"));
         Assert.Empty(Directory.GetFiles(_directory, "plinth.db.before-restore-*"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Interrupted_rollback_write_failure_stops_startup_and_can_be_retried(bool hadWorkspace)
+    {
+        var factory = CreateBackupFactory();
+        var target = Path.Combine(_directory, "source.db");
+        using (var db = factory.CreateDbContext())
+        {
+            db.Add(new DemoRecord { Code = "ORIGINAL", Name = "original row" });
+            db.SaveChanges();
+        }
+        DatabaseInitializer.Checkpoint(target);
+        var journal = target + ".restore-transaction";
+        Directory.CreateDirectory(journal);
+        DatabaseInitializer.CreateConsistentCopy(target, Path.Combine(journal, "database.db"));
+        var settings = Path.Combine(_directory, "settings.json");
+        var workspace = Path.Combine(_directory, "workspace-preferences.json");
+        const string originalSettings = "{\"Theme\":\"Light\"}";
+        const string originalWorkspace = "{\"Demo\":{\"PageSize\":100}}";
+        File.WriteAllText(Path.Combine(journal, "settings.json"), originalSettings);
+        if (hadWorkspace) File.WriteAllText(Path.Combine(journal, "workspace-preferences.json"), originalWorkspace);
+        File.WriteAllText(Path.Combine(journal, "managed.json"),
+            "[\"settings.json\",\"workspace-preferences.json\"]");
+        File.WriteAllText(Path.Combine(journal, "ready.json"), hadWorkspace
+            ? "[\"database.db\",\"settings.json\",\"workspace-preferences.json\"]"
+            : "[\"database.db\",\"settings.json\"]");
+        var safetyBytes = File.ReadAllBytes(Path.Combine(journal, "database.db"));
+        using (var db = factory.CreateDbContext())
+            db.Database.ExecuteSqlRaw("DELETE FROM demo_records");
+        File.WriteAllText(settings, "partially restored settings");
+        // Stable on Windows/Linux, including root: fail the last rollback target after
+        // the database and settings have actually been restored, without timing hooks.
+        Directory.CreateDirectory(workspace);
+        var blocker = Path.Combine(workspace, "keep");
+        File.WriteAllText(blocker, "do not delete a directory recursively");
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            AssertFileSystemFailure(() => BackupService.ApplyPendingRestore(target));
+            using (var db = factory.CreateDbContext())
+                Assert.Equal("ORIGINAL", db.Set<DemoRecord>().Single().Code);
+            Assert.Equal(originalSettings, File.ReadAllText(settings));
+            Assert.Equal("do not delete a directory recursively", File.ReadAllText(blocker));
+            Assert.Equal(safetyBytes, File.ReadAllBytes(Path.Combine(journal, "database.db")));
+            Assert.True(File.Exists(Path.Combine(journal, "ready.json")));
+            Assert.False(File.Exists(Path.Combine(journal, "committed")));
+            Assert.Empty(Directory.GetDirectories(_directory, "source.db.before-restore-*"));
+            Assert.Empty(Directory.GetFiles(_directory, "*.replace-*"));
+        }
+
+        File.Delete(blocker);
+        Directory.Delete(workspace);
+        // false means there was no pending ZIP; interrupted recovery still ran first.
+        Assert.False(BackupService.ApplyPendingRestore(target));
+        Assert.False(Directory.Exists(journal));
+        using (var db = factory.CreateDbContext())
+            Assert.Equal("ORIGINAL", db.Set<DemoRecord>().Single().Code);
+        Assert.Equal(originalSettings, File.ReadAllText(settings));
+        Assert.Equal(hadWorkspace, File.Exists(workspace));
+        if (hadWorkspace) Assert.Equal(originalWorkspace, File.ReadAllText(workspace));
+        var safety = Assert.Single(Directory.GetDirectories(_directory, "source.db.before-restore-*"));
+        Assert.Equal(safetyBytes, File.ReadAllBytes(Path.Combine(safety, "database.db")));
+        Assert.False(BackupService.ApplyPendingRestore(target));
+        Assert.Single(Directory.GetDirectories(_directory, "source.db.before-restore-*"));
+    }
+
+    [Fact]
+    public void Committed_restore_cleanup_failure_never_rolls_back_and_retries_cleanup_on_startup()
+    {
+        var factory = CreateBackupFactory();
+        var target = Path.Combine(_directory, "source.db");
+        using (var db = factory.CreateDbContext())
+        {
+            db.Add(new DemoRecord { Code = "COMMITTED", Name = "committed row" });
+            db.SaveChanges();
+        }
+        DatabaseInitializer.Checkpoint(target);
+        var committedBytes = File.ReadAllBytes(target);
+        var settings = Path.Combine(_directory, "settings.json");
+        File.WriteAllText(settings, "committed settings");
+        var journal = target + ".restore-transaction";
+        Directory.CreateDirectory(journal);
+        // An unusable old safety copy must never be read after the commit marker.
+        File.WriteAllText(Path.Combine(journal, "database.db"), "unusable old safety copy");
+        File.WriteAllText(Path.Combine(journal, "ready.json"), "[\"database.db\"]");
+        File.WriteAllText(Path.Combine(journal, "committed"), "ok");
+        var pending = target + ".restore";
+        Directory.CreateDirectory(pending);
+        var blocker = Path.Combine(pending, "keep");
+        File.WriteAllText(blocker, "cleanup blocked");
+
+        AssertFileSystemFailure(() => BackupService.ApplyPendingRestore(target));
+        Assert.Equal(committedBytes, File.ReadAllBytes(target));
+        Assert.Equal("committed settings", File.ReadAllText(settings));
+        Assert.True(File.Exists(Path.Combine(journal, "committed")));
+        Assert.Equal("cleanup blocked", File.ReadAllText(blocker));
+        Assert.Empty(Directory.GetDirectories(_directory, "source.db.before-restore-*"));
+
+        File.Delete(blocker);
+        Directory.Delete(pending);
+        File.WriteAllText(pending, "stale pending payload must be discarded, not applied");
+        Assert.False(BackupService.ApplyPendingRestore(target));
+        Assert.False(File.Exists(pending));
+        Assert.False(Directory.Exists(journal));
+        Assert.Equal(committedBytes, File.ReadAllBytes(target));
+        Assert.Equal("committed settings", File.ReadAllText(settings));
+        Assert.Single(Directory.GetDirectories(_directory, "source.db.before-restore-*"));
+        using var verified = factory.CreateDbContext();
+        Assert.Equal("COMMITTED", verified.Set<DemoRecord>().Single().Code);
+    }
+
+    private static void AssertFileSystemFailure(Action action)
+    {
+        var error = Record.Exception(action);
+        Assert.True(error is IOException or UnauthorizedAccessException,
+            "Expected a real filesystem failure, got: " + error);
     }
 
     [Fact]

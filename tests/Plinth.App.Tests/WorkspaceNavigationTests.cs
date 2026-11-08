@@ -187,17 +187,123 @@ public sealed class WorkspaceNavigationTests
         Assert.Equal(1, newPage.DisposeCalls);
     }
 
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Request_exit_rejects_synchronous_context_rebind_even_when_original_is_restored(bool pending)
+    {
+        using var shell = new Shell();
+        var response = new TaskCompletionSource<bool>();
+        var page = new GuardedPage
+        {
+            Pending = pending ? response.Task : null,
+            OnLeave = () =>
+            {
+                shell.Window.DataContext = null;
+                shell.Window.DataContext = shell.ViewModel;
+            },
+        };
+        var tab = new WorkspaceTabViewModel("guarded", "Guarded", page);
+        shell.ViewModel.Tabs.Add(tab);
+        var closed = 0;
+        shell.Window.Closed += (_, _) => closed++;
+        try
+        {
+            var exiting = shell.Window.RequestExitAsync();
+            Assert.Equal(1, page.LeaveCalls);
+            Assert.Same(shell.ViewModel, shell.Window.DataContext);
+            if (pending) response.SetResult(true);
+
+            Assert.False(await exiting);
+            Assert.True(shell.Window.IsVisible);
+            Assert.False(shell.Window.CloseApproved);
+            Assert.Equal(0, closed);
+            Assert.Contains(tab, shell.ViewModel.Tabs);
+            Assert.Equal(0, page.DisposeCalls);
+
+            page.OnLeave = null;
+            Assert.True(await shell.Window.RequestExitAsync());
+            Assert.False(shell.Window.IsVisible);
+            Assert.Equal(1, closed);
+            Assert.Equal(1, page.DisposeCalls);
+        }
+        finally
+        {
+            page.OnLeave = null;
+            page.Pending = null;
+            response.TrySetResult(true);
+            shell.Window.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Request_exit_keeps_rejected_workspace_and_allows_retry(bool pending)
+    {
+        using var shell = new Shell();
+        var response = new TaskCompletionSource<bool>();
+        var page = new GuardedPage { AllowLeave = false, Pending = pending ? response.Task : null };
+        var tab = new WorkspaceTabViewModel("guarded", "Guarded", page);
+        shell.ViewModel.Tabs.Add(tab);
+        shell.ViewModel.SelectedTab = tab;
+        var closed = 0;
+        shell.Window.Closed += (_, _) => closed++;
+        try
+        {
+            var exiting = shell.Window.RequestExitAsync();
+            if (pending)
+            {
+                Assert.False(exiting.IsCompleted);
+                Assert.False(await shell.Window.RequestExitAsync());
+                Assert.Equal(1, page.LeaveCalls);
+                Assert.True(shell.Window.IsVisible);
+                response.SetResult(false);
+            }
+            Assert.False(await exiting);
+            Assert.True(shell.Window.IsVisible);
+            Assert.False(shell.Window.CloseApproved);
+            Assert.Equal(0, closed);
+            Assert.Contains(tab, shell.ViewModel.Tabs);
+            Assert.Same(tab, shell.ViewModel.SelectedTab);
+            Assert.Equal(0, page.DisposeCalls);
+
+            page.Pending = null;
+            page.AllowLeave = true;
+            Assert.True(await shell.Window.RequestExitAsync());
+            Assert.False(shell.Window.IsVisible);
+            Assert.True(shell.Window.CloseApproved);
+            Assert.Equal(2, page.LeaveCalls);
+            Assert.Equal(1, closed);
+            Assert.Equal(1, page.DisposeCalls);
+            Assert.False(await shell.Window.RequestExitAsync());
+            Assert.Equal(1, closed);
+            Assert.Equal(1, page.DisposeCalls);
+        }
+        finally
+        {
+            page.Pending = null;
+            page.AllowLeave = true;
+            response.TrySetResult(true);
+            shell.Window.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
     private sealed class GuardedPage : ViewModelBase, IUnsavedChanges, IDisposable
     {
         public bool IsDirty => true;
         public bool AllowLeave { get; set; } = true;
         public Task<bool>? Pending { get; set; }
+        public Action? OnLeave { get; set; }
         public int LeaveCalls { get; private set; }
         public int DisposeCalls { get; private set; }
         public bool Disposed => DisposeCalls > 0;
         public Task<bool> TryLeaveAsync()
         {
             LeaveCalls++;
+            OnLeave?.Invoke();
             return Pending ?? Task.FromResult(AllowLeave);
         }
         public void Dispose() => DisposeCalls++;

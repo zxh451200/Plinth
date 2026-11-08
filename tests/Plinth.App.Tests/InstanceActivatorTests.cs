@@ -26,11 +26,39 @@ public class InstanceActivatorTests
         NewId();
         await using var first = new InstanceActivator();
         var activated = new TaskCompletionSource();
-        first.ActivationRequested += () => activated.TrySetResult();
+        first.ActivationRequested += _ => activated.TrySetResult();
         first.StartListening();
 
         await NotifyRunningInstanceAsync();
         Assert.True(activated.Task.Wait(TimeSpan.FromSeconds(5)), "activation callback timed out");
+    }
+
+    [Fact]
+    public async Task Second_start_can_route_to_the_task_center()
+    {
+        NewId();
+        await using var first = new InstanceActivator();
+        var received = new TaskCompletionSource<ActivationIntent>(TaskCreationOptions.RunContinuationsAsynchronously);
+        first.ActivationRequested += intent => received.TrySetResult(intent);
+        first.StartListening();
+
+        await NotifyRunningInstanceAsync(ActivationIntent.TaskCenter);
+        Assert.Equal(ActivationIntent.TaskCenter, await received.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task A_connection_without_a_mode_byte_is_still_a_plain_activation()
+    {
+        NewId();
+        await using var first = new InstanceActivator();
+        var received = new TaskCompletionSource<ActivationIntent>(TaskCreationOptions.RunContinuationsAsynchronously);
+        first.ActivationRequested += intent => received.TrySetResult(intent);
+        first.StartListening();
+
+        using var client = new NamedPipeClientStream(
+            ".", $"Plinth.Activate.{InstanceActivator.TestInstanceId}", PipeDirection.Out, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await client.ConnectAsync(5000);
+        Assert.Equal(ActivationIntent.Show, await received.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
@@ -42,7 +70,7 @@ public class InstanceActivatorTests
         var callbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var disposeEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task? disposing = null;
-        first.ActivationRequested += () =>
+        first.ActivationRequested += _ =>
         {
             callbackEntered.TrySetResult();
             releaseCallback.Wait();
@@ -90,7 +118,7 @@ public class InstanceActivatorTests
         NewId();
         await using var first = new InstanceActivator();
         var activated = new TaskCompletionSource();
-        first.ActivationRequested += () => activated.TrySetResult();
+        first.ActivationRequested += _ => activated.TrySetResult();
         first.StartListening();
         first.StartListening();
         await NotifyRunningInstanceAsync();
@@ -155,7 +183,7 @@ public class InstanceActivatorTests
         NewId();
         await using var first = new InstanceActivator();
         var disposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        first.ActivationRequested += () =>
+        first.ActivationRequested += _ =>
         {
             first.Dispose();
             disposed.TrySetResult();
@@ -177,7 +205,7 @@ public class InstanceActivatorTests
         var first = new InstanceActivator();
         var failure = new InvalidOperationException("Activation callback failed");
         var callbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        first.ActivationRequested += () =>
+        first.ActivationRequested += _ =>
         {
             callbackEntered.TrySetResult();
             throw failure;
@@ -212,12 +240,12 @@ public class InstanceActivatorTests
         Assert.Equal(InstanceActivator.ComputeInstanceId(@"C:\a"), InstanceActivator.ComputeInstanceId(@"c:\A"));
     }
 
-    private static async Task NotifyRunningInstanceAsync()
+    private static async Task NotifyRunningInstanceAsync(ActivationIntent intent = ActivationIntent.Show)
     {
         // 监听刚启动时管道可能还没建好,保留原测试的重试策略。
         for (var attempt = 0; attempt < 20; attempt++)
         {
-            if (await Task.Run(InstanceActivator.TryNotifyRunningInstance))
+            if (await Task.Run(() => InstanceActivator.TryNotifyRunningInstance(intent)))
             {
                 return;
             }

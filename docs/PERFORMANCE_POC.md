@@ -9,7 +9,7 @@
 在装有 .NET 10 SDK 的机器上执行：
 
 ```sh
-dotnet test /home/work/data/xxx/Plinth-main/tests/Plinth.App.Tests/Plinth.App.Tests.csproj --configuration Release -p:PlinthRunPoc=true --filter "FullyQualifiedName~Plinth.App.Tests.PerformancePocTests" --logger "console;verbosity=detailed"
+dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj --configuration Release -p:PlinthRunPoc=true --filter "FullyQualifiedName~Plinth.App.Tests.PerformancePocTests" --logger "console;verbosity=detailed"
 ```
 
 请保留完整测试输出，并记录 SDK、CPU、内存、操作系统、电源模式与磁盘环境。
@@ -69,3 +69,59 @@ UI 响应或完整用户操作链路。需要桌面数据时须另行进行真�
 
 首批包含 JIT／EF 初始化影响；数据仅为阶段边界采样，不能外推为稳定吞吐或达标结论。
 原始输出见 `artifacts/acceptance/performance-poc-4.log` 与测试日志。
+
+## 大总量下客户端只取当前页的回归
+
+`RemoteDemoTests.Large_remote_total_keeps_only_the_requested_page_when_navigating`
+覆盖总量 100,000／1,000,000、页大小 50／200 的四组组合，使用真实
+RemoteDemoService、RemoteApiClient 和 ViewModel，通过受控 HTTP 传输只生成当前页。
+连续向前、向后翻页核对每个请求的页码及大小、单次操作的请求次数、当前集合大小、
+首尾记录及总页数，防止客户端把远端总量当成需要全部获取或累积的列表。
+
+```powershell
+dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
+  -p:TestingPlatformDotnetTestSupport=true `
+  --filter "FullyQualifiedName~Large_remote_total_keeps_only_the_requested_page_when_navigating"
+```
+
+2026-11-04 已补充测试源码并做独立静态核对；当前 Linux 环境没有 dotnet，
+尚未编译执行。这不是实际 API 的大数据量实测，也不输出延迟、内存峰值或吞吐结论。
+
+## 真实远端分页测量入口
+
+`RemotePagingPocTests` 已提供真实网络入口：默认不编译，只有
+`-p:PlinthRunPoc=true` 才纳入构建，且仍需显式运行开关与专用测试环境配置。
+没有配置时明确跳过，不用模拟响应替代。通过真实 RemoteDemoService 与 Bearer
+鉴权读取首、中、末三页，每页 50 条；总量分别在独立确认的 100k／1m 数据集上执行。
+核对总数、页号、行数及采样页 ID 不重复，并记录逐页耗时、工作集、托管内存和分配增量。
+
+运行前通过进程环境注入：
+
+- `PLINTH_REMOTE_POC_ENABLED=true`；
+- `PLINTH_REMOTE_POC_ENVIRONMENT=test` 或 `staging`；
+- `PLINTH_REMOTE_POC_BASE_URL`：专用测试 API 的 HTTPS 基址，以 `/` 结尾；
+- `PLINTH_REMOTE_POC_TOKEN`：短期只读 token，不放入命令参数、文档或日志；
+- `PLINTH_REMOTE_POC_EXPECTED_TOTAL=100000` 或 `1000000`；
+- `PLINTH_REMOTE_POC_DEVICE`：CPU 型号、物理 RAM、分辨率、缩放及设备档位。
+
+```powershell
+dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
+  -p:PlinthRunPoc=true -p:TestingPlatformDotnetTestSupport=true `
+  --filter "FullyQualifiedName~RemotePagingPocTests" `
+  --logger "console;verbosity=detailed"
+```
+
+2026-11-08 已用专用只读 HTTPS 测试 API 实际执行（产品代码未改动）：
+
+- 环境：Windows 11 10.0.26200，.NET SDK 10.0.403 / runtime 10.0.14，i5-10210U（8 逻辑核）/ 16 GB；
+  页大小 50；客户端 Release；HTTPS 使用本机开发证书（当前用户已信任，未改动信任库）。
+- 测试 API：临时 Node HTTPS 服务，只读 `GET /api/demo-records`；100k／1m 数据集按索引确定性生成
+  （固定宽度 Code／Name，ID 为 1 基 Guid），总量独立设置为 100000／1000000；不写数据、不接 OIDC、
+  不访问外部网络。首次运行发现数据集给第一条记录发了空 Guid，客户端按契约拒绝；修正测试数据后通过
+  （说明客户端校验生效，不是产品缺陷）。
+- 结果：100k 首／中／末页（1／1000／2000）耗时 **3496.8ms / 22.0ms / 9.2ms**；
+  1m 首／中／末页（1／10000／20000）**2710.2ms / 14.8ms / 3.9ms**。每次均返回 50 行，总数、
+  页元数据一致，采样页 ID 不重复。首次请求包含 TLS 握手与 JIT，中／末页更接近稳态；
+  测试宿主工作集约 46→58 MB，托管内存约 1.1→1.7 MB。
+- 边界：只证明客户端在大总量下只取当前页并对齐契约。服务端是临时本机 API，不是外部生产服务，
+  不能据此声明延迟或吞吐达标；OIDC 登录、桌面冷启动／首屏／滚动／编辑及长期资源趋势仍未测量。

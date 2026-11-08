@@ -2,7 +2,14 @@
   "Profile": "Development",
   "MinimumLogLevel": "Information",
   "IncludeSampleModules": true,
+  "EnableAdvancedTablePilot": false,
+  "EnableRuntimePlugins": false,
+  "EnableOfflineSyncPilot": false,
   "DemoApiBaseUrl": "",
+  "Database": {
+    "Provider": "Sqlite",
+    "ConnectionString": ""
+  },
   "Authentication": {
     "Enabled": false,
     "Authority": "https://identity.example.com",

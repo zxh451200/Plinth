@@ -28,6 +28,7 @@ using Xunit;
 
 namespace Plinth.App.Tests;
 
+[Collection("Localization")]
 public sealed class OptionalRemoteDemoTests
 {
     private static readonly Uri Address = new("https://example.test/api/");

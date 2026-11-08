@@ -25,8 +25,18 @@ public sealed class NotesEntries : Migration
         );
         CREATE UNIQUE INDEX "IX_notes_entries_Code" ON "notes_entries" ("Code");
         """;
-    protected override void Up(MigrationBuilder migrationBuilder) => migrationBuilder.Sql(CreateSql);
-    protected override void Down(MigrationBuilder migrationBuilder) => migrationBuilder.DropTable("notes_entries");
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        if (!InitialSchema.IsSqlite(migrationBuilder.ActiveProvider))
+            throw new NotSupportedException("SQLite migrations require the SQLite provider.");
+        migrationBuilder.Sql(CreateSql);
+    }
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        if (!InitialSchema.IsSqlite(migrationBuilder.ActiveProvider))
+            throw new NotSupportedException("服务器数据库仅支持向前迁移，请恢复兼容版本的备份。");
+        migrationBuilder.DropTable("notes_entries");
+    }
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
     {
         InitialSchema.BuildInitialModel(modelBuilder);

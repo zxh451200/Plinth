@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Plinth.App.Tests;
 
+[Collection("Localization")]
 public sealed class FormattingServiceTests
 {
     [Fact]

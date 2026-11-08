@@ -2,7 +2,7 @@
 
 Plinth 是一个通用的桌面 Admin 底座(Avalonia + .NET 10),用来在上面开发自己的业务软件。
 
-当前源码包含应用壳、工作区持久化、未保存确认、任务与诊断、CSV 预览映射、ZIP 备份恢复及可选远程身份接入。Demo 默认使用本机 SQLite。初始 EF 迁移及模型快照已落盘；本轮环境不能执行 .NET 还原、编译和桌面验收，不能据此声称已运行通过。实际未验收与实现限制见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
+当前源码包含应用壳、工作区持久化、未保存确认、任务与诊断、CSV 预览映射、ZIP 备份恢复及可选远程身份接入。Demo 默认使用本机 SQLite。本机已用 SDK 10.0.403 完成真实 restore、Release 构建与自动回归（App 1183 项、Spreadsheet 48 项，0 失败）；真实 IdP、OS 级 DPI/IME/读屏与安装升级人工矩阵仍未验收；本机标准用户首启与独立小卷磁盘满（启动/CLI 备份）已实测，边界见实现状态。实际限制见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
 
 ## 运行
 
@@ -40,7 +40,7 @@ $process.ExitCode
 Get-Content version.txt
 ```
 
-普通桌面启动不会额外弹出控制台。Windows 终端显示、单路重定向和发布包行为尚需按发布验收清单实测。
+普通桌面启动不会额外弹出控制台。发布目录的 `--version` 与未知参数退出码已实测；终端直连显示、单路重定向的 Windows 行为仍按发布验收清单复核。
 
 ## 离线帮助与许可证
 
@@ -62,6 +62,51 @@ runtime、字体、图标和安装器等不在 NuGet 自动发现范围内。发
 
 ## 测试
 
+### 独立试点的真实 .NET 验收入口
+
+`scripts/acceptance.ps1` 验收主解决方案；Dock、RuntimePlugins、OfflineSync
+在解决方案之外，使用同一跨平台入口 `scripts/pilot_checks.py`。
+需要 Python 3.8+、`global.json` 指定的 .NET 10 SDK（10.0.403 / latestPatch）、
+可访问配置中的 NuGet 源，以及插件测试所需全局安装的 .NET 10 运行时。
+从仓库根目录运行，Windows 可将 `python3` 换为 `python`：
+
+```bash
+# 首次还原：由真实 NuGet restore 生成/更新锁，再执行 format/build/test
+python3 scripts/pilot_checks.py --mode generate-locks
+```
+
+此命令依次覆盖 Dock 的 2 个、RuntimePlugins 的 4 个（包括示例和恶意测试夹具）、
+OfflineSync 的 2 个项目引用图；根测试项目 restore/build 会遍历 ProjectReference，
+不构建主应用。每个项目均执行现有 CI 的 format 检查，Release build 开启 nullable
+警告门禁，test 使用 `--no-build --no-restore`，防止隐式还原混入后续阶段。
+脚本不生成锁内容，只检查 restore 后每个引用项目的锁文件存在且非空；
+依赖解析和锁内容有效性由真实 NuGet 负责。
+
+首次命令成功后，人工审查这 8 个项目实际生成的 `packages.lock.json`，
+核对直接/传递依赖和完整性值；不要手写锁文件。随后**另行**运行：
+
+```bash
+# 按现有锁复验：缺少任一引用项目的锁会在 restore 前失败
+python3 scripts/pilot_checks.py --mode locked
+```
+
+`locked` 使用 `--locked-mode`，不自动回退到生成模式，也不自动批准或提交锁。
+可加 `--pilot dock`、`--pilot runtime-plugins` 或 `--pilot offline-sync`
+单独验收；默认 `all`。任一 SDK、restore、锁检查、format、build、test 或 TRX
+检查失败，立即非零退出，不继续下一个阶段或试点。
+
+每次调用在 `artifacts/pilot-checks/<mode>-<唯一目录>/` 保留 SDK 信息和每条命令的
+合并 stdout/stderr、退出码；TRX 在该目录的 `<pilot>/test-results/`。
+控制台显示日志位置，命令输出写入日志；失败前产生的日志和 TRX 保留。
+可用 `--output <目录>` 修改证据父目录，重复调用不会覆盖先前证据。
+CI 的 Windows/Ubuntu 试点矩阵复用此入口并始终上传证据；目前显式使用
+`generate-locks` 做 bootstrap，**尚不是 locked 可复现性门禁**。
+审查并提交真实锁后，应将试点 CI 的模式改为 `locked`。
+
+本次仅验证 Python 编排测试，未执行真实 .NET restore/build/test，也未生成锁，
+不能把脚本交付记为三个试点运行通过。自动测试不替代 Dock 实机拖拽/浮窗验收、
+插件生产隔离或同步服务/断电验收；具体边界见各试点说明。
+
 只有 Python 3.8+、尚无 PowerShell 或 .NET SDK 时，可先在仓库根目录运行离线检查：
 
 ```bash
@@ -78,9 +123,11 @@ dotnet test -p:TestingPlatformDotnetTestSupport=true
 
 CI 的 Windows / Ubuntu `gate` 均阻断失败，包含源码契约、SQLite smoke、工具测试、locked restore、format、Release 构建和测试。手动 dependency-locks workflow 用于生成真实锁文件。工作流配置存在不代表已执行成功，详见 [发布交接](docs/release/RELEASE.md)。
 
-本地真实 SQLite／CSV 的 10k 与 5000 行往返测量入口默认不编译；需要测量时按 [性能 POC](docs/PERFORMANCE_POC.md) 使用 Release 和 `-p:PlinthRunPoc=true` 显式运行。阶段内存采样来自测试进程，不能作为桌面峰值或性能达标证据；当前环境未运行该入口。
+本地真实 SQLite／CSV 的 10k 与 5000 行往返测量入口默认不编译；需要测量时按 [性能 POC](docs/PERFORMANCE_POC.md) 使用 Release 和 `-p:PlinthRunPoc=true` 显式运行。阶段内存采样来自测试进程，不能作为桌面峰值或性能达标证据；现有场景已执行过，最新数字见该文档。
 
 ## 项目结构
+
+下面只列核心路径；业务模块都在 `src/Plinth.App/Modules/` 下（Demo、Notes、AdvancedTable、RemoteDemo、RuntimePlugins、OfflineSync），完整文件以源码为准。
 
 ```text
 Plinth.sln
@@ -173,7 +220,7 @@ Modules/Demo/
 
 编码原文保留大小写，保存入口会去掉首尾空白。唯一性只忽略英文字母 `A-Z` 大小写：`A1` 与 `a1` 重复，`Ä` 与 `ä`、不同 Unicode 组合形式仍分别保留。保存、CSV 和 XLSX 使用同一规则；CSV 按键更新已有记录时保留已有编码的拼写。内部 CodeKey 唯一索引负责兜底，界面和导出不展示该字段。默认编码排序、分页及 CSV 导出按同一比较键、再按 ID 排序；其他字段排序仍需在实际数据库验收。
 
-CodeKey 由 `Data/CodeIdentity.cs` 计算，实体设置 Code 时同步更新；不要绕过属性直接改 backing field，或使用批量 SQL 单独修改 Code。当前模型不再使用 SQLite `NOCASE`，旧数据通过追加迁移回填比较键，原文和审计字段不变。搜索仍使用 EF 的转义 LIKE，当前 SQLite 对 ASCII 忽略大小写；迁移到其他数据库前必须验证搜索、其他字段排序及实际 Provider 行为，不能把这次改动当作 PostgreSQL／MySQL 支持已经完成。
+CodeKey 由 `Data/CodeIdentity.cs` 计算，实体设置 Code 时同步更新；不要绕过属性直接改 backing field，或使用批量 SQL 单独修改 Code。当前模型不再使用 SQLite `NOCASE`，旧数据通过追加迁移回填比较键，原文和审计字段不变。搜索仍使用 EF 的转义 LIKE；SQLite 对 ASCII 忽略大小写，MySQL／PostgreSQL 的排序和比较行为不同，切换到服务器数据库后仍要按实际 Provider 验收搜索和排序。
 
 历史库升级不会删除编码里的空白；应用输入和文件导入仍会 Trim，所以人为写入旧库的带首尾空白编码需要单独核对往返结果。外部创建的 UTF-16 SQLite 库会明确拒绝自动升级，不静默生成错误比较键。
 
@@ -183,8 +230,10 @@ CodeKey 由 `Data/CodeIdentity.cs` 计算，实体设置 Code 时同步更新；
 
 ```bash
 dotnet tool install --global dotnet-ef        # 只需装一次
-dotnet ef migrations add Demo_YourChange --project src/Plinth.App --startup-project src/Plinth.App
+dotnet ef migrations add Demo_YourChange --project src/Plinth.App --context AppDbContext --output-dir Migrations
 ```
+
+项目里有三个迁移上下文（SQLite／MySQL／PostgreSQL），不加 `--context` 会直接报 `More than one DbContext was found`。只生成 SQLite 迁移不能代表服务器库也已升级，服务器 Provider 的命令见下文。
 
 也可以使用脚本,它会校验迁移名称并统一输出到 `src/Plinth.App/Migrations/`:
 
@@ -194,20 +243,57 @@ pwsh scripts/add-migration.ps1 Demo_YourChange
 
 迁移名建议带模块前缀。历史数据库基线、升级失败回滚与 WAL 一致性副本有 Python SQLite smoke；仍需执行真实 EF 迁移测试和 Windows 恢复演练。
 
+### 选择 SQLite / MySQL / PostgreSQL
+
+默认使用数据目录下的 `plinth.db`（SQLite）。要切换到服务器数据库，在数据目录创建 `database.json`：
+
+```json
+{
+  "provider": "PostgreSql",
+  "connectionString": "Host=localhost;Port=5432;Database=plinth;Username=plinth;Password=***"
+}
+```
+
+`provider` 取值：`Sqlite`、`MySql`、`PostgreSql`。优先级为环境变量 > 数据目录 `database.json` > 安装目录 `deployment.json` > SQLite：
+
+```powershell
+$env:PLINTH_Database__Provider = "MySql"
+$env:PLINTH_Database__ConnectionString = "Server=localhost;Port=3306;Database=plinth;User=plinth;Password=***"
+```
+
+服务器库需要用户先创建数据库和账号；应用只建表/迁移，不自动创建服务器或账号。MySQL 使用 Pomelo（MIT），PostgreSQL 使用 Npgsql；EF Core 固定在 9.0.x，因为 Pomelo 目前没有 EF Core 10 的 MIT Provider。连接串可能含密码，不要提交到仓库；应用日志与异常不会回显连接串。切换后重启程序生效，并且只应指向同一个逻辑数据库，不能把 SQLite 与服务器库当成同一份数据的自动同步副本。
+
+服务器数据库的备份/恢复由服务器端负责，应用内“备份与恢复”页只支持 SQLite 文件；页面会明确显示该限制。SQLite 保留原有迁移历史，服务器 Provider 使用独立迁移上下文、迁移 ID 和模型快照。业务 CRUD 仍使用 `AppDbContext`，启动迁移由 `DatabaseInitializer` 选择对应迁移上下文，不在服务器库上执行 SQLite 专用 SQL。
+
+修改业务模型后，分别生成并审查各 Provider 的迁移，不能只生成 SQLite 迁移就宣称服务器库也已升级：
+
+```powershell
+dotnet ef migrations add ChangeName --project src/Plinth.App --context AppDbContext --output-dir Migrations
+dotnet ef migrations add ChangeName --project src/Plinth.App --context PostgreSqlMigrationContext --output-dir Migrations/PostgreSql
+dotnet ef migrations add ChangeName --project src/Plinth.App --context MySqlMigrationContext --output-dir Migrations/MySql
+```
+
+服务器设计时工厂使用不含秘密的本地示例连接串，MySQL 使用固定设计时服务器版本，不自动连接探测。审查生成结果是否符合实际部署版本，再对专用测试数据库运行 Provider 集成测试。本轮独立迁移集尚未编译或在真实服务器执行，不能据源码声明正式支持。
+
+Provider 集成测试会执行真实迁移并写入一条带 `PLINTH-INT-` 前缀的记录，因此只能指向可丢弃、可清理的专用测试库。连接串之外还必须由操作者显式设置 `PLINTH_TEST_DATABASE_ISOLATED=true` 和 `PLINTH_TEST_DATABASE_PURPOSE=plinth-integration`；缺任一变量时测试跳过，不会把 Skip 算作通过。测试结束按本次唯一前缀清理记录；数据库建库、账号创建和共享库隔离由部署方负责，测试不会自动创建或删除数据库。Provider 异常不会把原始消息或连接串写入测试结果。旧试验版本若在服务器库写入了 SQLite 的迁移 ID，启动会拒绝该历史；先备份并人工制定迁移方案，不自动清空数据库或改写迁移历史。
+
+也可使用 `pwsh scripts/add-migration.ps1 ChangeName`（默认 SQLite），或加 `-Provider PostgreSql`／`-Provider MySql`。脚本显式选择上下文及输出目录，避免多个上下文时 EF 无法确定目标。
+
 ## 新增一个页面
 
-1. 在 `Views/` 新建 `XxxView.axaml`(`UserControl` + `x:DataType`),只写布局和绑定。
+1. 在 `Views/` 新建 `XxxView.axaml`(`UserControl` + `x:DataType`),只写布局和绑定。文件名必须和 ViewModel 去掉 `Model` 后缀一致：`XxxViewModel` 由 `ViewLocator` 自动找 `XxxView`，名字不一致会在打开页面时报找不到视图。
 2. 在 `ViewModels/` 新建 `XxxViewModel.cs`,继承 `ViewModelBase`,用 `[ObservableProperty]` 和 `[RelayCommand]` 写状态和命令。
 3. 需要业务逻辑时,在 `Services/` 加一个普通类,通过构造函数注入使用。
-4. 在 `ServiceCollectionExtensions.cs` 里注册 ViewModel。
-5. **加一条导航注册**,否则页面进不去:
+4. 在 `ServiceCollectionExtensions.cs` 里注册 ViewModel，然后加导航项：
    ```csharp
+   services.AddTransient<XxxViewModel>();
    services.AddSingleton<NavigationItem>(provider => new NavigationItem(
        "your.page.id",
-       "页面标题",
-       () => provider.GetRequiredService<XxxViewModel>()));
+       Loc.Get("your.page.title"),
+       () => provider.GetRequiredService<XxxViewModel>())
+   { Section = NavigationSection.Business, Order = 500, TitleKey = "your.page.title" });
    ```
-   然后在本文件的「项目结构」和 `MainViewModel` 都不用改——Shell 注入 `IEnumerable<NavigationItem>` 自动生成导航。
+   标题文字放进两个 resx；`TitleKey` 让切换语言时侧栏标题一起刷新。`Section`／`Order`／`Icon` 只影响侧栏位置和图标，省略时默认 Business／500。本文件的「项目结构」和 `MainViewModel` 都不用改——Shell 注入 `IEnumerable<NavigationItem>` 自动生成导航。
    页面注册了但不想占侧栏一行(比如只能从菜单或快捷键进的「关于」),再加一个 `ShowInMenu: false`。
 
 含页面查询的 ViewModel 实现 `IDisposable`，由 Shell 在关闭单个标签、全部标签或释放工作区时调用。`Dispose()` 应幂等，取消本页查询、清除局部结果，并阻止迟到请求更新页面；活跃查询在自己的 `finally` 中释放 CTS。已交给任务中心的导入／导出继续执行。
@@ -218,7 +304,7 @@ pwsh scripts/add-migration.ps1 Demo_YourChange
 
 - **CSV 导出**:按当前搜索条件，在同一个数据库读取事务内每页读取最多 200 条，逐行写到 `exports` 下的 UTF-8 BOM 文件，完成后才发布目标文件。公式前缀加单引号保护，原有单引号另行转义，便于导入往返保留文本。
 - **CSV 导入**:选择文件后核对编码、分隔符和编码／名称／备注源列序号，预览最多 20 行后确认。预览对完整文件计算 SHA-256，导入校验同一份重读字节；文件改变后需重新预览。预览错误可独立导出报告。完整校验通过才在同一事务内新增或更新；上限 5000 行、5 MiB。导入导出进入任务中心，关闭页面继续执行；在任务中心核对完成结果后，使用 F5 刷新列表。
-- **XLSX**:默认构建不注册此可选页面，CSV 保持可用。完成 Office 兼容、内存 POC 和许可验收后，用 `-p:PlinthEnableXlsx=true` 构建／运行，或用 `publish.ps1 -EnableXlsx` 打包。启用后的页面支持文本表格预览、校验、确认导入、取消和导出；导入上限 5000 行、5 MiB，拒绝公式、宏、外部关系和非文本单元格。ClosedXML 仍在统一依赖图中，默认关闭功能不免除其锁包和许可检查。当前尚无 POC 通过证据。
+- **XLSX**:默认构建不注册此可选页面，CSV 保持可用。完成 Office 兼容、内存 POC 和许可验收后，用 `-p:PlinthEnableXlsx=true` 构建／运行，或用 `publish.ps1 -EnableXlsx` 打包。启用后的页面支持文本表格预览、校验、确认导入、取消和导出；导入上限 5000 行、5 MiB，拒绝公式、宏、外部关系和非文本单元格。ClosedXML 仍在统一依赖图中，默认关闭功能不免除其锁包和许可检查。Office 兼容（真实 Excel 保存的文本工作簿可导入、外部链接与 `.xlsm` 被拒）和 5000 行内存 POC（61 MiB）已执行；宏内容的真实 Office 样本受本机 VBA 工程访问设置阻塞，许可为 MIT 但终审仍属发布决策，因此默认仍关闭。
 - **日志与错误中心**:默认显示技术日志，可切换任务日志、安全审计或技术与任务日志。“查看警告和错误”预设合并技术与任务事件，排除审计。跨文件查询支持时间、等级、模块、任务、错误码及关联 ID 筛选，通过按钮复制详情；Ctrl+F 聚焦搜索，“清空筛选”回到无条件的技术查询，手动清理读取设置的保留天数。意外错误弹窗按关联 ID、任务中心按任务 ID 跳转，替换旧筛选，保留对应类别的信息级上下文。没有匹配记录时明确显示空结果，不保证已经过保留期或尚未落盘的日志可查。
 - **备份与恢复**:ZIP 包含一致性数据库副本、用户设置、工作区偏好和 SHA-256 manifest。预览并确认后暂存，下次启动恢复，保留安全副本与回滚记录。旧 ZIP 缺少工作区偏好时会清除当前偏好、回到默认布局；不接受裸 `.db` 直接恢复。部署身份配置与凭据不包含在包中。
 
@@ -278,7 +364,7 @@ XLSX 导入按完整预览快照生成中转 CSV，并在写出时计算实际�
 - XAML 里写 `Text="{loc:T demo.new}"`,文件顶部加 `xmlns:loc="using:Plinth.App.Localization"`。
 - 代码里写 `Loc.Get("demo.new")`;带参数的写 `Loc.Format("demo.status.count", 3)`(资源里写 `共 {0} 条`)。
 - key 的写法:`模块.位置.动作`,例如 `demo.col.code`。
-- 左侧「设置」页可以切换语言,**重启程序后生效**(界面文字在启动时就定了)。默认是中文。
+- 左侧「设置」页可以切换语言,**切换后界面立即生效**(已打开的页面、导航和状态栏一起刷新)。默认是中文。
 - 技术日志、给开发者看的提示(例如 `ViewLocator` 找不到页面)不翻译,仍是中文。
 - 找不到 key 时界面显示 `[key]`,同时写一条警告日志。
 
@@ -296,7 +382,7 @@ pwsh scripts/publish.ps1
 - `Plinth-<版本>-win-x64.zip`:便携包,解压即用(数据仍写在 `%LOCALAPPDATA%\Plinth`,不写程序文件夹)。
 - `Plinth-Setup-<版本>.exe`:安装包。需要先安装 [NSIS](https://nsis.sourceforge.io/)(命令行里有 `makensis`),没装就只生成 ZIP。安装到当前用户自己的目录 `%LOCALAPPDATA%\Programs\Plinth`,不需要管理员权限;**卸载不会删除用户数据**。
 
-升级前先在旧版“备份与恢复”创建 ZIP，放到程序及数据目录之外，记录保存位置，再完全退出应用。安装器提示确认，静默升级会拒绝；不会替用户直接复制数据库。同一程序目录的所有实例都需退出，安装／卸载过程中不能启动新实例。随程序交付的 `plinth.install.lock` 用于协调，不要删除。卸载只删除发布清单中的程序文件，未知文件与非空目录保留；完整规则和待验收限制见 [升级与回退](docs/UPGRADING.md)。
+升级前先保存业务修改并完全退出应用。安装器交互确认后调用旧版 `--backup-before-upgrade` 创建一致性 ZIP，保留到 `%LOCALAPPDATA%\Plinth-Upgrade-Backups` 并显示位置；失败即停止覆盖，不支持命令的旧版、认证或生产确认无法完成时也拒绝。静默升级仍一律返回 6。同一程序目录的所有实例都需退出，安装／卸载过程中不能启动新实例。随程序交付的 `plinth.install.lock` 用于协调，不要删除。卸载只删除发布清单中的程序文件，未知文件与非空目录保留；自定义数据目录、权限限制及待验收事项见 [升级与回退](docs/UPGRADING.md)。
 
 版本号只在 `Directory.Build.props` 里改一处。
 
@@ -308,7 +394,7 @@ pwsh scripts/publish.ps1
 - 值不认识(比如主题写成了别的)时换回默认值。
 - `SchemaVersion` 记录文件格式的版本,以后加字段时用它升级旧文件。字段只增不改名。
 
-设置包含主题、语言、地区格式、时区、窗口位置、远程健康检查及日志保留。地区格式独立于界面语言，不推断货币；时间点按所选时区显示，数据库仍存 UTC。语言、地区、时区和日志轮转配置重启后应用。schema 1 升级到 2，未知 schema 将整份原文件保留为 `settings.json.unsupported`，再以默认值启动。工作区未知根版本或布局版本也将整份原件保留为 `workspace-preferences.json.unsupported`，回到默认布局与导航偏好。
+设置包含主题、语言、地区格式、时区、窗口位置、远程健康检查及日志保留。地区格式独立于界面语言，不推断货币；时间点按所选时区显示，数据库仍存 UTC。语言切换立即生效；地区、时区和日志轮转配置重启后应用。schema 1 升级到 2，未知 schema 将整份原文件保留为 `settings.json.unsupported`，再以默认值启动。工作区未知根版本或布局版本也将整份原件保留为 `workspace-preferences.json.unsupported`，回到默认布局与导航偏好。
 
 保留副本不会覆盖已有 `.unsupported` 或 `.bad`。如果保留原件失败，当前服务实例阻止后续保存，避免默认值覆盖未知格式；应先核对并妥善保管冲突文件，再重启应用。备份中的未知设置／工作区版本仍会被拒绝，不通过规范化悄悄丢弃未来字段。
 
@@ -385,6 +471,6 @@ Profile 仅接受 Development、Test、Production；生产窗口标题有标识�
 
 ## 已知限制 / 尚未实现
 
-真实 IdP、Windows 安装升级与 UI 人工验收仍未完成，完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
+真实第三方 IdP、正式 CA 签名与 OS 级 DPI／IME／读屏人工矩阵仍未完成；安装升级、0.1.0→0.1.1 备份演练、本机标准用户首启与独立 300MB 卷磁盘满（启动/CLI 备份）已实测，边界与恢复行为见实现状态。完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
 
-按规范章节整理的剩余功能、条件项和验收阻塞见 [需求交付核对表](docs/REQUIREMENTS_STATUS.md)。系统 Toast 仍是待实现的 Should，应用内任务提示已提供；不能将两者视为同一能力。
+按规范章节整理的剩余功能、条件项和验收阻塞见 [需求交付核对表](docs/REQUIREMENTS_STATUS.md)。系统 Toast 已接入并进入 Windows 通知历史；横幅物理点击和勿扰策略下的人工体验仍待验收，应用内任务提示不能替代这两项。

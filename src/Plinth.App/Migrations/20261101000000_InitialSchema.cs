@@ -28,8 +28,23 @@ public sealed class InitialSchema : Migration
         CREATE UNIQUE INDEX "IX_demo_records_Code" ON "demo_records" ("Code");
         """;
 
-    protected override void Up(MigrationBuilder migrationBuilder) => migrationBuilder.Sql(CreateSql);
-    protected override void Down(MigrationBuilder migrationBuilder) => migrationBuilder.DropTable("demo_records");
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        if (!IsSqlite(migrationBuilder.ActiveProvider))
+            throw new NotSupportedException("SQLite migrations require the SQLite provider.");
+
+        migrationBuilder.Sql(CreateSql);
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        if (!IsSqlite(migrationBuilder.ActiveProvider))
+            throw new NotSupportedException("服务器数据库仅支持向前迁移，请恢复兼容版本的备份。");
+        migrationBuilder.DropTable("demo_records");
+    }
+
+    internal static bool IsSqlite(string? provider) =>
+        provider?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true;
 
     protected override void BuildTargetModel(ModelBuilder modelBuilder) => BuildInitialModel(modelBuilder);
 

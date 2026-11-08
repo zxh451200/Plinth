@@ -15,6 +15,16 @@ public sealed class OfflineUserContext : IRemoteUserContext
 public sealed class SensitiveOperationService(AuthorizedOperation authorized, ISecurityAudit audit,
     bool? authenticationEnabled = null, bool? production = null)
 {
+    internal bool AuthenticationEnabled =>
+        authenticationEnabled ?? DeploymentConfiguration.Current.Authentication.Enabled;
+    internal Plinth.App.Auth.IIdentitySessionEvents? SessionEvents => authorized.SessionEvents;
+    internal Action CaptureSnapshotValidation() => AuthenticationEnabled
+        ? authorized.CaptureSnapshotValidation() : () => { };
+    internal void Demand(string permission)
+    {
+        if (AuthenticationEnabled) authorized.Demand(permission);
+    }
+
     public Func<Task<bool>>? ConfirmProductionAsync { get; set; }
 
     public async Task<bool> ConfirmAsync() => !(production ?? DeploymentConfiguration.Current.IsProduction)

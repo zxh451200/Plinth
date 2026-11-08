@@ -70,6 +70,75 @@ public sealed class RemoteDemoTests
     }
 
     [Theory]
+    [InlineData(100_000, 50)]
+    [InlineData(1_000_000, 50)]
+    [InlineData(100_000, 200)]
+    [InlineData(1_000_000, 200)]
+    public async Task Large_remote_total_keeps_only_the_requested_page_when_navigating(int total, int size)
+    {
+        // A bounded transport fixture checks the real client and ViewModel. This is
+        // not an external service performance measurement or a million-row dataset.
+        var requestedPage = 1;
+        var requestedSize = 50;
+        using var fixture = new Fixture((request, _) =>
+        {
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal("/api/demo-records", request.RequestUri!.AbsolutePath);
+            Assert.Equal($"?page={requestedPage}&pageSize={requestedSize}&search=&sortField=Code&descending=false",
+                request.RequestUri.Query);
+            var start = (requestedPage - 1) * requestedSize;
+            var items = JsonSerializer.Serialize(Enumerable.Range(start + 1, requestedSize).Select(index => new
+            {
+                id = new Guid(index, 0, 0, new byte[8]),
+                code = $"C{index:D8}",
+                name = $"记录 {index}",
+                remark = "",
+                version = 1,
+            }));
+            return Task.FromResult(Json(PageJson(requestedPage, requestedSize, total, items)));
+        });
+        // Suppress constructor I/O so every request is awaited through a public action.
+        var user = fixture.Users.User;
+        fixture.Users.User = RemoteUserContext.Anonymous;
+        using var vm = new RemoteDemoListViewModel(fixture.Service, new UnsavedChangesService(), fixture.Users);
+        fixture.Users.User = user;
+        await vm.RefreshAsync();
+        Assert.Equal(1, fixture.Handler.Calls);
+        if (size != 50)
+        {
+            requestedSize = size;
+            vm.PageSize = size;
+            await vm.SearchCommand.ExecuteAsync(null);
+        }
+        var initialCalls = fixture.Handler.Calls;
+        AssertPage(1);
+        foreach (var target in new[] { 2, 3, 4 })
+        {
+            requestedPage = target;
+            await vm.NextPageCommand.ExecuteAsync(null);
+            AssertPage(target);
+            Assert.Equal(initialCalls + target - 1, fixture.Handler.Calls);
+        }
+        requestedPage = 3;
+        await vm.PreviousPageCommand.ExecuteAsync(null);
+        AssertPage(3);
+        Assert.Equal(initialCalls + 4, fixture.Handler.Calls);
+
+        void AssertPage(int page)
+        {
+            Assert.Empty(vm.ErrorMessage);
+            Assert.False(vm.IsBusy);
+            Assert.Equal(total, vm.TotalCount);
+            Assert.Equal(page, vm.Page);
+            Assert.Equal($"{page} / {total / size}", vm.PageText);
+            Assert.Equal(size, vm.Items.Count);
+            Assert.Equal($"C{(page - 1) * size + 1:D8}", vm.Items[0].Code);
+            Assert.Equal($"C{page * size:D8}", vm.Items[^1].Code);
+            Assert.Equal(size, vm.Items.Select(item => item.Id).Distinct().Count());
+        }
+    }
+
+    [Theory]
     [InlineData(0, 50, "Code")]
     [InlineData(1, 201, "Code")]
     [InlineData(1, 0, "Code")]

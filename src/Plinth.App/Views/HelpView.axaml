@@ -17,13 +17,13 @@
                AutomationProperties.Name="{loc:T help.topics}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="nav:HelpTopic">
-            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding DisplayTitle}" TextWrapping="Wrap" />
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
       <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
         <TextBlock Text="{loc:T help.noResults}" IsVisible="{Binding !HasTopics}" TextWrapping="Wrap" />
-        <TextBox Grid.Row="1" Text="{Binding SelectedTopic.Body, Mode=OneWay}"
+        <TextBox Grid.Row="1" Text="{Binding SelectedTopic.DisplayBody, Mode=OneWay}"
                  IsVisible="{Binding HasTopics}" IsReadOnly="True" AcceptsReturn="True"
                  TextWrapping="Wrap" AutomationProperties.Name="{loc:T help.content}"
                  ScrollViewer.VerticalScrollBarVisibility="Auto" />

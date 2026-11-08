@@ -5,12 +5,14 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Plinth.App.Localization;
 using Plinth.App.Services;
 using Xunit;
 
 namespace Plinth.App.Tests;
 
 /// <summary>日志读取:解析 CompactJson 行、取最新文件的最后 N 条、坏行跳过。</summary>
+[Collection("Localization")]
 public sealed class LogReaderTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "plinth-logs-" + Guid.NewGuid().ToString("N"));
@@ -38,6 +40,24 @@ public sealed class LogReaderTests : IDisposable
         Assert.NotNull(entry);
         Assert.DoesNotContain("{", entry.Message);
         Assert.Contains("[redacted]ms", entry.Message);
+    }
+
+    [Fact]
+    public void Details_use_the_ui_language_for_level_and_event_kind()
+    {
+        try
+        {
+            Loc.Initialize("zh-CN");
+            var entry = new LogEntry(DateTimeOffset.Now, "Warning", "probe") { EventKind = LogEventKind.Task };
+            Assert.Contains("警告", entry.Details);
+            Assert.Contains("任务日志", entry.Details);
+            Assert.DoesNotContain("Warning", entry.Details);
+            Assert.DoesNotContain("Task\n", entry.Details);
+        }
+        finally
+        {
+            Loc.Initialize(Loc.DefaultLanguage);
+        }
     }
 
     [Fact]
