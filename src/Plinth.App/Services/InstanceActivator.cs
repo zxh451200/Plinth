@@ -63,7 +63,8 @@ public sealed class InstanceActivator : IDisposable, IAsyncDisposable
 
             return true;
         }
-        catch (Exception ex) when (ex is TimeoutException or System.IO.IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is TimeoutException or System.IO.IOException or UnauthorizedAccessException
+            or System.Net.Sockets.SocketException)
         {
             return false;
         }
@@ -172,7 +173,7 @@ public sealed class InstanceActivator : IDisposable, IAsyncDisposable
                 ActivationRequested?.Invoke(intent);
             }
             catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
-                or ObjectDisposedException)
+                or ObjectDisposedException or System.Net.Sockets.SocketException)
             {
                 if (cancellationToken.IsCancellationRequested) return;
                 if (cancellationToken.WaitHandle.WaitOne(500)) return;

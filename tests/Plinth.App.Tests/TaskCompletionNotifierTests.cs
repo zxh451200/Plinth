@@ -31,6 +31,7 @@ public sealed class TaskCompletionNotifierTests
     [Fact]
     public void Launch_arguments_carry_the_fixed_status_and_task_center_uri()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Windows 系统通知；非 Windows 平台不启动 PowerShell。");
         Loc.Initialize(Loc.DefaultLanguage);
         var script = Path.Combine(Path.GetTempPath(), $"plinth-notify-{Guid.NewGuid():N}.ps1");
         File.WriteAllText(script, "exit 0");

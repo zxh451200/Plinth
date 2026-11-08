@@ -49,10 +49,12 @@ public sealed class DateFieldTests
         var nav = shell.ViewModel.NavigationItems.Single(item => item.Id == ShellNavigation.LogsId);
         shell.ViewModel.OpenTabCommand.Execute(nav);
         shell.Layout();
-        shell.Window.CaptureRenderedFrame()!.Save("D:\\tmp\\plinth-date-filters.png");
+        var output = Path.Combine(Path.GetTempPath(), "plinth-date-filters");
+        Directory.CreateDirectory(output);
+        shell.Window.CaptureRenderedFrame()!.Save(Path.Combine(output, "plinth-date-filters.png"));
 
         var fields = shell.PageView<LogView>().GetVisualDescendants().OfType<DateField>().ToList();
-        using var writer = new StreamWriter("D:\\tmp\\plinth-date-filters.txt");
+        using var writer = new StreamWriter(Path.Combine(output, "plinth-date-filters.txt"));
         foreach (var field in fields)
         {
             writer.WriteLine(
