@@ -17,6 +17,7 @@ public sealed class PluginBoundaryTests
     [Fact]
     public async Task Sample_round_trips_unicode_and_shell_metacharacters()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "运行时插件进程隔离在 Windows 上验收；Linux 只验证构建与校验路径。");
         var path = Peer("sample", "Plinth.EchoPlugin");
         var host = new RuntimePluginHost([new("echo", path, Hash(path), ["echo"])]);
         const string text = "你好 $(touch should-not-exist) & | quoted";
@@ -47,6 +48,7 @@ public sealed class PluginBoundaryTests
     [InlineData("missing-success", PluginError.ProtocolViolation)]
     public async Task Hostile_peer_errors_are_redacted(string operation, PluginError expected)
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "运行时插件进程隔离在 Windows 上验收；Linux 只验证构建与校验路径。");
         var result = await Host(operation).InvokeAsync("fixture", operation, "secret=/private/token");
         Assert.Equal(expected, result.Error);
         Assert.Null(result.Output);
@@ -94,6 +96,7 @@ public sealed class PluginBoundaryTests
     [InlineData(true, "response-hang")]
     public async Task Timeout_and_cancel_reap_processes(bool cancel, string operation)
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "运行时插件进程隔离在 Windows 上验收；Linux 只验证构建与校验路径。");
         var file = Path.Combine(Path.GetTempPath(), $"plinth-plugin-{Guid.NewGuid():N}");
         using var cts = new CancellationTokenSource();
         var host = Host(operation, TimeSpan.FromSeconds(3));
@@ -143,6 +146,7 @@ public sealed class PluginBoundaryTests
     [Fact]
     public async Task Environment_secrets_are_not_inherited()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "运行时插件进程隔离在 Windows 上验收；Linux 只验证构建与校验路径。");
         Environment.SetEnvironmentVariable("PLINTH_PLUGIN_TEST_SECRET", "private-token");
         try
         {

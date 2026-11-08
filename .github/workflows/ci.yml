@@ -40,7 +40,7 @@ jobs:
           for project in tests/Plinth.App.Tests/Plinth.App.Tests.csproj tests/Plinth.Spreadsheet.Tests/Plinth.Spreadsheet.Tests.csproj; do
             name=$(basename "$project" .csproj)
             dotnet test "$project" -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true \
-              -- --results-directory "artifacts/test-results/$name" \
+              -- --results-directory "$PWD/artifacts/test-results/$name" \
                  --report-xunit-trx --report-xunit-trx-filename "$name.trx" || failed=1
           done
           exit $failed
@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true \
-            -- --results-directory artifacts/test-results-xlsx \
+            -- --results-directory "$PWD/artifacts/test-results-xlsx" \
                --report-xunit-trx --report-xunit-trx-filename xlsx.trx \
                --filter-class "*Spreadsheet*"
       - name: Upload test evidence

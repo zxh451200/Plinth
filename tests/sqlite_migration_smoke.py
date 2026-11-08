@@ -21,20 +21,20 @@ def managed_connect(target):
 
 
 SOURCE = pathlib.Path(__file__).resolve().parents[1] / "src/Plinth.App/Migrations/20261101000000_InitialSchema.cs"
-DDL = re.search(r'CreateSql = """(.*?)""";', SOURCE.read_text(), re.S).group(1)
-LEGACY_SOURCE = SOURCE.with_name("LegacyEnsureCreatedSchema.cs").read_text()
+DDL = re.search(r'CreateSql = """(.*?)""";', SOURCE.read_text(encoding="utf-8-sig"), re.S).group(1)
+LEGACY_SOURCE = SOURCE.with_name("LegacyEnsureCreatedSchema.cs").read_text(encoding="utf-8-sig")
 SIX_DDL = re.search(r'SixColumnCreateSql = """(.*?)""";', LEGACY_SOURCE, re.S).group(1)
 UPGRADE_SQL = re.search(r'UpgradeSixColumnSql = """(.*?)""";', LEGACY_SOURCE, re.S).group(1)
 INITIALIZER = SOURCE.parents[1] / "Data/DatabaseInitializer.cs"
-BASELINE_SQL = re.search(r'command.CommandText = """(.*?)""";', INITIALIZER.read_text(), re.S).group(1)
+BASELINE_SQL = re.search(r'command.CommandText = """(.*?)""";', INITIALIZER.read_text(encoding="utf-8-sig"), re.S).group(1)
 BASELINE_ID = "20261101000000_InitialSchema"
-NOTES_SOURCE = SOURCE.with_name("20261101010000_NotesEntries.cs").read_text()
+NOTES_SOURCE = SOURCE.with_name("20261101010000_NotesEntries.cs").read_text(encoding="utf-8-sig")
 NOTES_DDL = re.search(r'CreateSql = """(.*?)""";', NOTES_SOURCE, re.S).group(1)
-IDENTITY_SOURCE = SOURCE.with_name("20261102000000_CodeIdentityKeys.cs").read_text()
+IDENTITY_SOURCE = SOURCE.with_name("20261102000000_CodeIdentityKeys.cs").read_text(encoding="utf-8-sig")
 IDENTITY_SQL = re.search(r'UpgradeSql = """(.*?)""";', IDENTITY_SOURCE, re.S).group(1)
-TYPED_SOURCE = SOURCE.with_name("20261108125013_DemoTypedColumns.cs").read_text()
+TYPED_SOURCE = SOURCE.with_name("20261108125013_DemoTypedColumns.cs").read_text(encoding="utf-8-sig")
 TYPED_DDL = re.search(r'AddColumnsSql = """(.*?)""";', TYPED_SOURCE, re.S).group(1)
-TYPED_DESIGNER = SOURCE.with_name("20261108125013_DemoTypedColumns.Designer.cs").read_text()
+TYPED_DESIGNER = SOURCE.with_name("20261108125013_DemoTypedColumns.Designer.cs").read_text(encoding="utf-8-sig")
 NOTES_ID = "20261101010000_NotesEntries"
 IDENTITY_ID = "20261102000000_CodeIdentityKeys"
 TYPED_ID = "20261108125013_DemoTypedColumns"
@@ -118,7 +118,7 @@ class SqliteMigrationSmoke(unittest.TestCase):
 
     def test_snapshot_and_new_frozen_target_match(self):
         # 静态检查不代替 EF HasPendingModelChanges 或 C# 编译。
-        snapshot = SOURCE.with_name("AppDbContextModelSnapshot.cs").read_text()
+        snapshot = SOURCE.with_name("AppDbContextModelSnapshot.cs").read_text(encoding="utf-8-sig")
         pattern = r"protected override void %s\(ModelBuilder modelBuilder\)\s*\{(.*?)\n        \}"
         migration_model = re.search(pattern % "BuildTargetModel", TYPED_DESIGNER, re.S).group(1)
         snapshot_model = re.search(pattern % "BuildModel", snapshot, re.S).group(1)
@@ -302,7 +302,7 @@ class SqliteMigrationSmoke(unittest.TestCase):
 
     def test_identity_schema_comparison_detects_drift_despite_version_claim(self):
         # 使用与初始化器相同的固定 SQL 链建立预期结构；本测试不执行 C# 初始化器。
-        initializer = INITIALIZER.read_text()
+        initializer = INITIALIZER.read_text(encoding="utf-8-sig")
         self.assertIn("applied[^1] == CodeIdentityKeys.MigrationId", initializer)
         self.assertIn("create.CommandText += CodeIdentityKeys.UpgradeSql;", initializer)
         with managed_connect(":memory:") as expected:
