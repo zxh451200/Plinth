@@ -76,11 +76,11 @@ class SupplementalTests(unittest.TestCase):
             "sha256": hashlib.sha256((self.evidence / "NOTICE").read_bytes()).hexdigest()})
         self.write_inventory([self.entry])
         output = self.generate()
-        notice = (output / "THIRD_PARTY_NOTICES.md").read_text()
+        notice = (output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig")
         self.assertIn("SYNTHETIC TEST LICENSE ONLY", notice)
         self.assertIn("Synthetic notice", notice)
         self.assertIn("Not a complete distribution inventory", notice)
-        sbom = json.loads((output / "sbom.cdx.json").read_text())
+        sbom = json.loads((output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(len(sbom["components"]), 2)
         extra = sbom["components"][1]
         self.assertEqual(extra["licenses"][0]["license"]["name"], "Fixture custom license")
@@ -96,8 +96,8 @@ class SupplementalTests(unittest.TestCase):
 
     def test_no_supplement_preserves_candidate(self):
         output = self.generate(False)
-        self.assertIn("NuGet-only candidate", (output / "THIRD_PARTY_NOTICES.md").read_text())
-        self.assertEqual(len(json.loads((output / "sbom.cdx.json").read_text())["components"]), 1)
+        self.assertIn("NuGet-only candidate", (output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig"))
+        self.assertEqual(len(json.loads((output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))["components"]), 1)
 
     def test_reject_missing_identity_version_source_license(self):
         for field in ("id", "name", "version", "source", "license"):
@@ -225,8 +225,8 @@ class SupplementalTests(unittest.TestCase):
         self.assertFalse((self.root / "failed").exists())
 
     def test_powershell_option_forwarding_static_only(self):
-        publish = (ROOT / "scripts" / "publish.ps1").read_text()
-        acceptance = (ROOT / "scripts" / "acceptance.ps1").read_text()
+        publish = (ROOT / "scripts" / "publish.ps1").read_text(encoding="utf-8-sig")
+        acceptance = (ROOT / "scripts" / "acceptance.ps1").read_text(encoding="utf-8-sig")
         self.assertIn("[string]$SupplementalComplianceFile", publish)
         self.assertIn("@('--supplemental-compliance-file', $SupplementalComplianceFile)", publish)
         self.assertIn('supplemental_compliance.py" --validate $SupplementalComplianceFile', publish)
@@ -285,12 +285,12 @@ class PublishInventoryTests(unittest.TestCase):
         with patch("sys.stdout", stdout):
             third_party.generate(assets or [self.asset], self.output,
                                  self.manifest if supplemental else None, self.publish)
-        sbom = json.loads((self.output / "sbom.cdx.json").read_text())
-        notice = (self.output / "THIRD_PARTY_NOTICES.md").read_text()
+        sbom = json.loads((self.output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
+        notice = (self.output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig")
         return sbom, notice, stdout.getvalue()
 
     def test_release_filter_and_case_insensitive_multi_assets_deduplication(self):
-        data = json.loads(self.asset.read_text())
+        data = json.loads(self.asset.read_text(encoding="utf-8-sig"))
         # An excluded Debug-only package must not reach license policy evaluation.
         data["libraries"]["DebugOnly/1.0"] = dict(data["libraries"]["Fixture/1.0"])
         self.asset.write_text(json.dumps(data))
@@ -387,7 +387,7 @@ class PublishInventoryTests(unittest.TestCase):
         self.assertIn("UNCOVERED: " + key, notice)
 
     def test_runtime_with_real_assets_uses_normal_license_validation(self):
-        data = json.loads(self.asset.read_text())
+        data = json.loads(self.asset.read_text(encoding="utf-8-sig"))
         data["libraries"][self.runtime] = dict(data["libraries"]["Fixture/1.0"])
         self.asset.write_text(json.dumps(data))
         self.deps(["Fixture/1.0", self.runtime])
@@ -397,7 +397,7 @@ class PublishInventoryTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
 
     def test_runtime_with_matching_restored_identity_has_no_gap(self):
-        data = json.loads(self.asset.read_text())
+        data = json.loads(self.asset.read_text(encoding="utf-8-sig"))
         library = data["libraries"].pop("Fixture/1.0")
         data["libraries"][self.runtime] = library
         self.asset.write_text(json.dumps(data))
@@ -416,7 +416,7 @@ class PublishInventoryTests(unittest.TestCase):
                              for p in sbom["metadata"]["properties"]))
 
     def test_missing_restored_directory_is_not_a_runtime_exception(self):
-        data = json.loads(self.asset.read_text())
+        data = json.loads(self.asset.read_text(encoding="utf-8-sig"))
         data["libraries"][self.runtime] = {
             "type": "package", "path": "missing/10.0.0", "sha512": ""}
         self.asset.write_text(json.dumps(data))

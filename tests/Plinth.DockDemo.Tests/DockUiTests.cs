@@ -35,7 +35,8 @@ public sealed class DockUiTests : IDisposable
         // DockControl 内部订阅依赖控件已进入可视树。
         var dock = new DockControl
         {
-            InitializeFactory = false, InitializeLayout = false,
+            InitializeFactory = false,
+            InitializeLayout = false,
         };
         var window = new Window { Content = dock, Width = 900, Height = 600 };
         try

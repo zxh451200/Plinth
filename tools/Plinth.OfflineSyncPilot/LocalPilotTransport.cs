@@ -22,7 +22,9 @@ public sealed class LocalPilotTransport : IPilotTransport
         Scope = "local-sqlite/" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path))) + "/demo-user";
         connectionString = new SqliteConnectionStringBuilder
         {
-            DataSource = path, Pooling = false, DefaultTimeout = 5
+            DataSource = path,
+            Pooling = false,
+            DefaultTimeout = 5
         }.ToString();
     }
 

@@ -69,7 +69,9 @@ switch (request.Operation)
         await PluginProtocol.WriteAsync(output,
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new
             {
-                version = PluginProtocol.Version, requestId = request.RequestId, output = "ok"
+                version = PluginProtocol.Version,
+                requestId = request.RequestId,
+                output = "ok"
             }), CancellationToken.None);
         return 0;
     case "exit":

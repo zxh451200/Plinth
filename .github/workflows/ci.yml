@@ -33,9 +33,24 @@ jobs:
       - run: dotnet restore Plinth.sln --locked-mode --configfile scripts/nuget.config
       - run: dotnet format Plinth.sln --verify-no-changes --no-restore
       - run: dotnet build Plinth.sln -c Release --no-restore -warnaserror:nullable
-      - run: dotnet test Plinth.sln -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true --logger trx --results-directory artifacts/test-results
+      - name: Run tests
+        shell: bash
+        run: |
+          failed=0
+          for project in tests/Plinth.App.Tests/Plinth.App.Tests.csproj tests/Plinth.Spreadsheet.Tests/Plinth.Spreadsheet.Tests.csproj; do
+            name=$(basename "$project" .csproj)
+            dotnet test "$project" -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true \
+              -- --results-directory "artifacts/test-results/$name" \
+                 --report-xunit-trx --report-xunit-trx-filename "$name.trx" || failed=1
+          done
+          exit $failed
       - name: Check optional XLSX page
-        run: dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true --filter FullyQualifiedName~Spreadsheet --logger trx --results-directory artifacts/test-results-xlsx
+        shell: bash
+        run: |
+          dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true \
+            -- --results-directory artifacts/test-results-xlsx \
+               --report-xunit-trx --report-xunit-trx-filename xlsx.trx \
+               --filter-class "*Spreadsheet*"
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4

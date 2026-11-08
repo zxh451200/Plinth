@@ -229,7 +229,9 @@ public sealed class LocalPilotTests : IDisposable
         var testAssembly = typeof(LocalPilotTests).Assembly.Location;
         var start = new ProcessStartInfo("dotnet")
         {
-            RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
         };
         foreach (var arg in new[]
         {

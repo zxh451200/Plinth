@@ -46,7 +46,7 @@ class CoverageTests(unittest.TestCase):
 
     def generate(self, supplemental=None, publish=None):
         third_party.generate([self.assets], self.output, supplemental, publish)
-        return json.loads((self.output / "coverage-report.json").read_text())
+        return json.loads((self.output / "coverage-report.json").read_text(encoding="utf-8-sig"))
 
     def test_multiline_unicode_attribution_preserved_with_evidence(self):
         text = "  Copyright © 2026 Fixture & 合作者\nAll rights reserved.  "
@@ -54,9 +54,9 @@ class CoverageTests(unittest.TestCase):
         bundled = self.package / "NOTICE"
         bundled.write_bytes(b"SYNTHETIC NOTICE\r\n")
         report = self.generate()
-        sbom = json.loads((self.output / "sbom.cdx.json").read_text())
+        sbom = json.loads((self.output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(sbom["components"][0]["copyright"], text)
-        self.assertIn(text, (self.output / "THIRD_PARTY_NOTICES.md").read_text())
+        self.assertIn(text, (self.output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig"))
         entry = report["nuget_packages"][0]
         self.assertEqual(entry["copyright"], {"status": "present", "text": text})
         self.assertEqual(entry["bom-ref"], sbom["components"][0]["bom-ref"])
@@ -77,7 +77,7 @@ class CoverageTests(unittest.TestCase):
         bundled = self.package / "NOTICE"
         bundled.write_bytes(b"\xef\xbb\xbfSYNTHETIC NOTICE\r\n")
         third_party.generate([self.assets, second], self.output)
-        report = json.loads((self.output / "coverage-report.json").read_text())
+        report = json.loads((self.output / "coverage-report.json").read_text(encoding="utf-8-sig"))
         release_checks.coverage_report(report)
         inputs = report["inputs"]["assets"]
         self.assertEqual([e["path"] for e in inputs], [
@@ -93,7 +93,7 @@ class CoverageTests(unittest.TestCase):
         publish.mkdir()
         for name in ("coverage-report.json", "THIRD_PARTY_NOTICES.md", "sbom.cdx.json"):
             shutil.copyfile(self.output / name, publish / name)
-            text = (publish / name).read_text()
+            text = (publish / name).read_text(encoding="utf-8-sig")
             for private in (str(self.root), str(third_party.ROOT), str(self.package), "private-user"):
                 self.assertNotIn(private, text)
         (publish / "Plinth.App.exe").write_bytes(b"synthetic executable")
@@ -121,12 +121,12 @@ class CoverageTests(unittest.TestCase):
             with self.subTest(status=status, xml=xml):
                 self.write_nuspec(xml)
                 report = self.generate()
-                component = json.loads((self.output / "sbom.cdx.json").read_text())["components"][0]
+                component = json.loads((self.output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))["components"][0]
                 self.assertNotIn("copyright", component)
                 entry = report["nuget_packages"][0]
                 self.assertEqual(entry["copyright"]["status"], status)
                 self.assertIn("Locate upstream copyright", entry["pending_materials"][0])
-                self.assertNotIn("NOT A COPYRIGHT", (self.output / "THIRD_PARTY_NOTICES.md").read_text())
+                self.assertNotIn("NOT A COPYRIGHT", (self.output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig"))
                 self.assertFalse(report["distribution_inventory_complete"])
                 self.assertFalse(report["license_review_approved"])
 
@@ -164,7 +164,7 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(report["inputs"]["publish_deps"][0]["path"], "publish/Fixture.deps.json")
         self.assertEqual(report["inputs"]["supplemental"]["path"], "inputs/supplemental/inventory.json")
         for file in self.output.iterdir():
-            self.assertNotIn(str(self.root), file.read_text())
+            self.assertNotIn(str(self.root), file.read_text(encoding="utf-8-sig"))
         release_checks.coverage_report(report)
         extra = report["supplemental_components"][0]
         self.assertEqual(extra["texts"][0]["sha256"], hashlib.sha256(evidence.read_bytes()).hexdigest())
@@ -175,7 +175,7 @@ class CoverageTests(unittest.TestCase):
         self.assertFalse(report["license_review_approved"])
 
     def test_excluded_restored_packages_are_traceable(self):
-        data = json.loads(self.assets.read_text())
+        data = json.loads(self.assets.read_text(encoding="utf-8-sig"))
         data["libraries"]["BuildOnly/1.0"] = dict(data["libraries"]["Fixture/1.0"])
         self.assets.write_text(json.dumps(data))
         publish = self.root / "publish"

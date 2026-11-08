@@ -18,18 +18,18 @@ except ModuleNotFoundError:
 class PilotChecksTests(unittest.TestCase):
     def test_runtime_plugins_use_the_trusted_default_deny_composition_gate(self):
         root = pilot_checks.ROOT
-        composition = (root / "src/Plinth.App/ServiceCollectionExtensions.cs").read_text()
-        deployment = (root / "src/Plinth.App/Services/DeploymentConfiguration.cs").read_text()
-        example = json.loads((root / "deployment.example.json").read_text())
-        registration = (root / "src/Plinth.App/Modules/RuntimePlugins/RuntimePluginsModuleRegistration.cs").read_text()
-        configuration = (root / "src/Plinth.App/Modules/RuntimePlugins/RuntimePluginConfiguration.cs").read_text()
+        composition = (root / "src/Plinth.App/ServiceCollectionExtensions.cs").read_text(encoding="utf-8-sig")
+        deployment = (root / "src/Plinth.App/Services/DeploymentConfiguration.cs").read_text(encoding="utf-8-sig")
+        example = json.loads((root / "deployment.example.json").read_text(encoding="utf-8-sig"))
+        registration = (root / "src/Plinth.App/Modules/RuntimePlugins/RuntimePluginsModuleRegistration.cs").read_text(encoding="utf-8-sig")
+        configuration = (root / "src/Plinth.App/Modules/RuntimePlugins/RuntimePluginConfiguration.cs").read_text(encoding="utf-8-sig")
         self.assertIn("public bool EnableRuntimePlugins { get; set; }", deployment)
         self.assertFalse(example["EnableRuntimePlugins"])
         self.assertFalse(example["EnableOfflineSyncPilot"])
         self.assertIn("if (deployment.EnableRuntimePlugins)", composition)
         self.assertIn("services.AddRuntimePluginsModule();", composition)
         self.assertIn("RequiredAnyPermission = [RuntimePluginsViewModel.InvokePermission]", registration)
-        self.assertIn("private bool Allowed()", (root / "src/Plinth.App/Modules/RuntimePlugins/ViewModels/RuntimePluginsViewModel.cs").read_text())
+        self.assertIn("private bool Allowed()", (root / "src/Plinth.App/Modules/RuntimePlugins/ViewModels/RuntimePluginsViewModel.cs").read_text(encoding="utf-8-sig"))
         self.assertIn("using Plinth.App.Modules.RuntimePlugins;", composition)
         self.assertIn("RuntimePluginConfiguration? configuration = null", registration)
         self.assertIn("configuration ?? RuntimePluginConfiguration.Disabled", registration)
@@ -117,7 +117,7 @@ class PilotChecksTests(unittest.TestCase):
                  patch.object(pilot_checks.subprocess, "run", side_effect=fake_run), \
                  contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
                 code = pilot_checks.main(["--mode", mode, "--output", str(root / "evidence")])
-            logs = {p.name: p.read_text() for p in (root / "evidence").rglob("*.log")}
+            logs = {p.name: p.read_text(encoding="utf-8-sig") for p in (root / "evidence").rglob("*.log")}
             return code, calls, output.getvalue(), logs
 
     def test_generate_and_locked_are_separate_and_do_not_implicitly_restore(self):

@@ -15,7 +15,9 @@ public sealed class DockDemoWindow : Window
     private readonly TextBlock _status = new() { Margin = new Thickness(12, 6) };
     private readonly StackPanel _toolbar = new()
     {
-        Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(12),
+        Orientation = Orientation.Horizontal,
+        Spacing = 8,
+        Margin = new Thickness(12),
     };
     private DockWorkspace? _workspace;
     private bool _busy;

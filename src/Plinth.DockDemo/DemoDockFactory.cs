@@ -69,14 +69,18 @@ public sealed class DemoDockFactory : Factory, IDisposable
         var guide = new Document { Id = "guide", Title = "布局说明", CanClose = true };
         var tools = new ToolDock
         {
-            Id = "tools", Title = "工具", Proportion = 0.25,
+            Id = "tools",
+            Title = "工具",
+            Proportion = 0.25,
             Alignment = Alignment.Left,
             ActiveDockable = explorer,
             VisibleDockables = CreateList<IDockable>(explorer, inspector),
         };
         var documents = new DocumentDock
         {
-            Id = "documents", Title = "文档", IsCollapsable = false,
+            Id = "documents",
+            Title = "文档",
+            IsCollapsable = false,
             ActiveDockable = welcome,
             VisibleDockables = CreateList<IDockable>(welcome, guide),
         };
@@ -99,13 +103,29 @@ public sealed class DemoDockFactory : Factory, IDisposable
     {
         var demo = new Tool { Id = "demo", Title = "Demo", CanClose = true };
         var notes = new Document { Id = "notes", Title = "Notes", CanClose = true };
-        var tools = new ToolDock { Id = "tools", Title = "工具", Proportion = 0.35,
-            Alignment = Alignment.Left, ActiveDockable = demo,
-            VisibleDockables = CreateList<IDockable>(demo) };
-        var documents = new DocumentDock { Id = "documents", Title = "业务页面", IsCollapsable = false,
-            ActiveDockable = notes, VisibleDockables = CreateList<IDockable>(notes) };
-        var split = new ProportionalDock { Id = "workspace", Orientation = Orientation.Horizontal,
-            VisibleDockables = CreateList<IDockable>(tools, new ProportionalDockSplitter(), documents) };
+        var tools = new ToolDock
+        {
+            Id = "tools",
+            Title = "工具",
+            Proportion = 0.35,
+            Alignment = Alignment.Left,
+            ActiveDockable = demo,
+            VisibleDockables = CreateList<IDockable>(demo)
+        };
+        var documents = new DocumentDock
+        {
+            Id = "documents",
+            Title = "业务页面",
+            IsCollapsable = false,
+            ActiveDockable = notes,
+            VisibleDockables = CreateList<IDockable>(notes)
+        };
+        var split = new ProportionalDock
+        {
+            Id = "workspace",
+            Orientation = Orientation.Horizontal,
+            VisibleDockables = CreateList<IDockable>(tools, new ProportionalDockSplitter(), documents)
+        };
         var root = CreateRootDock();
         root.Id = "root"; root.IsCollapsable = false;
         root.VisibleDockables = CreateList<IDockable>(split);

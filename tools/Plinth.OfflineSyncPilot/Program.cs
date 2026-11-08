@@ -28,7 +28,8 @@ namespace Plinth.OfflineSyncPilot
             """;
         private static readonly JsonSerializerOptions Json = new()
         {
-            WriteIndented = true, Converters = { new JsonStringEnumConverter() }
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
         };
 
         public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error)

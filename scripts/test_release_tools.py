@@ -102,12 +102,12 @@ class ReleaseToolTests(unittest.TestCase):
             with patch.object(third_party, "SPDX_CACHE", root / "spdx-cache"), \
                     patch("urllib.request.urlopen", return_value=io.BytesIO(b"synthetic SPDX text fixture")):
                 third_party.generate([assets], output)
-            notice = (output / "THIRD_PARTY_NOTICES.md").read_text()
+            notice = (output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig")
             self.assertIn("synthetic copyright fixture", notice)
             self.assertIn(f"License text source: {third_party.SPDX_SOURCE}MIT.txt", notice)
             self.assertIn("License text SHA256: " + hashlib.sha256(
                 b"synthetic SPDX text fixture").hexdigest(), notice)
-            sbom = json.loads((output / "sbom.cdx.json").read_text())
+            sbom = json.loads((output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
             self.assertEqual(sbom["components"][0]["purl"], "pkg:nuget/Fixture@1.0.0")
             # This synthetic metadata verifies policy behavior, not Npgsql package contents.
             nuspec.write_text(template.format("PostgreSQL"))
@@ -115,9 +115,9 @@ class ReleaseToolTests(unittest.TestCase):
                     patch("urllib.request.urlopen", return_value=io.BytesIO(b"synthetic PostgreSQL license fixture")) as fetch:
                 third_party.generate([assets], output)
             fetch.assert_called_once_with(third_party.SPDX_SOURCE + "PostgreSQL.txt", timeout=30)
-            sbom = json.loads((output / "sbom.cdx.json").read_text())
+            sbom = json.loads((output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
             self.assertEqual(sbom["components"][0]["licenses"], [{"license": {"id": "PostgreSQL"}}])
-            self.assertIn("synthetic PostgreSQL license fixture", (output / "THIRD_PARTY_NOTICES.md").read_text())
+            self.assertIn("synthetic PostgreSQL license fixture", (output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig"))
             for expression in ("Unknown-License", "MIT AND GPL-3.0-only", "(MIT OR Apache-2.0)"):
                 nuspec.write_text(template.format(expression))
                 with self.assertRaises(ValueError):

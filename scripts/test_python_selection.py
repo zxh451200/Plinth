@@ -21,7 +21,7 @@ import json
 import sys
 from pathlib import Path
 
-config = json.loads(Path(sys.argv[1]).read_text())
+config = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
 args = sys.argv[2:]
 with open(config["log"], "a") as log:
     log.write(json.dumps(args) + "\n")
@@ -78,7 +78,7 @@ class PythonSelectionTests(unittest.TestCase):
 
     def calls(self, name):
         log = self.bin / (name + ".log")
-        return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+        return [json.loads(line) for line in log.read_text(encoding="utf-8-sig").splitlines()] if log.exists() else []
 
     def run_ps(self, code, success=True):
         result = subprocess.run(

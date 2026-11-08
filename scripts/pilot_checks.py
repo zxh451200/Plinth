@@ -92,7 +92,7 @@ def main(argv=None):
         evidence = Path(tempfile.mkdtemp(prefix=f"{args.mode}-", dir=args.output.resolve()))
         print(f"Evidence: {evidence}", flush=True)
         version_log = run_step(["dotnet", "--version"], evidence, "sdk-version")
-        if not any(line.strip().startswith("10.0.") for line in version_log.read_text().splitlines()):
+        if not any(line.strip().startswith("10.0.") for line in version_log.read_text(encoding="utf-8-sig").splitlines()):
             raise RuntimeError(f".NET 10 SDK required; see {version_log}")
         run_step(["dotnet", "--info"], evidence, "sdk-info")
         selected = PILOTS if args.pilot == "all" else {args.pilot: PILOTS[args.pilot]}
@@ -116,7 +116,8 @@ def main(argv=None):
             results = evidence / name / "test-results"
             run_step(["dotnet", "test", str(project), "-c", "Release", "--no-build",
                       "--no-restore", "-p:TestingPlatformDotnetTestSupport=true",
-                      "--logger", "trx", "--results-directory", str(results)],
+                      "--", "--results-directory", str(results),
+                      "--report-xunit-trx", "--report-xunit-trx-filename", f"{name}.trx"],
                      evidence, f"{name}-test")
             require_test_results(results)
         print(f"PASS: {args.mode}; evidence: {evidence}")
