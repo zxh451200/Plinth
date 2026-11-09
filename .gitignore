@@ -7,6 +7,7 @@ Desktop.ini
 # 编辑器目录
 .idea/
 .vscode/
+.mimosa/
 *.swp
 *~
 
