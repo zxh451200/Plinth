@@ -485,6 +485,6 @@ Profile 仅接受 Development、Test、Production；生产窗口标题有标识�
 
 ## 已知限制 / 尚未实现
 
-真实第三方 IdP、正式 CA 签名与 OS 级 DPI／IME／读屏人工矩阵仍未完成；安装升级（含安装器干净账户安装/卸载冒烟）、0.1.0→0.1.1 备份演练、本机标准用户首启、独立 300MB 卷磁盘满（启动/CLI 备份）、日志目录 IO/只读降级与真实 GitHub CI（run 42525487305）已实测/通过，边界见实现状态。完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
+真实第三方 IdP、正式 CA 签名与 OS 级 DPI／IME／读屏人工矩阵仍未完成；安装升级（含安装器干净账户安装/卸载冒烟与磁盘满首次安装失败）、0.1.0→0.1.1 备份演练、本机标准用户首启、独立 300MB 卷磁盘满（启动/CLI 备份）、日志目录 IO/只读降级与真实 GitHub CI（run 42525487305）已实测/通过，边界见实现状态。完整清单见 [实现状态](docs/IMPLEMENTATION_STATUS.md) 和 [UI 验收](docs/UI_ACCEPTANCE.md)。不得将静态扫描、测试源码存在或 workflow 已配置记为运行通过。
 
 按规范章节整理的剩余功能、条件项和验收阻塞见 [需求交付核对表](docs/REQUIREMENTS_STATUS.md)。系统 Toast 已接入并进入 Windows 通知历史；横幅物理点击和勿扰策略下的人工体验仍待验收，应用内任务提示不能替代这两项。

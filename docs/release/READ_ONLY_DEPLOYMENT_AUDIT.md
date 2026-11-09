@@ -54,7 +54,7 @@ dotnet publish src/Plinth.App/Plinth.App.csproj -c Release -r win-x64 --self-con
 pwsh scripts/acceptance.ps1 -Package -PythonExecutable (Get-Command python).Source
 ```
 
-Windows UI、IME、DPI 与安装器/升级在磁盘满、旧版升级下的完整矩阵仍须按 `docs/WINDOWS_TEST_PLAN.md` 实测；应用在标准用户下的首启、独立小卷磁盘满（启动/CLI 备份）以及安装器在 PlinthClean 下的 `/S` 安装/卸载冒烟已于 2026-11-08/09 实测，见[实现记录](../IMPLEMENTATION_STATUS.md)。源码、CI YAML、`bin/Release`、`obj` 和测试源码不能代替交付物证据。
+Windows UI、IME、DPI 与安装器/升级在磁盘满下的升级/回滚、旧版升级下的完整矩阵仍须按 `docs/WINDOWS_TEST_PLAN.md` 实测；应用在标准用户下的首启、独立小卷磁盘满（启动/CLI 备份）、安装器在 PlinthClean 下的 `/S` 安装/卸载冒烟与磁盘满首次安装失败已于 2026-11-08/09 实测，见[实现记录](../IMPLEMENTATION_STATUS.md)。源码、CI YAML、`bin/Release`、`obj` 和测试源码不能代替交付物证据。
 
 ## 第三方候选报告
 
@@ -83,7 +83,7 @@ python scripts/release_checks.py package artifacts/Plinth-<version>-win-x64.zip
 | .NET SDK 10.0.403、`dotnet` | 当前宿主不可用；缓存 SDK 受 glibc/运行时策略阻塞 | `dotnet --info`、solution 与 pilot 的 locked restore、Release build、TRX |
 | PowerShell 7、`pwsh` | 当前宿主不可用 | `pwsh --version`、`scripts/acceptance.ps1` 原始日志 |
 | NSIS `makensis` | 当前宿主不可用 | `makensis /VERSION`、`acceptance.ps1 -Package`、Setup SHA-256 |
-| Windows 11 实机与干净账户 | 实机、标准用户首启与安装器干净账户安装/卸载冒烟已执行；安装器/升级磁盘满/旧版升级、DPI/IME/辅助功能矩阵未完成 | 按 `WINDOWS_TEST_PLAN.md` 执行安装/升级/卸载、DPI/IME/辅助功能和故障矩阵 |
+| Windows 11 实机与干净账户 | 实机、标准用户首启、安装器干净账户安装/卸载与磁盘满首次安装失败已执行；安装器/升级磁盘满下的升级/回滚、旧版升级、DPI/IME/辅助功能矩阵未完成 | 按 `WINDOWS_TEST_PLAN.md` 执行安装/升级/卸载、DPI/IME/辅助功能和故障矩阵 |
 | 真实 HTTPS API 与隔离 IdP | 未发现配置或授权 | 按 `REMOTE_DEMO.md` 执行登录、刷新、换号、权限、ETag、超时；不得归档令牌或原始跳转 URL |
 | 隔离 PostgreSQL/MySQL 测试库 | 未发现连接串或授权 | 仅注入受控秘密后执行 `DatabaseProviderIntegrationTests`；保留脱敏 TRX，不记录连接串 |
 | 实际发布目录与 `project.assets.json` | 当前未发现 | 完成真实 publish 后运行 `third_party.py`、`release_checks.py package` |
