@@ -43,7 +43,7 @@
 
 - `supplemental_compliance.py --validate reviewed-materials/inventory.json`：8 个组件通过。
 - 默认包生成：83 NuGet + 8 补充组件；`uncovered=[]`、`reconciled=1`；两个批准标志为 `false`。
-- 补充材料测试 35 项、发布工具测试 12 项通过；删除 nuspec 许可、包内正文哈希、发布文件守卫时测试均变红。
+- 补充材料测试 36 项、发布工具测试 12 项通过；删除 nuspec 许可、包内正文哈希、发布文件守卫时测试均变红。
 - `release_checks.py package`：ZIP 与安装器校验通过。
 - 安装器实机冒烟：安装 `/S` 退出 0；`Plinth.App.exe --version` 输出 `Plinth 0.1.0`；`/D=` 其他目录退出 4；运行中再安装退出 5；静默覆盖安装退出 6；应用退出后卸载退出 0；未知用户文件保留；用户数据保留；卸载注册表键与 `plinth://` 协议清理；安装目录/ZIP/安装器均无 `ClosedXML.dll`。运行中静默卸载在 26 s 内不改文件/注册表（拒绝），但 NSIS 卸载 stub 返回 0，不能把该 0 当作成功。新包不含 ClosedXML 时，安装/升级路径会删除旧版残留的 `ClosedXML.dll`／`ClosedXML.Parser.dll`／`DocumentFormat.OpenXml*.dll`／`ExcelNumberFormat.dll`；已用“卸载保留 dummy ClosedXML.dll、重装后删除、未知用户文件保留”验证。
 - 安装器内嵌 notices/SBOM/coverage 的 SHA-256 与 `artifacts/compliance` 一致：
