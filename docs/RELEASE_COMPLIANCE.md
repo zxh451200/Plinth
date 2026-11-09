@@ -7,11 +7,11 @@ NuGet 原有许可策略不变。
 
 ### 版权归属与覆盖证据报告
 
-生成器同时输出 `coverage-report.json`，将 nuspec 的直接版权声明保留到 notices 与 SBOM，并关联每个包的来源 assets、nuspec／正文 SHA-256、许可声明、被发布过滤排除的包及待补材料。缺少版权时明确标为缺失，不用作者或 SPDX 模板推造声明。补充库存不会自动消除 runtime pack 的未覆盖状态。
+生成器同时输出 `coverage-report.json`，将 nuspec 的直接版权声明保留到 notices 与 SBOM，并关联每个包的来源 assets、nuspec／正文 SHA-256、许可声明、被发布过滤排除的包及待补材料。缺少版权时明确标为缺失，不用作者或 SPDX 模板推造声明。补充库存不会自动消除 runtime pack 的未覆盖状态；只有与 deps 中 runtimepack 身份、版本完全一致，类别为 `runtime`，且同时提供 LICENSE 与 NOTICE 正文的补充组件，才会把该缺口记为 `reconciled`（对账），报告仍保持 `distribution_inventory_complete=false`、`license_review_approved=false`。
 
 公开报告使用编号 assets、发布相对路径与 `nuget/<包名>/<版本>/…` 等逻辑位置，不包含构建机工作区或包缓存的绝对根路径。报告与 notices／SBOM 一起进入发布目录，随 ZIP 和安装器交付；ZIP 检查要求非空报告、JSON 结构、证据路径及哈希格式有效。它提供证据对应及缺口清单，不证明完整分发库存或许可审查通过。
 
-发布清单完整性：指定 `--publish-directory` 时，所有 `.deps.json` 中 `type=package` 的条目必须匹配还原库存，缺少即阻断。`type=runtimepack` 只有在名称、活动 RID target 及非空 runtime/native 条目均符合受限 SDK 规则时，才可作为未覆盖项披露；它不会自动变成已核验组件。未覆盖包的身份、deps 文件和 target 写入 notices、SBOM 的 `plinth:uncovered-publish-package` 元数据及终端输出，普通包不能用类似 runtimepack 的名称绕过检查。
+发布清单完整性：指定 `--publish-directory` 时，所有 `.deps.json` 中 `type=package` 的条目必须匹配还原库存，缺少即阻断。`type=runtimepack` 只有在名称、活动 RID target 及非空 runtime/native 条目均符合受限 SDK 规则时，才可作为未覆盖项披露；它不会自动变成已核验组件。未覆盖包的身份、deps 文件和 target 写入 notices、SBOM 的 `plinth:uncovered-publish-package` 元数据及终端输出，普通包不能用类似 runtimepack 的名称绕过检查。满足上述严格条件的补充组件会把缺口改写入 `reconciled_publish_packages` 与 `plinth:reconciled-publish-package`，并保留“非许可审查通过”说明；缺少 LICENSE/NOTICE、类别不符或版本不符时仍保持 uncovered。
 
 SPDX 正文只从固定版本 `license-list-data/v3.26.0` 获取，缓存按固定来源 URL 隔离。旧的无版本缓存不再读取，也不再回退到未固定版本的 spdx.org 正文，避免把其他来源正文标注成固定版本证据。首次使用或来源版本变化时需访问该上游；没有对应缓存且下载失败会阻断生成。缓存不是第三方许可审查结论。
 
@@ -81,7 +81,8 @@ JSON 顶层必须恰好包含 `schema_version`（整数 1）与非空 `component
 
 ### 2026-11-09 已核对补充库存（reviewed-materials）
 
-- `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：.NET Runtime 10.0.14（随 SDK 的 Microsoft .NET Library 条款 + ThirdPartyNotices；源码仓库为 MIT）、NSIS 3.11（zlib/libpng；COPYING 与 3.11 源码包逐字节一致）、Skia 3.119.4（BSD-3-Clause + SkiaSharp 原生包 ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（上游 Old MIT + HarfBuzzSharp 包装 MIT；其原生包附带的 ThirdPartyNotices 与 SkiaSharp 包逐字节相同，正文已列在 `skia/THIRD-PARTY-NOTICES.txt`）、SQLite 3.53.3（Public Domain，`e_sqlite3.dll`）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过（8 个组件）。
+- `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：runtimepack.Microsoft.NETCore.App.Runtime.win-x64 10.0.14（MIT + 包内 ThirdPartyNotices）、NSIS 3.11（zlib/libpng；COPYING 与 3.11 源码包逐字节一致）、Skia 3.119.4（BSD-3-Clause + SkiaSharp 原生包 ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（上游 Old MIT + HarfBuzzSharp 包装 MIT；其原生包附带的 ThirdPartyNotices 与 SkiaSharp 包逐字节相同，正文已列在 `skia/THIRD-PARTY-NOTICES.txt`）、SQLite 3.53.3（Public Domain，`e_sqlite3.dll`）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过（8 个组件）。
+- B) runtime pack 核对：实际分发来自 NuGet 包 `Microsoft.NETCore.App.Runtime.win-x64/10.0.14`，包内 `LICENSE.TXT`（MIT）与 `THIRD-PARTY-NOTICES.TXT`（含 msquic、zlib-ng 等原生归属）已入库为 `runtimepack/`；此前 A) 使用的 SDK 安装目录 `LICENSE.txt` 是 Microsoft .NET Library 条款，并非 runtime pack 的许可正文，已替换并移出库存。
 - 字体不是纯系统字体：`Avalonia.Dialogs.dll`（Avalonia 12.1.4）内嵌 Roboto Light 2.137，`ClosedXML.dll`（0.105.1）内嵌 CarlitoBare 1.104 四字重；两个 DLL 都在 ZIP 与安装器发布清单中。组件版本取自从 DLL 提取的字体 name 表，Regular 提取件 SHA-256 分别为 `db02096a91c20ab62d459001a1059bc8d78caa35d637dc91494c4440815a6ac1`（Roboto）与 `ec7c1357b67ac184a52ce7e6b4d9f6f8cf3c9518864bfea0d0e88ba07e1183c8`（Carlito）。Carlito 的 OFL 含 Reserved Font Name "Carlito"，内嵌派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断。图标仍为应用自有 `plinth.ico`，无第三方 icon 组件。
-- 实跑 `python scripts/third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（`THIRD_PARTY_NOTICES.md` 538,059 B、`sbom.cdx.json` 505,124 B、`coverage-report.json` 111,369 B）；补充材料专项测试 31 项通过。
-- 覆盖边界：publish deps 的 `runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 仍按设计为 `uncovered`（补充库存不自动消除；同包内 `msquic.dll` 等原生件也不因此转绿）。工具只验证身份/路径/原文/哈希，不代替法务审查；“审查通过”仍属发布决策。
+- 实跑 `python scripts/third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（`THIRD_PARTY_NOTICES.md` 528,955 B、`sbom.cdx.json` 481,869 B、`coverage-report.json` 111,617 B）；补充材料专项测试 33 项通过，发布工具测试 12 项通过。
+- 覆盖边界：publish deps 的 `runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 不再列为 `uncovered`；生成器按严格条件将其写入 `reconciled_publish_packages` 与 SBOM 的 `plinth:reconciled-publish-package`，coverage 明确“reconciled … not a license review approval”。`distribution_inventory_complete` 与 `license_review_approved` 仍为 false；缺少 NOTICE、类别或版本不符时仍回到 uncovered（正反例测试覆盖）。工具只验证身份/路径/原文/哈希，不代替法务审查；“审查通过”仍属发布决策。

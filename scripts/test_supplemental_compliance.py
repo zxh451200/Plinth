@@ -341,6 +341,57 @@ class PublishInventoryTests(unittest.TestCase):
             self.assertIn(self.target, text)
         self.assertFalse(any(c["name"].startswith("runtimepack.") for c in sbom["components"]))
 
+    def runtime_evidence(self, *, name=None, category="runtime", version="10.0.0", notice=True):
+        self.entry.update(name=name or self.runtime.rsplit("/", 1)[0], version=version,
+                          category=category, license="MIT")
+        if notice:
+            self.entry["texts"].append({
+                "kind": "NOTICE", "path": "NOTICE",
+                "sha256": hashlib.sha256((self.evidence / "NOTICE").read_bytes()).hexdigest()})
+        self.write_inventory([self.entry])
+        return self.entry
+
+    def test_runtime_gap_reconciled_only_by_exact_explicit_evidence(self):
+        self.runtime_evidence()
+        self.deps(["Fixture/1.0", self.runtime])
+        sbom, notice, stdout = self.run_publish(supplemental=True)
+        reconciled = [json.loads(p["value"]) for p in sbom["metadata"]["properties"]
+                      if p["name"] == "plinth:reconciled-publish-package"]
+        self.assertEqual([entry["package"] for entry in reconciled], [self.runtime])
+        self.assertEqual(reconciled[0]["evidence"], ["urn:plinth:supplemental:fixture-runtime"])
+        self.assertIn("not a license/attribution review approval", reconciled[0]["reason"])
+        self.assertFalse(any(p["name"] == "plinth:uncovered-publish-package"
+                             for p in sbom["metadata"]["properties"]))
+        report = json.loads((self.output / "coverage-report.json").read_text(encoding="utf-8-sig"))
+        self.assertEqual(report["uncovered_publish_packages"], [])
+        self.assertEqual(len(report["reconciled_publish_packages"]), 1)
+        self.assertFalse(report["distribution_inventory_complete"])
+        self.assertFalse(report["license_review_approved"])
+        self.assertIn("Reconciled SDK runtime packs: 1", report["coverage"])
+        self.assertTrue(any(c["name"] == self.runtime.rsplit("/", 1)[0]
+                            for c in sbom["components"]))
+        for text in (notice, stdout):
+            self.assertIn("RECONCILED: " + self.runtime, text)
+
+    def test_runtime_reconciliation_fails_closed_without_exact_evidence(self):
+        base = copy.deepcopy(self.entry)
+        for label, overrides, notice in (
+                ("missing notice", {}, False),
+                ("wrong category", {"category": "native"}, True),
+                ("wrong version", {"version": "10.0.1"}, True),
+                ("wrong name", {"name": "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64"}, True)):
+            with self.subTest(label=label):
+                self.entry = copy.deepcopy(base)
+                self.runtime_evidence(notice=notice, **overrides)
+                self.deps(["Fixture/1.0", self.runtime])
+                sbom, notice_text, _ = self.run_publish(supplemental=True)
+                self.assertIn("UNCOVERED: " + self.runtime, notice_text)
+                self.assertFalse(any(p["name"] == "plinth:reconciled-publish-package"
+                                     for p in sbom["metadata"]["properties"]))
+                report = json.loads((self.output / "coverage-report.json").read_text(encoding="utf-8-sig"))
+                self.assertEqual(report["reconciled_publish_packages"], [])
+                self.assertEqual(len(report["uncovered_publish_packages"]), 1)
+
     def test_runtime_boundaries_fail_closed(self):
         for key, target, entries in (
             (self.runtime.replace("runtimepack.", ""), self.target, None),

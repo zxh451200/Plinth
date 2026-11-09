@@ -45,7 +45,8 @@ def coverage_report(data):
     for field in ("distribution_inventory_complete", "license_review_approved"):
         require(type(data.get(field)) is bool, field)
     for field in ("nuget_packages", "supplemental_components", "uncovered_publish_packages",
-                  "excluded_restored_packages", "pending_scope_checks", "pending_materials"):
+                  "reconciled_publish_packages", "excluded_restored_packages",
+                  "pending_scope_checks", "pending_materials"):
         require(isinstance(data.get(field), list), field)
     inputs = data.get("inputs")
     require(isinstance(inputs, dict), "inputs")
@@ -73,7 +74,7 @@ def coverage_report(data):
                 and isinstance(entry.get("texts"), list) and bool(entry["texts"]), "supplemental entry")
         for item in entry["texts"]:
             evidence(item)
-    for field in ("uncovered_publish_packages", "pending_scope_checks"):
+    for field in ("uncovered_publish_packages", "reconciled_publish_packages", "pending_scope_checks"):
         require(all(isinstance(entry, dict) for entry in data[field]), field)
 
 

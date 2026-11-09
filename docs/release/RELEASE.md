@@ -64,7 +64,7 @@ python scripts/third_party.py --output artifacts/compliance
 
 默认仅接受明确列入脚本的宽松 SPDX 标识和简单 OR 表达式；例如 CsvHelper 只有真实 nuspec 声明支持 Apache-2.0 时才能选择它。文件型、旧 licenseUrl、AND/WITH、复杂表达式或未知许可均失败，需要针对真实材料审查后再扩展脚本。SPDX 正文下载失败也阻断，不能用占位文本代替。自动脚本的合成测试使用 mock 正文，只验证工具逻辑。
 
-**覆盖限制：** 自动发现范围仍为 NuGet，不能证明 SDK 隐式下载的 self-contained .NET runtime packs、native 二进制、图标/字体、NSIS 与 LZMA 模块的全部许可义务已履行。发布维护者可通过 `-SupplementalComplianceFile` 提供实际核对过的库存和 LICENSE/NOTICE 正文，将明确列出的组件合并进声明与 SBOM；输入结构、正文路径和原始字节摘要会被校验。格式及命令见 [补充许可材料](../RELEASE_COMPLIANCE.md)。无输入时继续生成注明 NuGet-only 的候选清单；有输入也不自动证明所有分发组件已覆盖或许可已审查。正式分发前仍须复核实际版本、材料和完整性。
+**覆盖限制：** 自动发现范围仍为 NuGet，不能证明 SDK 隐式下载的 self-contained .NET runtime packs、native 二进制、图标/字体、NSIS 与 LZMA 模块的全部许可义务已履行。发布维护者可通过 `-SupplementalComplianceFile` 提供实际核对过的库存和 LICENSE/NOTICE 正文，将明确列出的组件合并进声明与 SBOM；输入结构、正文路径和原始字节摘要会被校验。格式及命令见 [补充许可材料](../RELEASE_COMPLIANCE.md)。无输入时继续生成注明 NuGet-only 的候选清单；有输入也不自动证明所有分发组件已覆盖或许可已审查。与发布 deps 中 runtimepack 身份、版本一致且同时含 LICENSE/NOTICE 的补充组件，会从 uncovered 转入报告的 reconciled 列表；它只表示证据已对账，仍不表示许可审查通过。正式分发前仍须复核实际版本、材料和完整性。
 
 ## 发布与验收
 

@@ -21,6 +21,7 @@ def synthetic_report():
         "inputs": {"assets": [{"path": "inputs/assets/1/project.assets.json", "sha256": "0" * 64}],
                    "publish_deps": [], "supplemental": None},
         "nuget_packages": [], "supplemental_components": [], "uncovered_publish_packages": [],
+        "reconciled_publish_packages": [],
         "excluded_restored_packages": [], "pending_scope_checks": [], "pending_materials": [],
     }
 
@@ -58,7 +59,8 @@ class ReleaseToolTests(unittest.TestCase):
         invalid = [None, b"", b" ", b"{", b"\xff", b"null", b"[]", b"{}"]
         for field, value in (("schema_version", True), ("schema_version", 2),
                              ("inputs", []), ("nuget_packages", {}),
-                             ("nuget_packages", [None]), ("supplemental_components", [None])):
+                             ("nuget_packages", [None]), ("supplemental_components", [None]),
+                             ("reconciled_publish_packages", {})):
             report = synthetic_report()
             report[field] = value
             invalid.append(json.dumps(report).encode())

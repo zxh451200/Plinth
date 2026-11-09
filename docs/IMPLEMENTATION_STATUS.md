@@ -19,9 +19,10 @@
 
 ## 2026-11-09 发布补充许可库存
 
-- `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：.NET Runtime 10.0.14（随 SDK 的 Microsoft .NET Library 条款 + ThirdPartyNotices）、NSIS 3.11（zlib/libpng）、Skia 3.119.4（BSD-3-Clause + ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（Old MIT + HarfBuzzSharp MIT）、SQLite 3.53.3（Public Domain）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过。
+- `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：runtimepack.Microsoft.NETCore.App.Runtime.win-x64 10.0.14（MIT + 包内 ThirdPartyNotices）、NSIS 3.11（zlib/libpng）、Skia 3.119.4（BSD-3-Clause + ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（Old MIT + HarfBuzzSharp MIT）、SQLite 3.53.3（Public Domain）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过。
+- runtime pack 直接取自 NuGet 包 `Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 的 `LICENSE.TXT`（MIT）与 `THIRD-PARTY-NOTICES.TXT`；A) 曾使用 SDK 安装目录的 Microsoft .NET Library 条款，已确认不是 runtime pack 正文并替换。生成器新增严格对账：仅身份/版本一致、`category=runtime`、同时含 LICENSE/NOTICE 时，把缺口记入 `reconciled_publish_packages`，不影响 `distribution_inventory_complete`／`license_review_approved=false`。
 - 字体核查推翻了“纯系统字体”的旧结论：`Avalonia.Dialogs.dll` 内嵌 Roboto Light 2.137，`ClosedXML.dll` 内嵌 CarlitoBare 1.104 四字重，两个 DLL 均在发布 ZIP 中；版本取自从 DLL 提取的字体 name 表。Carlito 的 OFL 含 Reserved Font Name "Carlito"，派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断；图标仍为应用自有 `plinth.ico`。
-- 实跑 `third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（538,059／505,124／111,369 B）；补充材料专项测试 31 项通过；`runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 仍按设计 uncovered。工具只验证身份/路径/原文/哈希，不代替法务审查。
+- 实跑 `third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（528,955／481,869／111,617 B）；补充材料专项测试 33 项、发布工具测试 12 项通过；`runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 由 uncovered 转为 reconciled（带证据引用，仍非许可审查通过）。工具只验证身份/路径/原文/哈希，不代替法务审查。
 
 ## 2026-11-09 XLSX 真实宏样本
 

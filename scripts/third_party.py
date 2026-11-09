@@ -100,6 +100,35 @@ def publish_inventory(packages, publish_directory):
              if f"{key[0]}/{key[1]}".casefold() in shipped}, gaps)
 
 
+def reconcile_runtime_gaps(gaps, supplemental_components):
+    """Link runtime-pack gaps to exact explicit evidence; never infer approval.
+
+    Only an identity/version match with category runtime plus LICENSE and NOTICE
+    texts reconciles a gap. Anything else remains uncovered.
+    """
+    index = {}
+    for component in supplemental_components:
+        properties = component["properties"]
+        category = next(p["value"] for p in properties
+                        if p["name"] == "plinth:supplemental-category")
+        kinds = {json.loads(p["value"])["kind"] for p in properties
+                 if p["name"] == "plinth:supplemental-evidence"}
+        index[(component["name"].casefold(), component["version"].casefold())] = (
+            component["bom-ref"], category, kinds)
+    reconciled, uncovered = [], []
+    for gap in gaps:
+        name, version = gap["package"].rsplit("/", 1)
+        match = index.get((name.casefold(), version.casefold()))
+        if match and match[1] == "runtime" and {"LICENSE", "NOTICE"} <= match[2]:
+            reconciled.append(dict(gap, evidence=[match[0]], reason=(
+                "SDK runtime pack reconciled with explicit supplemental evidence matching "
+                "identity and version, including LICENSE and NOTICE; "
+                "not a license/attribution review approval.")))
+        else:
+            uncovered.append(gap)
+    return reconciled, uncovered
+
+
 def file_evidence(path, logical_path):
     """Identify original evidence bytes; text hashes are labelled separately."""
     path = Path(path)
@@ -142,27 +171,37 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
     # Only components actually copied to the publish output ship to users. project.assets.json
     # also lists Debug-only packages that Release publish excludes.
     restored_identities = set(packages)
-    gaps = []
+    gaps, reconciled_gaps = [], []
     if publish_directory is not None:
         packages, gaps = publish_inventory(packages, publish_directory)
+        reconciled_gaps, gaps = reconcile_runtime_gaps(gaps, supplemental_components)
     coverage = (
         "Coverage: restored NuGet inventory plus explicitly supplied supplemental components only. "
         "Not a complete distribution inventory or a compliance/review approval. "
-        "Unlisted SDK runtime packs, native code, fonts/icons and NSIS remain outside coverage."
+        "SDK runtime packs without matching explicit evidence, and unlisted native code, "
+        "fonts/icons and NSIS remain outside coverage."
         if supplemental_file is not None else
         "Coverage: NuGet-only candidate; no supplemental evidence supplied. "
         "SDK runtime packs, native code, fonts/icons and NSIS remain outside coverage. "
         "Not a complete distribution inventory or a compliance/review approval.")
     if gaps:
         coverage += f" Explicit publish runtime coverage gaps: {len(gaps)} (see plinth:uncovered-publish-package)."
+    if reconciled_gaps:
+        coverage += (f" Reconciled SDK runtime packs: {len(reconciled_gaps)} with explicit supplemental "
+                     "evidence (see plinth:reconciled-publish-package); not a license review approval.")
     gap_lines = [f"UNCOVERED: {gap['package']} (deps: {gap['deps']}; target: {gap['target']}): "
                  f"{gap['reason']}" for gap in gaps]
+    reconciled_lines = [f"RECONCILED: {gap['package']} (deps: {gap['deps']}; target: {gap['target']}; "
+                        f"evidence: {', '.join(gap['evidence'])}): {gap['reason']}"
+                        for gap in reconciled_gaps]
     notices = ["# Third-party notices", "",
                "Generated from project.assets.json and restored .nuspec files.",
                "Scope: NuGet packages (including build/test dependencies if supplied).",
                coverage, "Evidence index and pending materials: coverage-report.json", ""]
     if gaps:
         notices.extend(["## Uncovered publish SDK runtime packs", "", *gap_lines, ""])
+    if reconciled_gaps:
+        notices.extend(["## Reconciled publish SDK runtime packs", "", *reconciled_lines, ""])
     components = []
     package_reports = []
     text_cache = {}
@@ -302,6 +341,10 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
             "Supply exact SDK runtime version/RID distribution inventory, upstream LICENSE/NOTICE "
             "and native component attribution; manually reconcile supplemental evidence."])
             for gap in gaps],
+        "reconciled_publish_packages": [dict(gap, pending_materials=[
+            "Human license/attribution review remains required; reconciliation only links "
+            "explicitly supplied evidence."])
+            for gap in reconciled_gaps],
         # Categories are checks still to perform, never fabricated inventory items.
         "pending_scope_checks": [{
             "category": category, "status": "not-established",
@@ -322,6 +365,8 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
         "bomFormat": "CycloneDX", "specVersion": "1.5", "version": 1,
         "metadata": {"properties": [{"name": "plinth:coverage", "value": coverage},
                                      {"name": "plinth:coverage-report", "value": "coverage-report.json"}] + [
+            {"name": "plinth:reconciled-publish-package", "value": json.dumps(gap, sort_keys=True)}
+            for gap in reconciled_gaps] + [
             {"name": "plinth:uncovered-publish-package", "value": json.dumps(gap, sort_keys=True)}
             for gap in gaps]},
         "components": components,
@@ -329,6 +374,8 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
     print(f"Generated notices/SBOM for {nuget_count} restored NuGet packages "
           f"and {len(supplemental_components)} supplemental components")
     print(coverage)
+    for line in reconciled_lines:
+        print(line)
     for line in gap_lines:
         print(line)
 
