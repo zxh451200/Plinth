@@ -10,6 +10,8 @@ TRX 在 `artifacts/test-results/`。标签条键盘可达性通过：Avalonia 12
 窗口 Tab 顺序内，`MainWindow` 在焦点位于标签条时把 Tab 路由到当前标签的关闭按钮；导航列表、
 表格和 TabItem 已显式可聚焦。
 
+2026-11-09 在当前 HEAD 以 Release 重新执行自动回归：`Plinth.App.Tests` 1205 项（1203 通过、2 项 `PLINTH_TEST_POSTGRES`／`PLINTH_TEST_MYSQL` 环境跳过）、`Plinth.Spreadsheet.Tests` 49 项（48 通过、1 项无 `PLINTH_XLSM_SAMPLE` 跳过）；TRX 归档在 `artifacts/test-results/`。上文 917/47/956 为 2026-11-04 历史数字。
+
 折叠轨道与内缩圆角选中态已在 125% 实机截图复核（`nav-p3-selected-125.png`、`nav-p3-compact-125.png`），深色主题见 `nav-dark-125.png`；真实 UIAutomation 树已抓取（`uia-current-alt2.txt`、`uia-menu-quickopen.json`），窗口 DPI 为 120（125%），标签页名称修复为页面标题，装饰分组标题不进入 UIA 树，快速打开结果的读屏名称也已改为页面标题。真实 `Alt+2` 已把窗口切到“示例数据”；真实菜单“查看→快速打开”已展开并显示“快速打开页面／页面搜索结果”。`Ctrl+K`、`Alt+1..9`、`Alt+0` 另有自动回归覆盖。2026-11-04 起导航行、快速打开结果与设置页下拉的选中／悬停底色改为左右通栏，Fluent 原生下拉／菜单弹层的首尾 4px 留白也由资源归零，上文“内缩圆角选中态”截图作废；几何门禁见 `ShellTests.Navigation_selection_fills_the_sidebar_width`、`ShellTests.Quick_open_rows_fill_the_panel_width`、`PopupBleedTests` 与 `SearchSelectTests.Option_rows_span_the_full_popup_width`。
 
 渲染缩放 100/125/150/200% 由 `ScaleRenderingTests` 断言：截图像素尺寸与缩放同比例，侧栏与工作区不越界，日志／任务／设置页面级容器不横向溢出；截图见 `dpi-100.png`、`dpi-150.png`、`dpi-200.png`。这是 Avalonia 渲染缩放，不等同于修改 Windows 显示设置。

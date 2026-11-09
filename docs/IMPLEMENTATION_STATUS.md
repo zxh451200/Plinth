@@ -4,6 +4,13 @@
 
 阅读口径：本文件包含历史实施记录。下文旧条目中的“缺少 SDK／锁文件”“C# 尚未运行”等描述，已由本页“2026-11-04 Windows 实机执行”“2026-11-08 Windows 实机构建与测试收口”“2026-11-08 真实数据库、升级与签名验收”和 [当前需求核对表](REQUIREMENTS_STATUS.md) 中的执行记录更新，不再代表当前全局状态。后续新增变更仍须另行验证。
 
+## 2026-11-09 当前 HEAD 全量验收与门禁修复
+
+- **format 门禁失败（仓库问题，已修复）**：`src/Plinth.App/Views/Controls/SearchSelect.axaml.cs` 与 `tests/Plinth.App.Tests/SearchSelectTests.cs` 带 UTF-8 BOM、工作树为 CRLF，违反 `.editorconfig` 的 `charset=utf-8`／`end_of_line=lf`；测试对象初始化器还把 5 个属性挤在一行。`dotnet format --verify-no-changes` 报 599 条诊断（CHARSET 2、ENDOFLINE 594、WHITESPACE 3），`acceptance.ps1` 在第 37 行 `throw 'Format failed'` 中止。已去掉 BOM、统一 LF、按格式器拆分初始化器，复验通过。
+- **验收入口不产 TRX（工具问题，已修复）**：原脚本用 `--logger trx --results-directory` 和 `--filter`，这些 VSTest 参数在 xunit v3 的 Microsoft.Testing.Platform 下被忽略（MTP0001）。`scripts/acceptance.ps1` 现按项目循环，使用 `-- --results-directory <绝对路径> --report-xunit-trx --report-xunit-trx-filename <name>.trx`，XLSX 变体改用 `--filter-class "*Spreadsheet*"`，与 `.github/workflows/ci.yml` 一致。TRX 实际写入 `artifacts/test-results/<项目>/`；相对路径会被 MTP 解析到测试项目目录，故必须用绝对路径。
+- **执行结果（当前工作区，Release）**：Python 工具测试 112 项（1 项环境跳过）、源码契约 0 错误、资源集成通过（532 双语键／460 引用键／40 XML）、SQLite migration smoke 15 项、11 项目锁包检查、locked restore、format、构建 0 错误均通过；App **1205 项（1203 通过、2 项 `PLINTH_TEST_POSTGRES`／`PLINTH_TEST_MYSQL` 跳过、0 失败，10m36s）**；Spreadsheet **49 项（48 通过、1 项 `PLINTH_XLSM_SAMPLE` 跳过，32–34s）**；另用相同 MTP 参数单独复跑 Spreadsheet，TRX 与日志落在 `artifacts/test-results/Plinth.Spreadsheet.Tests/`。
+- **环境边界**：D: 盘一度 100% 满（约 1 MB 可用），隔离构建到 D: 的尝试因磁盘不足失败，首次构建还被已运行的 `Plinth.App` 锁定输出文件；清理本轮生成的无效输出目录后，在仓库原位完成上述门禁。D: 空间仍紧张，后续发布/安装器构建前需先清理。Dock／RuntimePlugins／OfflineSync 试点不在 `Plinth.sln`，由独立 CI 作业与 `pilot_checks.py` 覆盖，本次门禁未重跑。
+
 ## 2026-11-09 启动失败安全报错与故障演练
 
 - **启动失败不再裸崩**：`Program.Main` 的启动 catch 原先 `Log.Fatal` 后 rethrow（磁盘满演练实测进程 0xE0434352 终止、无图形提示）。现生成 `STARTUP_FAILED` 安全摘要（双语 `startup.error.body`／`startup.error.next`＋错误码＋关联 ID，标记可重试），Fatal 日志带同一关联 ID 与受控异常栈；Windows 交互会话用原生消息框展示（新增 `StartupErrorReporter`；主窗口尚未创建，ErrorDialog 不可用），非交互环境写 stderr；进程受控退出 **1**。弹窗不含原始异常、路径或凭据。
@@ -36,7 +43,7 @@
 - `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：runtimepack.Microsoft.NETCore.App.Runtime.win-x64 10.0.14（MIT + 包内 ThirdPartyNotices）、NSIS 3.11（zlib/libpng）、Skia 3.119.4（BSD-3-Clause + ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（Old MIT + HarfBuzzSharp MIT）、SQLite 3.53.3（Public Domain）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过。
 - runtime pack 直接取自 NuGet 包 `Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 的 `LICENSE.TXT`（MIT）与 `THIRD-PARTY-NOTICES.TXT`；A) 曾使用 SDK 安装目录的 Microsoft .NET Library 条款，已确认不是 runtime pack 正文并替换。生成器新增严格对账：身份/版本一致、`category=runtime`、同时含 LICENSE/NOTICE，且正文与包内 nuspec 许可及根目录 LICENSE/NOTICE 逐字节一致、deps 列出的 187 个 runtime/native 文件在发布目录中非空存在时，才把缺口记入 `reconciled_publish_packages`（含文件路径与 SHA-256），不影响 `distribution_inventory_complete`／`license_review_approved=false`；缺包目录、nuspec/正文哈希不符、发布文件缺失或为空时仍为 uncovered。
 - 字体核查推翻了“纯系统字体”的旧结论：`Avalonia.Dialogs.dll` 内嵌 Roboto Light 2.137，`ClosedXML.dll` 内嵌 CarlitoBare 1.104 四字重，两个 DLL 均在发布 ZIP 中；版本取自从 DLL 提取的字体 name 表。Carlito 的 OFL 含 Reserved Font Name "Carlito"，派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断；图标仍为应用自有 `plinth.ico`。
-- 实跑 `third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（528,949／506,086／142,305 B；该次 ClosedXML 仍在发布图中，默认包最终 83 NuGet，见下）；补充材料专项测试 34 项、发布工具测试 12 项通过；`runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 由 uncovered 转为 reconciled（包内许可/通知与 187 个发布文件逐项对账，仍非许可审查通过）。工具只验证身份/路径/原文/哈希，不代替法务审查。
+- 实跑 `third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（528,949／506,086／142,305 B；该次 ClosedXML 仍在发布图中，默认包最终 83 NuGet，见下）；补充材料专项测试 36 项、发布工具测试 12 项通过；`runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 由 uncovered 转为 reconciled（包内许可/通知与 187 个发布文件逐项对账，仍非许可审查通过）。工具只验证身份/路径/原文/哈希，不代替法务审查。
 
 ## 2026-11-09 发布包重打包与法务审查证据
 
@@ -128,7 +135,7 @@
 - XLSX Office POC（本机已装 Microsoft Office Excel，"仅有 WPS"的旧记录不再成立）：按产品纯文本语义用发布目录同版本 ClosedXML 生成 fixture（中文、18 位长数字文本、日期文本、公式注入文本、`@` 文本格式），真实 Excel COM 打开读取全部正确（18 位长数字无损——数值单元格则受 xlsx 双精度限制只保留 15 位有效数字，产品按设计只接受文本单元格并拒绝数值单元格）；Excel 另存 xlsx 后由 ClosedXML 读回全部无损；截断损坏文件被 ClosedXML 拒绝。宏／外部关系在真实 Office 中的行为、内存 POC 与许可审查未完成，故 XLSX 仍保持默认关闭，不据此启用 `PlinthEnableXlsx`。POC 脚本与产物在 `D:\tmp\xlsx-poc\`（临时目录，不入库）。
 - PowerShell 透传与完整验收入口：本机已有 PowerShell 后，Python 工具测试 107 项全部真实执行（原 8 项因缺 PowerShell 跳过的用例已执行，仅剩 `test_nsis_compiles_with_a_generated_publish_manifest` 一项因 PATH 无 makensis 跳过——把便携版 NSIS 3.11 加入 PATH 后该项也真实执行通过，含生成清单编译与升级备份门禁语义的 13 项安装器测试）；`scripts/acceptance.ps1` 完整验收入口（与 CI 同门禁：工具单测→源码契约→资源集成→SQLite smoke→11 项目锁包→restore→构建→Spreadsheet 47/47→App 1174 项 0 失败）首次整体实机执行通过。内存维度按服务预检上限（5000 行／5 MiB／32 MiB 展开）的拒绝路径已有测试覆盖，进程峰值内存采样未做。
 
-仍然未验收：真实 IdP 端到端、真实 MySQL／PostgreSQL 服务器迁移与 CRUD、干净账户／独立小容量卷磁盘满／代码签名、真实 OS DPI／多显示器／高对比度／IME／Narrator、真实文件选择器／剪贴板／托盘／更新浏览器、XLSX 在 Office 中的兼容 POC、通知横幅物理点击、真实 CI 运行与升级前备份／恢复完整演练。列表见 [需求交付核对表](REQUIREMENTS_STATUS.md)。
+仍然未验收：真实 IdP 端到端、真实 MySQL／PostgreSQL 服务器迁移与 CRUD、干净账户／独立小容量卷磁盘满／代码签名、真实 OS DPI／多显示器／高对比度／IME／Narrator、真实文件选择器／剪贴板／托盘／更新浏览器、XLSX 在 Office 中的兼容 POC、通知横幅物理点击、真实 CI 运行与升级前备份／恢复完整演练。（2026-11-08/09 已关闭其中 MySQL/PostgreSQL、干净账户、XLSX Office POC、真实 CI、升级前备份与部分磁盘满演练；保留本段作为当时快照。）列表见 [需求交付核对表](REQUIREMENTS_STATUS.md)。
 
 ## 2026-11-04 继续补齐需求
 
@@ -304,6 +311,8 @@
 
 ## 已实际执行
 
+> 本节为 2026-11-03/04 的历史数字；当前工具测试、资源键与迁移 smoke 数量以 [需求交付核对表](REQUIREMENTS_STATUS.md) 顶部快照和 2026-11-08/09 各节为准。
+
 - Python 工具单元测试：发现 63 项，55 项通过，8 项 PowerShell 执行测试因缺少 PowerShell 明确跳过。已运行部分覆盖发布／安装清单、模块契约（含 ExecuteConfirmedAsync 正反例）、直接日志插值正反例及补充许可材料；许可正文使用模拟夹具，不证明真实依赖合规。
 - 补充许可材料专项：17 项通过（包含在上述工具测试中），覆盖正文与原始字节合并、hash／路径／UTF-8 校验、重复键／身份／路径拒绝、NuGet 身份冲突、无补充输入候选及 CLI 失败路径；PowerShell 选项透传和产物复制仅为静态检查，不代表真实脚本、ZIP 或安装器运行通过。
 - Python SQLite migration smoke：14 项通过，覆盖三次迁移 DDL、历史值及 Unicode 保留、比较键回填、UTF-16 拒绝、失败回滚、WAL 一致性副本及固定模型声明一致性；不是 EF Core 运行测试。
@@ -311,6 +320,8 @@
 - scripts/check_source_contracts.py：源码契约检查 0 个错误。不检查 C# 类型或 Avalonia 绑定能否编译。
 
 ## 剩余阻塞与未验收
+
+> 本节为 2026-11-03/04 记录的历史环境阻塞。.NET/NuGet、锁文件、编译运行、MySQL/PostgreSQL、干净账户、XLSX POC、真实 CI 与升级备份已由 2026-11-08/09 实测解除；仍有效的人工／环境／法务项见 [需求交付核对表](REQUIREMENTS_STATUS.md)。原“系统 Toast 尚未实现”一条已订正。
 
 - 环境 .NET/NuGet 不可用；未执行 restore、format、C# build、xUnit、Avalonia XAML 编译、headless 测试及发布。构造参数和引用只完成源码核对，不能证明依赖 API 兼容或运行时 DI 成功。
 - 再次尝试固定 SDK 官方下载地址，IPv6 与强制 IPv4 均连接失败（退出码 7），未取得 SDK。完整 dotnet test 尝试返回 127；真实锁文件检查仍明确阻断（退出码 1），没有生成虚假锁文件或依赖声明。
@@ -323,4 +334,4 @@
 - XLSX 的 Office 兼容、日期／长数字／中文／损坏文件和内存 POC 尚未执行；导出分页有行数与重复检查，但不是跨页数据库快照。当前代码和测试接入不能记作该 Should 项已验收。
 - Current 设置对象仍可变，旧 Save() 路径在认证／生产模式下阻止用户字段未经授权持久化；不能视为防本机代码修改的安全边界。同步宿主持久化与异步设置修改的并发仍需运行验证。
 - CI 配置存在但无本轮真实运行记录；NSIS、便携包、安装器、签名／校验及实际 runtime／native／font／icon／NSIS 库存与许可审查未验收。补充材料校验和合并的合成测试不证明实际发布覆盖完整。
-- 系统 Toast 尚未实现，仍为 Should。可靠实现依赖真实还原的通知 SDK／投影、Windows Runtime 初始化、通知注册及安装／激活验证；unpackaged 官方路径不要求先改为 MSIX。接入依据和阻塞见 [通知接入记录](WINDOWS_NOTIFICATIONS.md)，应用内提示不能替代系统通知。
+- 系统 Toast 已实现并实测显示、任务中心路由与安装卸载清理（见 2026-11-04/11-08 节及 [通知接入记录](WINDOWS_NOTIFICATIONS.md)）；仍剩横幅物理点击与勿扰／焦点助手策略下的人工体验未验收。应用内提示不能替代系统通知。

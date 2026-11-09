@@ -9,7 +9,7 @@
 在装有 .NET 10 SDK 的机器上执行：
 
 ```sh
-dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj --configuration Release -p:PlinthRunPoc=true --filter "FullyQualifiedName~Plinth.App.Tests.PerformancePocTests" --logger "console;verbosity=detailed"
+dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release -p:PlinthRunPoc=true -p:TestingPlatformDotnetTestSupport=true -- --results-directory artifacts/test-results-poc --report-xunit-trx --report-xunit-trx-filename poc.trx --filter-class "*PerformancePocTests"
 ```
 
 请保留完整测试输出，并记录 SDK、CPU、内存、操作系统、电源模式与磁盘环境。
@@ -81,11 +81,10 @@ RemoteDemoService、RemoteApiClient 和 ViewModel，通过受控 HTTP 传输只�
 ```powershell
 dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
   -p:TestingPlatformDotnetTestSupport=true `
-  --filter "FullyQualifiedName~Large_remote_total_keeps_only_the_requested_page_when_navigating"
+  -- --filter-method "*Large_remote_total_keeps_only_the_requested_page_when_navigating*"
 ```
 
-2026-11-04 已补充测试源码并做独立静态核对；当前 Linux 环境没有 dotnet，
-尚未编译执行。这不是实际 API 的大数据量实测，也不输出延迟、内存峰值或吞吐结论。
+2026-11-08 已编译执行；本组用例只验证客户端每次只请求当前页并对齐契约，不输出延迟、内存峰值或吞吐结论。
 
 ## 真实远端分页测量入口
 
@@ -107,8 +106,9 @@ dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
 ```powershell
 dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release `
   -p:PlinthRunPoc=true -p:TestingPlatformDotnetTestSupport=true `
-  --filter "FullyQualifiedName~RemotePagingPocTests" `
-  --logger "console;verbosity=detailed"
+  -- --results-directory artifacts/test-results-poc `
+     --report-xunit-trx --report-xunit-trx-filename remote-paging.trx `
+     --filter-class "*RemotePagingPocTests"
 ```
 
 2026-11-08 已用专用只读 HTTPS 测试 API 实际执行（产品代码未改动）：

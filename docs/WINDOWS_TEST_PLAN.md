@@ -111,10 +111,13 @@ dotnet test Plinth.sln -c Release --no-build `
 
 ```powershell
 dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj `
-  -c Release -p:PlinthRunPoc=true `
-  --filter "FullyQualifiedName~PerformancePocTests" `
-  --logger "console;verbosity=detailed"
+  -c Release -p:PlinthRunPoc=true -p:TestingPlatformDotnetTestSupport=true `
+  -- --results-directory artifacts/test-results-poc `
+     --report-xunit-trx --report-xunit-trx-filename poc.trx `
+     --filter-class "*PerformancePocTests"
 ```
+
+> xunit v3 走 Microsoft.Testing.Platform：`--filter`／`--logger` 是 VSTest 参数，会被忽略；过滤和 TRX 参数必须放在 `--` 之后使用 MTP 语法。
 
 验证内容：
 
@@ -133,9 +136,10 @@ dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj `
 
 ```powershell
 dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj `
-  -c Release -p:PlinthEnableXlsx=true `
-  --filter "FullyQualifiedName~Spreadsheet" `
-  --logger "console;verbosity=detailed"
+  -c Release -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true `
+  -- --results-directory artifacts/test-results-xlsx `
+     --report-xunit-trx --report-xunit-trx-filename xlsx.trx `
+     --filter-class "*Spreadsheet*"
 ```
 
 另测：
