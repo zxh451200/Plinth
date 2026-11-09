@@ -52,6 +52,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'RID locked restore failed; regenerate and review real runtime-specific locks' }
     dotnet publish src/Plinth.App/Plinth.App.csproj -c Release -r $Runtime --self-contained true -o $publishDir --no-restore -p:PublishTrimmed=false -p:PublishAot=false $xlsxProperty
     if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+    $closedXml = Join-Path $publishDir 'ClosedXML.dll'
+    if ($EnableXlsx.IsPresent -and -not (Test-Path -LiteralPath $closedXml)) {
+        throw 'XLSX enabled but ClosedXML.dll is missing from publish'
+    }
+    if (-not $EnableXlsx.IsPresent -and (Test-Path -LiteralPath $closedXml)) {
+        throw 'ClosedXML.dll must not be published when XLSX is disabled'
+    }
     $pythonArguments = @('scripts/third_party.py', '--assets', 'src/Plinth.App/obj/project.assets.json', '--output', $complianceDir, '--publish-directory', $publishDir)
     if ($PSBoundParameters.ContainsKey('SupplementalComplianceFile')) {
         $pythonArguments += @('--supplemental-compliance-file', $SupplementalComplianceFile)
@@ -93,7 +100,7 @@ try {
     else { Write-Host 'NSIS unavailable: installer NOT EXECUTED (use -RequireInstaller for a hard gate)' }
     foreach ($file in $outputs) {
         $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
-        "$hash  $([IO.Path]::GetFileName($file))" | Set-Content -LiteralPath "$file.sha256" -Encoding utf8NoBOM
+        [IO.File]::WriteAllText("$file.sha256", "$hash  $([IO.Path]::GetFileName($file))`n", (New-Object System.Text.UTF8Encoding($false)))
         $pythonArguments = @('scripts/release_checks.py', 'package', $file)
         & $python @pythonArguments
         if ($LASTEXITCODE -ne 0) { throw "Artifact verification failed: $file" }

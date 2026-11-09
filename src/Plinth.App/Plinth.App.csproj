@@ -8,6 +8,8 @@
     <DefineConstants Condition="'$(PlinthEnableXlsx)' == 'true'">$(DefineConstants);PLINTH_XLSX</DefineConstants>
     <PlinthEnableDockBusiness Condition="'$(PlinthEnableDockBusiness)' == ''">false</PlinthEnableDockBusiness>
     <DefineConstants Condition="'$(PlinthEnableDockBusiness)' == 'true'">$(DefineConstants);PLINTH_DOCK_BUSINESS</DefineConstants>
+    <!-- XLSX 默认关闭：排除 ClosedXML 运行时资产，避免分发其内嵌 Carlito 字体。 -->
+    <ClosedXmlExcludeAssets Condition="'$(PlinthEnableXlsx)' != 'true'">runtime</ClosedXmlExcludeAssets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +29,7 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="CsvHelper" />
-    <PackageReference Include="ClosedXML" />
+    <PackageReference Include="ClosedXML" ExcludeAssets="$(ClosedXmlExcludeAssets)" />
     <PackageReference Include="QRCoder" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="Duende.IdentityModel.OidcClient" />

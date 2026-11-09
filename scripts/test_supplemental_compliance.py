@@ -225,6 +225,11 @@ class SupplementalTests(unittest.TestCase):
             self.assertIn("SHA256", result.stderr)
         self.assertFalse((self.root / "failed").exists())
 
+    def test_publish_guards_xlsx_payload_against_flag(self):
+        publish = (ROOT / "scripts" / "publish.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("XLSX enabled but ClosedXML.dll is missing from publish", publish)
+        self.assertIn("ClosedXML.dll must not be published when XLSX is disabled", publish)
+
     def test_powershell_option_forwarding_static_only(self):
         publish = (ROOT / "scripts" / "publish.ps1").read_text(encoding="utf-8-sig")
         acceptance = (ROOT / "scripts" / "acceptance.ps1").read_text(encoding="utf-8-sig")
