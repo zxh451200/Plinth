@@ -4,6 +4,13 @@
 
 阅读口径：本文件包含历史实施记录。下文旧条目中的“缺少 SDK／锁文件”“C# 尚未运行”等描述，已由本页“2026-11-04 Windows 实机执行”“2026-11-08 Windows 实机构建与测试收口”“2026-11-08 真实数据库、升级与签名验收”和 [当前需求核对表](REQUIREMENTS_STATUS.md) 中的执行记录更新，不再代表当前全局状态。后续新增变更仍须另行验证。
 
+## 2026-11-09 启动失败安全报错与故障演练
+
+- **启动失败不再裸崩**：`Program.Main` 的启动 catch 原先 `Log.Fatal` 后 rethrow（磁盘满演练实测进程 0xE0434352 终止、无图形提示）。现生成 `STARTUP_FAILED` 安全摘要（双语 `startup.error.body`／`startup.error.next`＋错误码＋关联 ID，标记可重试），Fatal 日志带同一关联 ID 与受控异常栈；Windows 交互会话用原生消息框展示（新增 `StartupErrorReporter`；主窗口尚未创建，ErrorDialog 不可用），非交互环境写 stderr；进程受控退出 **1**。弹窗不含原始异常、路径或凭据。
+- **测试与门禁**：`UnhandledErrorReporterTests` 新增 3 项（双语摘要／唯一关联 ID／可重试；弹窗文本含正文＋建议＋错误码＋关联 ID）。负控制把 `BuildText` 变异为只返回正文，目标用例如期转红，按字节还原（md5 一致）后复跑回绿。Release 构建 0 错误；App 全量 **1195 通过／2 项按设计跳过／0 失败**；`dotnet format --verify-no-changes`、源码契约 0 错误、532 双语键／460 引用键资源检查通过。
+- **启动失败前后对照演练**（同一注入、同一仪器）：当前用户非管理员，无法挂载满卷 VHD；改用数据目录 ACL 拒写（icacls deny WD/AD）注入，`Migrator.Migrate` 抛 `SqliteException`，与磁盘满共用同一异常→用户路径。旧发布包（2026-11-09 重打包产物）：无对话框、退出 -532462766（0xE0434352），复现原缺陷；新构建：原生消息框显示「应用启动失败…错误码 STARTUP_FAILED／关联 ID」，关闭后退出 **1**，当日日志 Fatal 行关联 ID 与弹窗一致（`983fdce2…`），异常栈只含受控方法帧。演练后 ACL 已还原。证据：`D:\tmp\plinth-startup-drill\result.txt`／`result2.txt`。边界：这是 ACL 拒写注入，不是物理满卷；磁盘满的旧行为记录见下文，二者走同一 catch。
+- **日志目录权限拒绝降级（§13.3 权限不足项）**：对 `%LOCALAPPDATA%\Plinth\logs` ACL 拒写后以临时数据目录启动新构建：stderr 恰好一次 `PLINTH_LOG_WRITE_FAILED: bounded in-memory metadata only.`，进程 14 秒后仍存活，数据目录正常生成 plinth.db／WAL／SHM 与 settings.json；ACL 测后还原（前后一致）。证据：`D:\tmp\plinth-logdeny-drill\result.txt`。边界：日志卷磁盘满的**运行中**写失败仍需可提权的满卷环境，未覆盖。
+
 ## 2026-11-09 真实 GitHub CI
 
 - **真实 GitHub CI**：提交 `0ae0af8` 推送触发 Actions run [`42525487305`](https://github.com/zxh451200/Plinth/actions/runs/42525487305)；`gate (windows-latest)`、`gate (ubuntu-latest)` 和 6 个 pilot job（dock／runtime-plugins／offline-sync × Windows／Ubuntu）全部通过。Windows gate：Python 工具 107（1 项环境跳过）、SQLite smoke 15、restore／format／build、App **1192 通过／2 跳过**、Spreadsheet 48、XLSX 36；Ubuntu gate：Python 107（2 项环境跳过）、SQLite 15、App **1191 通过／3 跳过**、Spreadsheet 48、XLSX 36。Pilot：Dock 15、RuntimePlugins 36（Linux 跳过 18 个进程隔离用例，保留构建/校验路径）、OfflineSync 8；TRX/xunit 日志与 pilot 证据作为 Actions artifact 归档。
@@ -90,7 +97,7 @@
 - **XLSX 内存 POC**：满额上限负载（5000 行 × 3 列 ~450 字符文本）经真实服务 PreviewAsync/ImportAsync，测试进程分页内存峰值 **61 MiB**（基线 43 MiB、增量 18 MiB）——有界，符合 5000 行／5 MiB／32 MiB 展开上限的预检设计。POC 用临时测试采样，跑完已删除，数字如实记录于此。
 - **自建本地 OIDC IdP 与契约 API 的真实端到端**：为关闭"真实 IdP 验收"清单，按"没有环境就自建测试租户"的口径，在 `D:\tmp\idp`（不入库）实现了本地专用 IdP（HTTPS 5443、自签证书、RS256/JWKS、S256 PKCE、授权码一次性、刷新令牌轮换与登出吊销）及符合 [REMOTE_DEMO 契约](REMOTE_DEMO.md) 的 API（服务端分页/排序/搜索、强 If-Match、`demo:read/save/delete` 权限、409/412/401）。使用产品同库的 Duende OidcClient + 产品 `SignedIdentityTokenValidator`（RS256/issuer/audience/过期），经 **13 项断言全部通过**：discovery、授权码+PKCE 交换、id_token 签名/audience/nonce 校验、身份与权限 claim、UserInfo、API 新建 201/分页 200/If-Match 更新/旧版本 412/无令牌 401、刷新轮换且旧令牌拒绝、end_session state 校验、登出后刷新令牌吊销。loopback 回调由测试 IBrowser 承载（产品注释认可的注入方式）：真实 HTTPS authorize 302 + 真实 loopback 监听捕获；真实浏览器 UI 环节（人输入账号）以自动同意测试租户替代。调试中修正的三个 IdP 自身缺陷（id_token aud 误用 API audience、iat 序列化为 ISO 字符串违反 NumericDate 规范、API 排序键大小写）均发生在测试服务端，产品代码未改动。浏览器内人工输入、桌面 UI 登录流程与真实第三方 IdP 租户管理不在本演练范围。
 
-**仍未验收**：日志卷磁盘满（日志目录创建 IO 故障与只读日志文件已实测）与安装器在磁盘满下的升级/回滚、旧版升级/恢复（应用启动、CLI 备份、安装器干净账户安装/卸载与磁盘满首次安装失败已实测，但 GUI 以未处理异常退出）；非 NuGet 许可的法务签核（证据包已出；默认包已排除 ClosedXML/Carlito，`-EnableXlsx` 变体仍待）；正式 CA 代码签名；真实 OS DPI/多显示器/高对比度/IME/Narrator 朗读；通知横幅物理点击；真实第三方 IdP 与符合 REMOTE_DEMO 契约的外部 API 端到端（远程模式未交付时为条件项，本仓库不附带生产 API/IdP）。
+**仍未验收**：日志卷磁盘满（日志目录创建 IO 故障、只读日志文件与目录 ACL 拒写已实测）与安装器在磁盘满下的升级/回滚、旧版升级/恢复（应用启动、CLI 备份、安装器干净账户安装/卸载与磁盘满首次安装失败已实测；GUI 启动失败裸崩已于 2026-11-09 修复为安全报错，见「启动失败安全报错与故障演练」节）；非 NuGet 许可的法务签核（证据包已出；默认包已排除 ClosedXML/Carlito，`-EnableXlsx` 变体仍待）；正式 CA 代码签名；真实 OS DPI/多显示器/高对比度/IME/Narrator 朗读；通知横幅物理点击；真实第三方 IdP 与符合 REMOTE_DEMO 契约的外部 API 端到端（远程模式未交付时为条件项，本仓库不附带生产 API/IdP）。
 
 ## 2026-11-08 Windows 实机构建与测试收口
 

@@ -450,6 +450,8 @@
   <data name="logs.kind.task"><value>Task logs</value></data>
   <data name="logs.accessDenied"><value>Access denied or account changed. Select an allowed category and reload.</value></data>
   <data name="installation.unavailable"><value>The application files are being installed or are unavailable. Finish installation and try again. If the problem continues, reinstall the complete package. User data has not been opened.</value></data>
+  <data name="startup.error.body"><value>The app failed to start and the main window was not opened. The details were written to the log.</value></data>
+  <data name="startup.error.next"><value>Check available disk space and access to the data directory, then try again. If the problem persists, use the correlation ID to check the log or contact support.</value></data>
   <data name="demo.err.codeInvalid"><value>Code contains invalid Unicode text.</value></data>
   <data name="remoteDemo.title"><value>Remote sample data</value></data>
   <data name="remoteDemo.search"><value>Apply search and sorting</value></data>

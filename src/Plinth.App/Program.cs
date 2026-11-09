@@ -94,8 +94,12 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "应用启动失败");
-            throw;
+            // 启动失败也要给用户安全摘要（§11.1）：错误码+建议+关联 ID，原始异常只进日志。
+            var error = UnhandledErrorPresentation.CreateStartup();
+            Log.Fatal(ex, "应用启动失败。ErrorCode {ErrorCode}, CorrelationId {CorrelationId}",
+                error.Code, error.CorrelationId);
+            StartupErrorReporter.Show(error);
+            return 1;
         }
         finally
         {

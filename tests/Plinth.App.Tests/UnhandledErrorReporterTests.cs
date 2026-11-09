@@ -37,6 +37,36 @@ public sealed class UnhandledErrorReporterTests
         finally { Loc.Initialize(Loc.DefaultLanguage); }
     }
 
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    public void Startup_summary_is_localized_retryable_and_has_unique_correlation_ids(string language)
+    {
+        try
+        {
+            Loc.Initialize(language);
+            var error = UnhandledErrorPresentation.CreateStartup();
+            Assert.Equal("STARTUP_FAILED", error.Code);
+            Assert.Equal(Loc.Get("startup.error.body"), error.Message);
+            Assert.Equal(Loc.Get("startup.error.next"), error.NextStep);
+            Assert.True(error.CanRetry);
+            Assert.True(Guid.TryParse(error.CorrelationId, out _));
+            Assert.NotEqual(error.CorrelationId, UnhandledErrorPresentation.CreateStartup().CorrelationId);
+        }
+        finally { Loc.Initialize(Loc.DefaultLanguage); }
+    }
+
+    [Fact]
+    public void Startup_text_contains_body_next_step_code_and_correlation_id()
+    {
+        var error = UnhandledErrorPresentation.CreateStartup();
+        var text = StartupErrorReporter.BuildText(error);
+        Assert.Contains(error.Message, text);
+        Assert.Contains(error.NextStep, text);
+        Assert.Contains("STARTUP_FAILED", text);
+        Assert.Contains(error.CorrelationId, text);
+    }
+
     [Fact]
     public void Reporter_keeps_original_exception_only_in_correlated_log()
     {

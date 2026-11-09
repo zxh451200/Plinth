@@ -450,6 +450,8 @@
   <data name="logs.kind.task"><value>任务日志</value></data>
   <data name="logs.accessDenied"><value>没有查看权限或账号已变化，请选择有权查看的类别后重新加载。</value></data>
   <data name="installation.unavailable"><value>程序正在安装，或安装文件不可用。请等待安装完成后重试；如仍失败，请重新安装完整程序包。尚未打开用户数据。</value></data>
+  <data name="startup.error.body"><value>应用启动失败，主窗口未打开。详细原因已写入日志。</value></data>
+  <data name="startup.error.next"><value>请检查磁盘剩余空间和数据目录访问权限后重试；如果问题持续，请用关联 ID 查看日志或联系支持人员。</value></data>
   <data name="demo.err.codeInvalid"><value>编码包含无效的 Unicode 字符。</value></data>
   <data name="remoteDemo.title"><value>远程示例数据</value></data>
   <data name="remoteDemo.search"><value>应用搜索和排序</value></data>
