@@ -37,10 +37,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Format failed' }
     dotnet build Plinth.sln -c Release --no-restore -warnaserror:nullable
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-    dotnet test Plinth.sln -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true --logger trx --results-directory artifacts/test-results
-    if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+    $testResultsRoot = Join-Path (Get-Location) 'artifacts/test-results'
+    $testProjects = @(
+        'tests/Plinth.App.Tests/Plinth.App.Tests.csproj',
+        'tests/Plinth.Spreadsheet.Tests/Plinth.Spreadsheet.Tests.csproj'
+    )
+    foreach ($testProject in $testProjects) {
+        $testName = [System.IO.Path]::GetFileNameWithoutExtension($testProject)
+        $resultsDirectory = Join-Path $testResultsRoot $testName
+        dotnet test $testProject -c Release --no-build --no-restore -p:TestingPlatformDotnetTestSupport=true -- --results-directory $resultsDirectory --report-xunit-trx --report-xunit-trx-filename "${testName}.trx"
+        if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+    }
     if ($EnableXlsx) {
-        dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true --filter FullyQualifiedName~Spreadsheet --logger trx --results-directory artifacts/test-results-xlsx
+        $xlsxResultsDirectory = Join-Path (Get-Location) 'artifacts/test-results-xlsx'
+        dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true -- --results-directory $xlsxResultsDirectory --report-xunit-trx --report-xunit-trx-filename xlsx.trx --filter-class "*Spreadsheet*"
         if ($LASTEXITCODE -ne 0) { throw 'XLSX page tests failed' }
     }
     if ($Package) {

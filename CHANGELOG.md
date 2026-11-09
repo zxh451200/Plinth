@@ -4,6 +4,11 @@
 
 以下为源码变更，不代表已发布或通过桌面验收。当前工程版本仍为 `0.1.0`，发版时统一修改 `Directory.Build.props`。
 
+### 2026-11-09 验收门禁格式与 TRX 修复
+
+- 去掉 `SearchSelect.axaml.cs` 与 `SearchSelectTests.cs` 的 UTF-8 BOM、把工作树换行统一为 LF，并按格式器拆分测试对象初始化器；`dotnet format --verify-no-changes` 重新通过（此前 HEAD 会因 599 条 CHARSET/ENDOFLINE/WHITESPACE 诊断在验收入口中止）。
+- `scripts/acceptance.ps1` 的测试步骤改为与 CI 相同的 Microsoft.Testing.Platform 参数：按项目分别输出 `--report-xunit-trx`，替代会被 MTP 忽略的 `--logger trx`／`--filter`；XLSX 变体改用 `--filter-class`。结果目录使用绝对路径，避免 MTP 相对测试项目写入 `tests/*/artifacts`。修复后完整门禁通过：App 1205（1203 通过、2 项环境跳过）、Spreadsheet 49（48 通过、1 项样本跳过）、Python 工具测试 112（1 项跳过）、SQLite smoke 15、构建 0 错误；TRX 在 `artifacts/test-results/`。
+
 ### 2026-11-09 设置页下拉字段的点击态与键盘操作
 
 - 下拉字段（语言／主题／密度／地区／时区）补下拉箭头与展开态：点击后字段为强调色描边 + 浅强调底、箭头翻半圈，不再整块变灰；悬停保留描边，键盘聚焦用强调色描边。

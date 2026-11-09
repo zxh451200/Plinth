@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -221,7 +221,10 @@ public sealed class SearchSelectTests
     {
         var select = new SearchSelect
         {
-            Items = Options, SelectedItem = Options[0], Searchable = false, Width = 280,
+            Items = Options,
+            SelectedItem = Options[0],
+            Searchable = false,
+            Width = 280,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
         };
         var panel = new StackPanel { Margin = new Thickness(24) };
