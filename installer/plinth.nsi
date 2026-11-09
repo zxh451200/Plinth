@@ -276,6 +276,18 @@ Section "Install"
   Rename "$INSTDIR\Plinth.App.exe" "$PreviousExecutable"
   IfErrors install_failed
   extract_files:
+  ; XLSX 关闭时清理旧版残留的 ClosedXML 家族，避免升级后继续携带 Carlito。
+  ; 新包包含 ClosedXML 时跳过，交给正常文件覆盖处理。
+  !if /FileExists "${PUBLISH_DIR}\ClosedXML.dll"
+  !else
+    ClearErrors
+    Delete "$INSTDIR\ClosedXML.dll"
+    Delete "$INSTDIR\ClosedXML.Parser.dll"
+    Delete "$INSTDIR\DocumentFormat.OpenXml.dll"
+    Delete "$INSTDIR\DocumentFormat.OpenXml.Framework.dll"
+    Delete "$INSTDIR\ExcelNumberFormat.dll"
+    IfErrors install_failed
+  !endif
   SetOutPath "$INSTDIR"
   SetOverwrite on
   ClearErrors

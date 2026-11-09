@@ -26,10 +26,10 @@
 
 ## 2026-11-09 发布包重打包与法务审查证据
 
-- 安装 NSIS 3.11（`D:\tmp\nsis`）后用 `pwsh` 7 与 `publish.ps1 -SupplementalComplianceFile reviewed-materials/inventory.json -RequireInstaller` 重建默认 0.1.0（XLSX 关闭）：ZIP 82,484,177 B（SHA256 `25af0958d64aaa54ea8e0285d17758caf152bfe99fa1da19d1f1c1737aefee6a`）、Setup 55,877,821 B（SHA256 `e4818380da046ee642f020b61337922a45c2ab49e08fde9a80e5e7bb8780556d`）；`release_checks.py package` 两个产物通过。
+- 安装 NSIS 3.11（`D:\tmp\nsis`）后用 `pwsh` 7 与 `publish.ps1 -SupplementalComplianceFile reviewed-materials/inventory.json -RequireInstaller` 重建默认 0.1.0（XLSX 关闭）：ZIP 82,484,177 B（SHA256 `25af0958d64aaa54ea8e0285d17758caf152bfe99fa1da19d1f1c1737aefee6a`）、Setup 55,889,831 B（SHA256 `d44869a1c7f00d7e0f95e7b4a10c7e216534f782ca0966d9f755c63c81268229`）；`release_checks.py package` 两个产物通过。安装器随后为重编译加入旧版残留清理（ZIP 未变）。
 - 默认关闭 XLSX 时对 ClosedXML 使用 `ExcludeAssets=runtime`，`publish.ps1` 增加“关闭时不得出现 ClosedXML.dll／启用时不得缺失”门禁；发布目录、ZIP、安装器与安装后目录均无 `ClosedXML.dll`，报告为 83 NuGet + 8 补充组件，`excluded_restored_packages` 含 ClosedXML 家族。
 - ZIP 内报告 `uncovered=[]`、`reconciled=1`，两个批准标志仍为 false；安装器内嵌 notices/SBOM/coverage 的 SHA-256 与 `artifacts/compliance` 一致（`3b91…`／`321a…`／`fcfb…`）。
-- 安装器实机冒烟：安装 `/S` 退出 0、`Plinth.App.exe --version` 输出 `Plinth 0.1.0`、运行中再安装退出 5、静默覆盖安装退出 6、卸载退出 0；`unknown-user-file.txt` 与用户数据保留，卸载注册表键与 `plinth://` 协议清理，无开始菜单/桌面快捷方式残留。
+- 安装器实机冒烟：安装 `/S` 退出 0、`Plinth.App.exe --version` 输出 `Plinth 0.1.0`、`/D=` 其他目录退出 4、运行中再安装退出 5、静默覆盖安装退出 6、应用退出后卸载退出 0；`unknown-user-file.txt` 与用户数据保留，卸载注册表键与 `plinth://` 协议清理，无开始菜单/桌面快捷方式残留。运行中静默卸载在 26 s 轮询内文件/注册表不变（拒绝），但 NSIS 卸载 stub 返回 0，0 不是成功信号，验收以目录/注册表状态为准。旧版残留清理：新包不含 ClosedXML 时安装器删除旧版 `ClosedXML.dll`／`ClosedXML.Parser.dll`／`DocumentFormat.OpenXml*.dll`／`ExcelNumberFormat.dll`；实测卸载保留 dummy `ClosedXML.dll`，重装后删除且 `unknown-user-file.txt` 保留。
 - 法务审查证据包 [LEGAL_REVIEW.md](release/LEGAL_REVIEW.md) 已更新：默认包已排除 ClosedXML/Carlito，RFN 风险仅影响 `-EnableXlsx` 变体；签核栏为空。代码签名方面 `signtool` 可用但 Setup `NotSigned`，仅有测试证书；正式 CA 签名、`-EnableXlsx` 变体法务结论与成功交互升级（需旧候选）仍待。
 
 ## 2026-11-09 XLSX 真实宏样本

@@ -90,9 +90,9 @@ JSON 顶层必须恰好包含 `schema_version`（整数 1）与非空 `component
 
 ### 2026-11-09 D) 发布包重打包与法务审查证据
 
-- 使用 `pwsh` 7 + NSIS 3.11 与 `publish.ps1 -SupplementalComplianceFile ... -RequireInstaller` 重建默认 0.1.0（XLSX 关闭）：ZIP 82,484,177 B（SHA256 `25af0958d64aaa54ea8e0285d17758caf152bfe99fa1da19d1f1c1737aefee6a`）、Setup 55,877,821 B（SHA256 `e4818380da046ee642f020b61337922a45c2ab49e08fde9a80e5e7bb8780556d`）；`release_checks.py package` 两者通过。
+- 使用 `pwsh` 7 + NSIS 3.11 与 `publish.ps1 -SupplementalComplianceFile ... -RequireInstaller` 重建默认 0.1.0（XLSX 关闭）：ZIP 82,484,177 B（SHA256 `25af0958d64aaa54ea8e0285d17758caf152bfe99fa1da19d1f1c1737aefee6a`）、Setup 55,889,831 B（SHA256 `d44869a1c7f00d7e0f95e7b4a10c7e216534f782ca0966d9f755c63c81268229`）；`release_checks.py package` 两者通过。安装器随后重编译加入旧版残留清理，ZIP 未变。
 - 默认关闭 XLSX 时对 ClosedXML 使用 `ExcludeAssets=runtime`，`publish.ps1` 增加发布目录门禁；发布目录、ZIP、安装器与安装后目录均无 `ClosedXML.dll`，报告为 83 NuGet + 8 补充组件，`excluded_restored_packages` 含 ClosedXML/ClosedXML.Parser/DocumentFormat.OpenXml/ExcelNumberFormat。
 - ZIP 内报告 `uncovered=[]`、`reconciled=1`，两个批准标志仍为 false；安装器内嵌 notices/SBOM/coverage 与 `artifacts/compliance` 逐字节一致（`3b91…`／`321a…`／`fcfb…`）。
-- 安装器实机冒烟：安装 `/S` 退出 0、`--version` 输出 `Plinth 0.1.0`、运行中再安装退出 5、静默覆盖安装退出 6、卸载退出 0；未知用户文件与用户数据保留，卸载注册表键与 `plinth://` 协议清理。
+- 安装器实机冒烟：安装 `/S` 退出 0、`--version` 输出 `Plinth 0.1.0`、`/D=` 其他目录退出 4、运行中再安装退出 5、静默覆盖安装退出 6、应用退出后卸载退出 0；未知用户文件与用户数据保留，卸载注册表键与 `plinth://` 协议清理。运行中静默卸载在 26 s 内不改文件/注册表（拒绝），但 NSIS 卸载 stub 返回 0，需按状态而不是退出码判定。新包不含 ClosedXML 时，安装器在安装/升级路径删除旧版残留的 `ClosedXML.dll`／`ClosedXML.Parser.dll`／`DocumentFormat.OpenXml*.dll`／`ExcelNumberFormat.dll`；已用“卸载保留 dummy ClosedXML.dll、重装后删除、未知用户文件保留”验证。
 - 法务审查证据包见 [LEGAL_REVIEW.md](release/LEGAL_REVIEW.md)：默认包已排除 ClosedXML/Carlito，Carlito RFN 仅影响 `-EnableXlsx` 变体；签核栏为空，未宣称审查通过。
 - 代码签名：`signtool` 可用，Setup 当前 `NotSigned`，仅有测试证书 `CN=Plinth Test Signing`；正式 CA 签名、`-EnableXlsx` 变体法务结论与成功交互升级（需旧候选）仍是独立门禁。

@@ -86,7 +86,7 @@ python scripts/third_party.py --output artifacts/compliance
 
 `acceptance.ps1` 先执行工具单测、源码契约、资源集成和 SQLite smoke，再执行锁包、还原、格式、编译及 C# 测试；任一步失败即停止。测试命令使用与 CI 一致的 `TestingPlatformDotnetTestSupport=true`。
 
-默认候选包不启用 XLSX 页面。兼容、内存及许可验收通过后，显式传 `-EnableXlsx`；验收脚本先运行启用变体中名称包含 `Spreadsheet` 的测试，覆盖页面与选择器生命周期，随后将相同开关传给发布脚本，测试失败不打包。该开关传递 `PlinthEnableXlsx=true`，不是验收证明。ClosedXML 保留在同一依赖图中，避免两个构建变体使用不同的锁文件；默认发布对其实施 `ExcludeAssets=runtime`，发布目录/ZIP/安装器不包含 `ClosedXML.dll` 及其内嵌 Carlito 字体，`publish.ps1` 在发布目录上校验这一条件。只有 `-EnableXlsx` 变体分发该 DLL，必须单独完成许可终审。CI 使用相同筛选编译／测试启用变体，独立 Spreadsheet 测试项目始终覆盖服务；当前环境尚未执行这些 C# 检查。
+默认候选包不启用 XLSX 页面。兼容、内存及许可验收通过后，显式传 `-EnableXlsx`；验收脚本先运行启用变体中名称包含 `Spreadsheet` 的测试，覆盖页面与选择器生命周期，随后将相同开关传给发布脚本，测试失败不打包。该开关传递 `PlinthEnableXlsx=true`，不是验收证明。ClosedXML 保留在同一依赖图中，避免两个构建变体使用不同的锁文件；默认发布对其实施 `ExcludeAssets=runtime`，发布目录/ZIP/安装器不包含 `ClosedXML.dll` 及其内嵌 Carlito 字体，`publish.ps1` 在发布目录上校验这一条件。只有 `-EnableXlsx` 变体分发该 DLL，必须单独完成许可终审。升级/覆盖安装时，新包不含 ClosedXML 会在安装路径定向删除旧版残留的 `ClosedXML.dll`、`ClosedXML.Parser.dll`、`DocumentFormat.OpenXml*.dll` 与 `ExcelNumberFormat.dll`，不触碰未知用户文件。CI 使用相同筛选编译／测试启用变体，独立 Spreadsheet 测试项目始终覆盖服务；当前环境尚未执行这些 C# 检查。
 
 每次清理本次 publish 目录，notice/SBOM 校验成功后才打 ZIP；有 NSIS 时生成带版本与 RID 的安装器。指定 `-RequireInstaller` 时缺少 NSIS 会失败。ZIP 和 EXE 各有 `<文件名>.sha256`，ZIP 另外检查完整性、应用入口、notice 和 SBOM 存在性。可独立运行：
 

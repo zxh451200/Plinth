@@ -230,6 +230,12 @@ class SupplementalTests(unittest.TestCase):
         self.assertIn("XLSX enabled but ClosedXML.dll is missing from publish", publish)
         self.assertIn("ClosedXML.dll must not be published when XLSX is disabled", publish)
 
+    def test_installer_removes_legacy_closedxml_without_shipping_it(self):
+        nsi = (ROOT / "installer" / "plinth.nsi").read_text(encoding="utf-8-sig")
+        self.assertIn('!if /FileExists "${PUBLISH_DIR}\\ClosedXML.dll"', nsi)
+        self.assertIn('Delete "$INSTDIR\\ClosedXML.dll"', nsi)
+        self.assertIn('Delete "$INSTDIR\\ExcelNumberFormat.dll"', nsi)
+
     def test_powershell_option_forwarding_static_only(self):
         publish = (ROOT / "scripts" / "publish.ps1").read_text(encoding="utf-8-sig")
         acceptance = (ROOT / "scripts" / "acceptance.ps1").read_text(encoding="utf-8-sig")
