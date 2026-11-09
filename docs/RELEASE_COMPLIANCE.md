@@ -78,3 +78,10 @@ JSON 顶层必须恰好包含 `schema_version`（整数 1）与非空 `component
 合成测试只验证工具行为，不证明任何真实依赖的许可正确或发布包覆盖完整。
 在没有 PowerShell/.NET/Windows 的环境中，透传检查只是静态检查；
 实际 Windows 发布、安装器及包内容的运行验收仍需在相应环境执行。
+
+### 2026-11-09 已核对补充库存（reviewed-materials）
+
+- `reviewed-materials/inventory.json`（schema 1）实际列出 8 个组件及正文/哈希：.NET Runtime 10.0.14（随 SDK 的 Microsoft .NET Library 条款 + ThirdPartyNotices；源码仓库为 MIT）、NSIS 3.11（zlib/libpng；COPYING 与 3.11 源码包逐字节一致）、Skia 3.119.4（BSD-3-Clause + SkiaSharp 原生包 ThirdPartyNotices）、ANGLE 2.1.27548.20260419（BSD-3-Clause）、HarfBuzz 8.3.1.3（上游 Old MIT + HarfBuzzSharp 包装 MIT；其原生包附带的 ThirdPartyNotices 与 SkiaSharp 包逐字节相同，正文已列在 `skia/THIRD-PARTY-NOTICES.txt`）、SQLite 3.53.3（Public Domain，`e_sqlite3.dll`）、Roboto Light 2.137（Apache-2.0）、CarlitoBare 1.104（OFL-1.1）；`supplemental_compliance.py --validate` 通过（8 个组件）。
+- 字体不是纯系统字体：`Avalonia.Dialogs.dll`（Avalonia 12.1.4）内嵌 Roboto Light 2.137，`ClosedXML.dll`（0.105.1）内嵌 CarlitoBare 1.104 四字重；两个 DLL 都在 ZIP 与安装器发布清单中。组件版本取自从 DLL 提取的字体 name 表，Regular 提取件 SHA-256 分别为 `db02096a91c20ab62d459001a1059bc8d78caa35d637dc91494c4440815a6ac1`（Roboto）与 `ec7c1357b67ac184a52ce7e6b4d9f6f8cf3c9518864bfea0d0e88ba07e1183c8`（Carlito）。Carlito 的 OFL 含 Reserved Font Name "Carlito"，内嵌派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断。图标仍为应用自有 `plinth.ico`，无第三方 icon 组件。
+- 实跑 `python scripts/third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（`THIRD_PARTY_NOTICES.md` 538,059 B、`sbom.cdx.json` 505,124 B、`coverage-report.json` 111,369 B）；补充材料专项测试 31 项通过。
+- 覆盖边界：publish deps 的 `runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 仍按设计为 `uncovered`（补充库存不自动消除；同包内 `msquic.dll` 等原生件也不因此转绿）。工具只验证身份/路径/原文/哈希，不代替法务审查；“审查通过”仍属发布决策。

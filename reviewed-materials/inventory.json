@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "id": "dotnet-runtime",
+      "name": ".NET Runtime",
+      "version": "10.0.14",
+      "category": "runtime",
+      "source": "https://github.com/dotnet/runtime",
+      "license": "Microsoft .NET Library License",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "dotnet/LICENSE.txt",
+          "sha256": "7f6839a61ce892b79c6549e2dc5a81fdbd240a0b260f8881216b45b7fda8b45d"
+        },
+        {
+          "kind": "NOTICE",
+          "path": "dotnet/ThirdPartyNotices.txt",
+          "sha256": "deb4427a295e1ed474b0d81c5a0d972c1b550b9a715cda939cdfa9236b1b418f"
+        }
+      ]
+    },
+    {
+      "id": "nsis",
+      "name": "NSIS",
+      "version": "3.11",
+      "category": "nsis",
+      "source": "https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/",
+      "license": "zlib/libpng",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "nsis/COPYING",
+          "sha256": "e7dd514003ab96cb3ddccbc028fe5c795fccf57dc41f21cfb9d4dd16ead23bf5"
+        }
+      ]
+    },
+    {
+      "id": "skia",
+      "name": "Skia",
+      "version": "3.119.4",
+      "category": "native",
+      "source": "https://skia.googlesource.com/skia",
+      "license": "BSD-3-Clause",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "skia/LICENSE",
+          "sha256": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd"
+        },
+        {
+          "kind": "NOTICE",
+          "path": "skia/THIRD-PARTY-NOTICES.txt",
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5"
+        }
+      ]
+    },
+    {
+      "id": "angle",
+      "name": "ANGLE",
+      "version": "2.1.27548.20260419",
+      "category": "native",
+      "source": "https://chromium.googlesource.com/angle/angle",
+      "license": "BSD-3-Clause",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "angle/LICENSE",
+          "sha256": "54aff7276217df9f6b5181613999d208c9e40d2b1d51bf55217837e6871a4a63"
+        }
+      ]
+    },
+    {
+      "id": "harfbuzz",
+      "name": "HarfBuzz",
+      "version": "8.3.1.3",
+      "category": "native",
+      "source": "https://github.com/harfbuzz/harfbuzz/releases/tag/8.3.1",
+      "license": "MIT",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "harfbuzz/COPYING",
+          "sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64"
+        },
+        {
+          "kind": "LICENSE",
+          "path": "harfbuzz/HarfBuzzSharp-LICENSE.txt",
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "version": "3.53.3",
+      "category": "native",
+      "source": "https://www.sqlite.org/copyright.html",
+      "license": "Public Domain",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "sqlite/LICENSE.txt",
+          "sha256": "a222f46a0f9ba7b76c1c363c5d04c5801bfffd6d12a407251c3fdcc44095dee1"
+        }
+      ]
+    },
+    {
+      "id": "roboto",
+      "name": "Roboto Light",
+      "version": "2.137",
+      "category": "font",
+      "source": "https://github.com/googlefonts/roboto-2",
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "roboto/LICENSE.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ]
+    },
+    {
+      "id": "carlito",
+      "name": "CarlitoBare",
+      "version": "1.104",
+      "category": "font",
+      "source": "https://github.com/googlefonts/carlito",
+      "license": "OFL-1.1",
+      "texts": [
+        {
+          "kind": "LICENSE",
+          "path": "carlito/OFL.txt",
+          "sha256": "58402f82a7c332a700294988fe7554fbb0a63a8d27ccc1ee3bbc640311990a00"
+        }
+      ]
+    }
+  ]
+}
