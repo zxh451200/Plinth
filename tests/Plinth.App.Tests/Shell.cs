@@ -113,7 +113,7 @@ internal sealed class Shell : IDisposable
         ViewModel.SelectedTab = tab;
         Layout();
         return Window.GetVisualDescendants().OfType<Button>()
-            .Single(b => (b.Content as string)?.Contains("✕", StringComparison.Ordinal) == true);
+            .Single(b => b.Classes.Contains("tabClose"));
     }
 
     /// <summary>真按键:通过窗口输入验证 AppShortcuts 与冒泡分发是否生效。</summary>

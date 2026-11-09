@@ -11,7 +11,7 @@
     <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}">
       <!-- 页头:标题在左,任务操作靠右,和日志页保持同一节奏 -->
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{loc:T tasks.title}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <SelectableTextBlock Text="{loc:T tasks.title}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
         <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
           <WrapPanel.Styles>
             <Style Selector="Button"><Setter Property="Margin" Value="8,0,0,0" /></Style>
@@ -41,7 +41,7 @@
               <TableViewColumn x:DataType="svc:WorkItem" Header="{loc:T logs.taskId}" Binding="{Binding Id}" Width="230" />
             </TableView.Columns>
           </TableView>
-          <TextBlock Text="{loc:T tasks.list.empty}" IsVisible="{Binding IsTaskListEmpty}" HorizontalAlignment="Center"
+          <SelectableTextBlock Text="{loc:T tasks.list.empty}" IsVisible="{Binding IsTaskListEmpty}" HorizontalAlignment="Center"
                      VerticalAlignment="Center" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
         </Grid>
       </Border>
@@ -52,16 +52,16 @@
               BoxShadow="0 1 3 0 #1A000000"
               IsVisible="{Binding SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}">
         <StackPanel Spacing="6">
-          <TextBlock Text="{Binding SelectedItem?.ResultText}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding SelectedItem?.ResultText}" TextWrapping="Wrap"
                      AutomationProperties.Name="{loc:T tasks.result.title}" />
-          <TextBlock Text="{Binding SelectedItem?.Error?.Code}" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding SelectedItem?.Error?.Message}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding SelectedItem?.Error?.Code}" FontWeight="SemiBold" />
+          <SelectableTextBlock Text="{Binding SelectedItem?.Error?.Message}" TextWrapping="Wrap"
                      Foreground="{DynamicResource PlinthErrorBrush}" />
-          <TextBlock Text="{Binding SelectedItem?.Error?.NextStep}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding SelectedItem?.Error?.NextStep}" TextWrapping="Wrap"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBlock Text="{Binding SelectedItem?.RetryText}" />
+          <SelectableTextBlock Text="{Binding SelectedItem?.RetryText}" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="{loc:T logs.correlationId}" VerticalAlignment="Center"
+            <SelectableTextBlock Text="{loc:T logs.correlationId}" VerticalAlignment="Center"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
             <TextBox Text="{Binding SelectedItem?.Error?.CorrelationId, Mode=OneWay}" IsReadOnly="True" MinWidth="280"
                      MaxWidth="420" HorizontalAlignment="Left" AutomationProperties.Name="{loc:T logs.correlationId}" />
@@ -77,7 +77,7 @@
         </StackPanel>
       </Border>
 
-      <TextBlock Text="{loc:T diagnostics.title}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0" />
+      <SelectableTextBlock Text="{loc:T diagnostics.title}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0" />
 
       <!-- 诊断条件:标签在控件上方,选项与执行按钮分列左右 -->
       <Border Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
@@ -85,17 +85,17 @@
               BoxShadow="0 1 3 0 #1A000000">
         <Grid ColumnDefinitions="Auto,Auto,Auto,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="16">
           <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
-            <TextBlock Text="{loc:T logs.from}" FontSize="11"
+            <SelectableTextBlock Text="{loc:T logs.from}" FontSize="11"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
             <controls:DateField SelectedDate="{Binding From}" Label="{loc:T logs.from}" />
           </StackPanel>
           <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
-            <TextBlock Text="{loc:T logs.to}" FontSize="11"
+            <SelectableTextBlock Text="{loc:T logs.to}" FontSize="11"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
             <controls:DateField SelectedDate="{Binding To}" Label="{loc:T logs.to}" />
           </StackPanel>
           <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4">
-            <TextBlock Text="{loc:T logs.col.level}" FontSize="11"
+            <SelectableTextBlock Text="{loc:T logs.col.level}" FontSize="11"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
             <ComboBox ItemsSource="{Binding LevelOptions}" SelectedIndex="{Binding LevelIndex}" Width="160"
                       AutomationProperties.Name="{loc:T logs.col.level}" />
@@ -116,7 +116,7 @@
       </Border>
 
       <!-- 未预览时只留一行提示,避免空表格占满首屏 -->
-      <TextBlock Text="{loc:T diagnostics.preview.empty}" IsVisible="{Binding !HasPreview}"
+      <SelectableTextBlock Text="{loc:T diagnostics.preview.empty}" IsVisible="{Binding !HasPreview}"
                  TextWrapping="Wrap" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
 
       <!-- 预览清单:文件与状态列定宽,包含字段吃剩余宽度 -->
@@ -140,8 +140,8 @@
               BoxShadow="0 1 3 0 #1A000000" IsVisible="{Binding HasPreview}">
         <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
           <StackPanel Spacing="2">
-            <TextBlock Text="{loc:T diagnostics.excluded}" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding ExcludedText}" TextWrapping="Wrap"
+            <SelectableTextBlock Text="{loc:T diagnostics.excluded}" FontWeight="SemiBold" />
+            <SelectableTextBlock Text="{Binding ExcludedText}" TextWrapping="Wrap"
                        Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
           </StackPanel>
           <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
@@ -153,7 +153,7 @@
         </Grid>
       </Border>
 
-      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
+      <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
     </StackPanel>
   </ScrollViewer>

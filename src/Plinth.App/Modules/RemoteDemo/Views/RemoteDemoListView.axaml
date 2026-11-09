@@ -7,7 +7,7 @@
              x:CompileBindings="True" x:DataType="vm:RemoteDemoListViewModel">
   <Grid Margin="20" RowDefinitions="Auto,Auto,*,Auto" ColumnDefinitions="*,320">
     <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
-      <TextBlock Text="{loc:T remoteDemo.title}" FontSize="20" />
+      <SelectableTextBlock Text="{loc:T remoteDemo.title}" FontSize="20" />
       <Button Content="{loc:T remoteDemo.refresh}" Command="{Binding RefreshCommand}" />
     </StackPanel>
     <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" IsEnabled="{Binding CanInteract}">
@@ -29,7 +29,7 @@
       <Button Content="{loc:T demo.list.edit}" Click="OnEditRecordClick" IsEnabled="{Binding CanDelete}" />
     </WrapPanel>
     <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,12,12,0">
-      <TextBlock Text="{loc:T demo.list.empty}" IsVisible="{Binding IsEmpty}" Margin="0,0,0,8" />
+      <SelectableTextBlock Text="{loc:T demo.list.empty}" IsVisible="{Binding IsEmpty}" Margin="0,0,0,8" />
       <TableView x:Name="RecordsTable" Grid.Row="1"
                  Focusable="True"
                  ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
@@ -43,25 +43,25 @@
     </Grid>
     <ScrollViewer Grid.Row="2" Grid.Column="1" IsVisible="{Binding IsEditing}" Margin="0,12,0,0">
       <StackPanel Spacing="8" IsEnabled="{Binding CanInteract}">
-        <TextBlock Text="{loc:T demo.form.title}" FontWeight="SemiBold" />
-        <TextBlock Text="{loc:T demo.form.unsaved}" IsVisible="{Binding IsDirty}" />
-        <TextBlock Text="{loc:T demo.col.code}" />
+        <SelectableTextBlock Text="{loc:T demo.form.title}" FontWeight="SemiBold" />
+        <SelectableTextBlock Text="{loc:T demo.form.unsaved}" IsVisible="{Binding IsDirty}" />
+        <SelectableTextBlock Text="{loc:T demo.col.code}" />
         <TextBox x:Name="EditCodeBox" Text="{Binding EditCode}" MaxLength="50" AutomationProperties.Name="{loc:T demo.col.code}" />
-        <TextBlock Text="{Binding CodeError}" TextWrapping="Wrap" />
-        <TextBlock Text="{loc:T demo.col.name}" />
+        <SelectableTextBlock Text="{Binding CodeError}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{loc:T demo.col.name}" />
         <TextBox Text="{Binding EditName}" MaxLength="200" AutomationProperties.Name="{loc:T demo.col.name}" />
-        <TextBlock Text="{Binding NameError}" TextWrapping="Wrap" />
-        <TextBlock Text="{loc:T demo.col.remark}" />
+        <SelectableTextBlock Text="{Binding NameError}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{loc:T demo.col.remark}" />
         <TextBox Text="{Binding EditRemark}" MaxLength="500" AcceptsReturn="True" Height="90"
                  AutomationProperties.Name="{loc:T demo.col.remark}" />
-        <TextBlock Text="{Binding RemarkError}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{Binding RemarkError}" TextWrapping="Wrap" />
         <WrapPanel>
           <Button Content="{loc:T demo.save}" Command="{Binding SaveCommand}" />
           <Button Content="{loc:T demo.cancel}" Command="{Binding CancelCommand}" />
           <Button Content="{loc:T demo.delete}" Command="{Binding AskDeleteCommand}" IsVisible="{Binding CanDelete}" />
         </WrapPanel>
         <StackPanel IsVisible="{Binding IsConfirmingDelete}" Spacing="8">
-          <TextBlock Text="{loc:T demo.delete.confirm}" TextWrapping="Wrap" />
+          <SelectableTextBlock Text="{loc:T demo.delete.confirm}" TextWrapping="Wrap" />
           <Button Content="{loc:T demo.delete}" Command="{Binding ConfirmDeleteCommand}" />
           <Button Content="{loc:T demo.delete.keep}" Command="{Binding CancelDeleteCommand}" />
         </StackPanel>
@@ -70,12 +70,12 @@
     <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Spacing="8" Margin="0,12,0,0">
       <WrapPanel IsEnabled="{Binding CanInteract}">
         <Button Content="{loc:T demo.list.previous}" Command="{Binding PreviousPageCommand}" />
-        <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
+        <SelectableTextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
         <Button Content="{loc:T demo.list.next}" Command="{Binding NextPageCommand}" />
-        <TextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" Margin="12,0" />
+        <SelectableTextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" Margin="12,0" />
       </WrapPanel>
       <ProgressBar IsVisible="{Binding IsBusy}" IsIndeterminate="True" Height="3" />
-      <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
     </StackPanel>
   </Grid>
 </UserControl>

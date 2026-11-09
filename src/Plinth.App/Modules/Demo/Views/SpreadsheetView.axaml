@@ -5,17 +5,17 @@
              x:CompileBindings="False">
   <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto" RowSpacing="{DynamicResource PlinthSectionSpacing}">
     <StackPanel Spacing="6">
-      <TextBlock Text="{Binding Labels[Title]}" FontSize="20" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding Labels[Help]}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding Labels[Title]}" FontSize="20" FontWeight="SemiBold" />
+      <SelectableTextBlock Text="{Binding Labels[Help]}" TextWrapping="Wrap" />
     </StackPanel>
     <WrapPanel Grid.Row="1">
       <Button x:Name="ChooseFileButton" Content="{Binding Labels[ChooseFile]}" IsEnabled="{Binding CanInteract}" Margin="0,0,8,6" />
       <Button Content="{Binding Labels[Clear]}" Command="{Binding ClearCommand}" Margin="0,0,8,6" />
       <Button Content="{Binding Labels[Cancel]}" Command="{Binding CancelCommand}" Margin="0,0,8,6" />
-      <TextBlock Text="{Binding SourceName}" VerticalAlignment="Center" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding SourceName}" VerticalAlignment="Center" TextWrapping="Wrap" />
     </WrapPanel>
     <StackPanel Grid.Row="2" Spacing="6">
-      <TextBlock Text="{Binding Labels[ExportHelp]}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding Labels[ExportHelp]}" TextWrapping="Wrap" />
       <WrapPanel>
         <TextBox Text="{Binding SearchText}" PlaceholderText="{Binding Labels[Search]}"
                  AutomationProperties.Name="{Binding Labels[Search]}" IsEnabled="{Binding CanInteract}"
@@ -23,7 +23,7 @@
         <Button x:Name="ExportButton" Content="{Binding Labels[Export]}" IsEnabled="{Binding CanInteract}" Margin="0,0,8,6" />
       </WrapPanel>
     </StackPanel>
-    <TextBlock Grid.Row="3" Text="{Binding Summary}" TextWrapping="Wrap" />
+    <SelectableTextBlock Grid.Row="3" Text="{Binding Summary}" TextWrapping="Wrap" />
     <Grid Grid.Row="4" RowDefinitions="2*,*" RowSpacing="{DynamicResource PlinthSectionSpacing}">
       <TableView x:Name="PreviewTable" ItemsSource="{Binding PreviewRows}" AutomationProperties.Name="{Binding Labels[Preview]}">
         <TableView.Columns>
@@ -37,7 +37,7 @@
         <ItemsControl ItemsSource="{Binding Issues}" AutomationProperties.Name="{Binding Labels[Errors]}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{DynamicResource PlinthErrorBrush}" Margin="0,2" />
+              <SelectableTextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{DynamicResource PlinthErrorBrush}" Margin="0,2" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -52,7 +52,7 @@
     </StackPanel>
     <StackPanel Grid.Row="6" Spacing="5">
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
-      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
       <TextBox Text="{Binding ExportedPath}" IsReadOnly="True" TextWrapping="Wrap"
                AutomationProperties.Name="{Binding Labels[OutputPath]}" />
     </StackPanel>

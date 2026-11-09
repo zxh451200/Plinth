@@ -366,13 +366,15 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public void Tab_close_button_is_a_small_square_not_a_stretched_pill()
+    public void Tab_close_button_is_a_compact_round_target()
     {
         using var shell = new Shell();
         var closeButton = shell.TabCloseButton("概览");
 
-        Assert.InRange(closeButton.Bounds.Width, 16, 20);
-        Assert.InRange(closeButton.Bounds.Height, 16, 20);
+        Assert.InRange(closeButton.Bounds.Width, 18, 22);
+        Assert.InRange(closeButton.Bounds.Height, 18, 22);
+        // 圆形悬停底:圆角等于半径。
+        Assert.Equal(closeButton.Bounds.Width / 2, closeButton.CornerRadius.TopLeft, 2);
     }
 
     [AvaloniaFact]

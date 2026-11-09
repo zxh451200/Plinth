@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -50,7 +50,6 @@ public sealed class SearchSelectTests
         window.Show();
         var button = select.GetVisualDescendants().OfType<Button>().First();
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        button.Flyout!.ShowAt(button);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         window.Measure(new Size(420, 320));
         window.Arrange(new Rect(0, 0, 420, 320));
@@ -62,9 +61,9 @@ public sealed class SearchSelectTests
         Assert.Equal(0, card.Padding.Left);
         Assert.Equal(0, card.Padding.Right);
         Assert.Equal(3, rows.Count);
-        // 首行贴上边:弹层不含上下留白(没有搜索框时)。
+        // 首行离上边留 4px:选中底色不顶到卡片圆角,左右仍然通栏。
         var firstOrigin = rows[0].TranslatePoint(new Point(0, 0), card)!.Value;
-        Assert.Equal(card.BorderThickness.Top, firstOrigin.Y, 1);
+        Assert.Equal(card.BorderThickness.Top + 4, firstOrigin.Y, 1);
         foreach (var row in rows)
         {
             // 行左缘贴住卡片内边(1px 细边),右缘对齐卡片右边:选/悬停底色通栏。
@@ -74,6 +73,13 @@ public sealed class SearchSelectTests
         }
 
         Assert.True(rows[1].IsSelected);
+
+        // 浮层左缘、宽度与字段完全重合,并且留出 4px 间距,不再出现原生弹窗的像素错位。
+        var fieldOrigin = button.TranslatePoint(new Point(0, 0), window)!.Value;
+        var cardOrigin = card.TranslatePoint(new Point(0, 0), window)!.Value;
+        Assert.Equal(fieldOrigin.X, cardOrigin.X, 1);
+        Assert.Equal(button.Bounds.Width, card.Bounds.Width, 1);
+        Assert.Equal(fieldOrigin.Y + button.Bounds.Height + 4, cardOrigin.Y, 1);
         window.Close();
     }
 
@@ -103,5 +109,110 @@ public sealed class SearchSelectTests
 
         window.MouseUp(point, MouseButton.Left);
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Field_shows_chevron_and_open_state()
+    {
+        var select = new SearchSelect { Items = Options, SelectedItem = Options[0], Searchable = false };
+        var window = new Window { Content = select, Width = 420, Height = 320 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var button = select.GetVisualDescendants().OfType<Button>().First();
+        var chevron = button.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Classes.Contains("chevron"));
+        Assert.Equal("\uE70D", chevron.Text);
+        Assert.False(button.Classes.Contains("open"));
+
+        var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, MouseButton.Left);
+        window.MouseUp(point, MouseButton.Left);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(select.OptionsPopup.IsOpen);
+        Assert.True(button.Classes.Contains("open"));
+
+        select.OptionsPopup.IsOpen = false;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.False(button.Classes.Contains("open"));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Arrow_keys_browse_without_committing_until_enter()
+    {
+        var select = new SearchSelect { Items = Options, SelectedItem = Options[0], Searchable = false };
+        var window = new Window { Content = select, Width = 420, Height = 320 };
+        window.Show();
+        var button = select.GetVisualDescendants().OfType<Button>().First();
+        var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, MouseButton.Left);
+        window.MouseUp(point, MouseButton.Left);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 上下键只移动高亮,设置值不变、弹层不关。
+        Assert.Equal(1, select.OptionsList.SelectedIndex);
+        Assert.Same(Options[0], select.SelectedItem);
+        Assert.True(select.OptionsPopup.IsOpen);
+
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(Options[1], select.SelectedItem);
+        Assert.False(select.OptionsPopup.IsOpen);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Clicking_an_option_commits_it()
+    {
+        var select = new SearchSelect { Items = Options, SelectedItem = Options[0], Searchable = false };
+        var window = new Window { Content = select, Width = 420, Height = 320 };
+        window.Show();
+        var button = select.GetVisualDescendants().OfType<Button>().First();
+        var fieldPoint = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(fieldPoint, MouseButton.Left);
+        window.MouseUp(fieldPoint, MouseButton.Left);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var row = select.OptionsList.GetVisualDescendants().OfType<ListBoxItem>().Last();
+        var rowPoint = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(rowPoint, MouseButton.Left);
+        window.MouseUp(rowPoint, MouseButton.Left);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(Options[2], select.SelectedItem);
+        Assert.False(select.OptionsPopup.IsOpen);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Popup_surface_follows_the_dark_theme()
+    {
+        var previous = Application.Current!.RequestedThemeVariant;
+        try
+        {
+            Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            var select = new SearchSelect { Items = Options, SelectedItem = Options[1], Searchable = false };
+            var window = new Window { Content = select, Width = 420, Height = 320 };
+            window.Show();
+            select.OptionsPopup.IsOpen = true;
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            var card = select.FindControl<Border>("PopupCard")!;
+            var background = Assert.IsType<SolidColorBrush>(card.Background);
+            // 弹层在独立根里,画刷必须按当前主题重新解析;深色下不能还是浅色面板。
+            Assert.True(background.Color.R < 60 && background.Color.G < 60 && background.Color.B < 60,
+                $"深色弹层底色过浅:{background.Color}");
+            window.Close();
+        }
+        finally
+        {
+            Application.Current.RequestedThemeVariant = previous;
+        }
     }
 }

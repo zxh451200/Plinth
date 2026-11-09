@@ -40,6 +40,8 @@
       <SolidColorBrush x:Key="PlinthRowSelectedBrush" Color="#EFF5FF" />
       <SolidColorBrush x:Key="PlinthFocusBrush" Color="#2563EB" />
       <SolidColorBrush x:Key="PlinthSelectionForegroundBrush" Color="#FFFFFF" />
+      <!-- 输入框选区：强调色降透明度，文字保持原前景色,不像实心蓝块压住数字 -->
+      <SolidColorBrush x:Key="PlinthTextSelectionBrush" Color="#382563EB" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="PlinthBackgroundBrush" Color="#0F1115" />
@@ -63,6 +65,7 @@
       <SolidColorBrush x:Key="PlinthRowSelectedBrush" Color="#1A2A40" />
       <SolidColorBrush x:Key="PlinthFocusBrush" Color="#6EA8FF" />
       <SolidColorBrush x:Key="PlinthSelectionForegroundBrush" Color="#0F1115" />
+      <SolidColorBrush x:Key="PlinthTextSelectionBrush" Color="#4D6EA8FF" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

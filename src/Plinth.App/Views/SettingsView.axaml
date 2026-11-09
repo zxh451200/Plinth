@@ -11,10 +11,10 @@
 
   <UserControl.Styles>
     <!-- 分区标题与说明统一一套排版:说明小一号、浅色,不再每处各写一份 -->
-    <Style Selector="TextBlock.section">
+    <Style Selector="SelectableTextBlock.section">
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
-    <Style Selector="TextBlock.hint">
+    <Style Selector="SelectableTextBlock.hint">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
       <Setter Property="TextWrapping" Value="Wrap" />
@@ -33,54 +33,54 @@
   <ScrollViewer>
   <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}" HorizontalAlignment="Left" MaxWidth="760" MinWidth="360"
               IsEnabled="{Binding !IsLeaving}">
-    <TextBlock Text="{loc:T settings.title}" FontSize="19" FontWeight="SemiBold" />
+    <SelectableTextBlock Text="{loc:T settings.title}" FontSize="19" FontWeight="SemiBold" />
     <Border Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Classes="section" Text="{loc:T settings.interface}" />
-        <TextBlock Text="{loc:T settings.density}" />
+        <SelectableTextBlock Classes="section" Text="{loc:T settings.interface}" />
+        <SelectableTextBlock Text="{loc:T settings.density}" />
         <controls:SearchSelect Items="{Binding Densities}" SelectedItem="{Binding SelectedDensity}" Searchable="False"
                                Label="{loc:T settings.density}" Width="280" HorizontalAlignment="Left" />
-        <TextBlock Classes="hint" Text="{loc:T settings.density.hint}" />
+        <SelectableTextBlock Classes="hint" Text="{loc:T settings.density.hint}" />
 
-        <TextBlock Text="{loc:T settings.theme}" Margin="0,4,0,0" />
+        <SelectableTextBlock Text="{loc:T settings.theme}" Margin="0,4,0,0" />
         <controls:SearchSelect Items="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" Searchable="False"
                                Label="{loc:T settings.theme}" Width="280" HorizontalAlignment="Left" />
-        <TextBlock Classes="hint" Text="{loc:T settings.theme.hint}" />
+        <SelectableTextBlock Classes="hint" Text="{loc:T settings.theme.hint}" />
 
-        <TextBlock Text="{loc:T settings.language}" Margin="0,4,0,0" />
+        <SelectableTextBlock Text="{loc:T settings.language}" Margin="0,4,0,0" />
         <controls:SearchSelect Items="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" Searchable="False"
                                Label="{loc:T settings.language}" Width="280" HorizontalAlignment="Left" />
-        <TextBlock Classes="hint" Text="{loc:T settings.language.hint}" />
+        <SelectableTextBlock Classes="hint" Text="{loc:T settings.language.hint}" />
       </StackPanel>
     </Border>
 
     <Border Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Classes="section" Text="{loc:T settings.regionTime}" />
-        <TextBlock Text="{loc:T settings.region}" />
+        <SelectableTextBlock Classes="section" Text="{loc:T settings.regionTime}" />
+        <SelectableTextBlock Text="{loc:T settings.region}" />
         <controls:SearchSelect Items="{Binding Regions}" SelectedItem="{Binding SelectedRegion}"
                                Label="{loc:T settings.region}" Width="280" HorizontalAlignment="Left" />
-        <TextBlock Text="{loc:T settings.timeZone}" Margin="0,4,0,0" />
+        <SelectableTextBlock Text="{loc:T settings.timeZone}" Margin="0,4,0,0" />
         <controls:SearchSelect Items="{Binding TimeZones}" SelectedItem="{Binding SelectedTimeZone}"
                                Label="{loc:T settings.timeZone}" Width="280" HorizontalAlignment="Left" />
-        <TextBlock Classes="hint" Text="{loc:T settings.format.hint}" />
+        <SelectableTextBlock Classes="hint" Text="{loc:T settings.format.hint}" />
       </StackPanel>
     </Border>
 
     <Border Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Classes="section" Text="{loc:T profile.title}" />
-        <TextBlock Text="{Binding Profile}" TextWrapping="Wrap" />
-        <TextBlock Text="{loc:T settings.logRetentionDays}" Margin="0,4,0,0" />
+        <SelectableTextBlock Classes="section" Text="{loc:T profile.title}" />
+        <SelectableTextBlock Text="{Binding Profile}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{loc:T settings.logRetentionDays}" Margin="0,4,0,0" />
         <NumericUpDown Minimum="1" Maximum="365" Value="{Binding LogRetentionDays}" Width="160"
                        HorizontalAlignment="Left" AutomationProperties.Name="{loc:T settings.logRetentionDays}" />
-        <TextBlock Text="{loc:T settings.logRetainedFiles}" />
+        <SelectableTextBlock Text="{loc:T settings.logRetainedFiles}" />
         <NumericUpDown Minimum="1" Maximum="100" Value="{Binding LogRetainedFileCount}" Width="160"
                        HorizontalAlignment="Left" AutomationProperties.Name="{loc:T settings.logRetainedFiles}" />
 
         <StackPanel IsVisible="{Binding AuthenticationEnabled}" Spacing="8" Margin="0,8,0,0">
-          <TextBlock Classes="section" Text="{loc:T auth.title}" />
-          <TextBlock Text="{Binding AuthenticationStatus}" TextWrapping="Wrap" />
+          <SelectableTextBlock Classes="section" Text="{loc:T auth.title}" />
+          <SelectableTextBlock Text="{Binding AuthenticationStatus}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="{loc:T auth.login}" Command="{Binding LoginCommand}" />
             <Button Content="{loc:T auth.refresh}" Command="{Binding RefreshSessionCommand}" />
@@ -92,36 +92,36 @@
 
     <Border Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Classes="section" Text="{loc:T remote.title}" />
+        <SelectableTextBlock Classes="section" Text="{loc:T remote.title}" />
         <CheckBox Content="{loc:T remote.enabled}" IsChecked="{Binding RemoteEnabled}" />
-        <TextBlock Text="{loc:T remote.baseUrl}" Margin="0,4,0,0" />
+        <SelectableTextBlock Text="{loc:T remote.baseUrl}" Margin="0,4,0,0" />
         <TextBox Text="{Binding RemoteBaseUrl}" MinWidth="360" MaxWidth="480" HorizontalAlignment="Left"
                  PlaceholderText="https://example.com" AutomationProperties.Name="{loc:T remote.baseUrl}" />
-        <TextBlock Text="{loc:T remote.healthPath}" />
+        <SelectableTextBlock Text="{loc:T remote.healthPath}" />
         <TextBox Text="{Binding RemoteHealthPath}" MinWidth="360" MaxWidth="480" HorizontalAlignment="Left"
                  AutomationProperties.Name="{loc:T remote.healthPath}" />
         <Button Content="{loc:T remote.check}" Command="{Binding CheckRemoteCommand}" HorizontalAlignment="Left" />
-        <TextBlock Text="{Binding RemoteStatus}" Classes="hint" />
+        <SelectableTextBlock Text="{Binding RemoteStatus}" Classes="hint" />
       </StackPanel>
     </Border>
 
     <Border Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Classes="section" Text="{loc:T settings.paths}" />
-        <TextBlock Text="{loc:T settings.dataPath}" />
-        <TextBlock Text="{Binding DataDirectory}" Classes="hint" MaxWidth="640" />
+        <SelectableTextBlock Classes="section" Text="{loc:T settings.paths}" />
+        <SelectableTextBlock Text="{loc:T settings.dataPath}" />
+        <SelectableTextBlock Text="{Binding DataDirectory}" Classes="hint" MaxWidth="640" />
         <Button Content="{loc:T settings.openDataPath}"
                 Command="{Binding OpenDataFolderCommand}"
                 HorizontalAlignment="Left" />
-        <TextBlock Text="{loc:T settings.logPath}" Margin="0,4,0,0" />
-        <TextBlock Text="{Binding LogDirectory}" Classes="hint" MaxWidth="640" />
+        <SelectableTextBlock Text="{loc:T settings.logPath}" Margin="0,4,0,0" />
+        <SelectableTextBlock Text="{Binding LogDirectory}" Classes="hint" MaxWidth="640" />
         <Button Content="{loc:T settings.openLogPath}"
                 Command="{Binding OpenLogFolderCommand}"
                 HorizontalAlignment="Left" />
       </StackPanel>
     </Border>
 
-    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
+    <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
   </StackPanel>
   </ScrollViewer>

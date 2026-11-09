@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="using:Plinth.App.Localization"
              x:Class="Plinth.App.Views.Controls.SearchSelect">
@@ -6,24 +6,92 @@
   <UserControl.Styles>
     <Style Selector="Button#FieldButton">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="Padding" Value="8,0" />
-      <Setter Property="MinHeight" Value="32" />
-      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,0,10,0" />
+      <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
       <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
       <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <!-- 悬停只提亮一档底色并保留描边:整块铺满灰底会让字段失去“输入框”的形 -->
+    <Style Selector="Button#FieldButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthRowHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
+    </Style>
+    <Style Selector="Button#FieldButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <!-- 展开态只换强调色描边 + 箭头,不整块染蓝:字段仍像输入框,状态靠边框表达 -->
+    <Style Selector="Button#FieldButton.open /template/ ContentPresenter#PART_ContentPresenter,
+                     Button#FieldButton.open:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button#FieldButton.open:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
+    </Style>
+    <Style Selector="Button#FieldButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
+    </Style>
+    <Style Selector="TextBlock.chevron">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons,Segoe MDL2 Assets" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="8,0,0,0" />
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <!-- 展开时箭头翻半圈并染成强调色,让“已打开”这件事可被看见 -->
+    <Style Selector="Button#FieldButton.open TextBlock.chevron">
+      <Setter Property="RenderTransform" Value="rotate(180deg)" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthAccentBrush}" />
     </Style>
     <Style Selector="TextBlock.placeholder">
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
     </Style>
+    <Style Selector="TextBlock.check">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons,Segoe MDL2 Assets" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="8,0,0,0" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ListBoxItem:selected TextBlock.check">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
     <!-- 选中底色通栏:行本身不缩进、不切角,文字缩进由内部的 Margin 负责 -->
     <Style Selector="ListBoxItem">
-      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="MinHeight" Value="32" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+    </Style>
+    <!-- 悬停/选中用应用令牌,别落回 Fluent 的 40% 黑底 -->
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthNavSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+    </Style>
+    <!-- 键盘焦点由选中行表达,不再额外套一圈焦点框 -->
+    <Style Selector="ListBox">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <!-- 滚动条收窄并去掉轨道底色,避免列表右侧挂一条灰槽 -->
     <Style Selector="ListBox ScrollBar">
@@ -37,23 +105,39 @@
     </Style>
   </UserControl.Styles>
 
-  <Button x:Name="FieldButton" Classes="field" Click="OnFieldClick">
-    <Button.Flyout>
-      <Flyout Placement="BottomEdgeAlignedLeft">
-        <Border x:Name="PopupCard" BorderThickness="0" CornerRadius="8"
-                Padding="0" MinWidth="220" BoxShadow="0 6 16 0 #33000000" ClipToBounds="True">
-          <StackPanel Spacing="8">
-            <!-- 弹层不留内边距:首行贴着上边,搜索框自己缩进 -->
-            <TextBox x:Name="SearchBox" PlaceholderText="{loc:T common.search}" Margin="8,8,8,0" />
-            <TextBlock x:Name="EmptyText" Text="{loc:T common.noMatch}" IsVisible="False"
-                       Foreground="{DynamicResource PlinthSubtleForegroundBrush}" Margin="12,8,12,0" />
-            <!-- 列表左右不留白:选中/悬停底色一路铺到弹层边,文字靠行内 Margin 缩进 -->
-            <ListBox x:Name="OptionsList" Background="Transparent" BorderThickness="0" MaxHeight="320"
-                     Padding="0" SelectionChanged="OnOptionSelected" />
-          </StackPanel>
-        </Border>
-      </Flyout>
-    </Button.Flyout>
-    <TextBlock x:Name="ValueText" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-  </Button>
+  <Grid>
+    <Button x:Name="FieldButton" Classes="field" Click="OnFieldClick">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock x:Name="ValueText" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                   Foreground="{DynamicResource PlinthForegroundBrush}" />
+        <TextBlock Grid.Column="1" Classes="chevron" Text="&#xE70D;"
+                   AutomationProperties.AccessibilityView="Raw" />
+      </Grid>
+    </Button>
+
+    <!-- 用窗口内浮层而不是原生弹窗:左缘和宽度跟着字段走,不会因窗口坐标/DPI 取整错位;
+         浮层里同时能直接命中应用主题令牌和投影。 -->
+    <Popup x:Name="OptionsPopup"
+           Placement="BottomEdgeAlignedLeft"
+           PlacementTarget="{Binding #FieldButton}"
+           VerticalOffset="4"
+           IsLightDismissEnabled="True"
+           ShouldUseOverlayLayer="True">
+      <Border x:Name="PopupCard"
+              Background="{DynamicResource PlinthPanelBrush}"
+              BorderBrush="{DynamicResource PlinthBorderStrongBrush}"
+              BorderThickness="1" CornerRadius="8" Padding="0" MinWidth="220"
+              BoxShadow="0 8 24 0 #26000000, 0 2 6 0 #14000000">
+        <StackPanel>
+          <!-- 弹层不留左右内边距:行底色贴住卡片边,搜索框自己缩进 -->
+          <TextBox x:Name="SearchBox" PlaceholderText="{loc:T common.search}" Margin="8,8,8,4" />
+          <TextBlock x:Name="EmptyText" Text="{loc:T common.noMatch}" IsVisible="False" FontSize="12"
+                     Foreground="{DynamicResource PlinthSubtleForegroundBrush}" Margin="12,4,12,10" />
+          <!-- 首末行上下各留 4px:选中底色不顶到卡片圆角,通栏只体现在左右 -->
+          <ListBox x:Name="OptionsList" Background="Transparent" BorderThickness="0" MaxHeight="320"
+                   Padding="0,4,0,4" />
+        </StackPanel>
+      </Border>
+    </Popup>
+  </Grid>
 </UserControl>

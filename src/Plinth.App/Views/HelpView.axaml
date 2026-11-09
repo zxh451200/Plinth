@@ -7,8 +7,8 @@
   <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,Auto,*"
         RowSpacing="{DynamicResource PlinthSectionSpacing}">
     <StackPanel Orientation="Horizontal" Spacing="12">
-      <TextBlock Text="{loc:T help.title}" FontSize="19" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding VersionText}" VerticalAlignment="Center" />
+      <SelectableTextBlock Text="{loc:T help.title}" FontSize="19" FontWeight="SemiBold" />
+      <SelectableTextBlock Text="{Binding VersionText}" VerticalAlignment="Center" />
     </StackPanel>
     <TextBox x:Name="HelpSearch" Grid.Row="1" Text="{Binding SearchText}"
              PlaceholderText="{loc:T help.search}" AutomationProperties.Name="{loc:T help.search}" />
@@ -22,7 +22,7 @@
         </ListBox.ItemTemplate>
       </ListBox>
       <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
-        <TextBlock Text="{loc:T help.noResults}" IsVisible="{Binding !HasTopics}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{loc:T help.noResults}" IsVisible="{Binding !HasTopics}" TextWrapping="Wrap" />
         <TextBox Grid.Row="1" Text="{Binding SelectedTopic.DisplayBody, Mode=OneWay}"
                  IsVisible="{Binding HasTopics}" IsReadOnly="True" AcceptsReturn="True"
                  TextWrapping="Wrap" AutomationProperties.Name="{loc:T help.content}"

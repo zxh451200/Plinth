@@ -9,12 +9,12 @@
              x:DataType="vm:OverviewViewModel">
 
   <UserControl.Styles>
-    <Style Selector="TextBlock.label">
+    <Style Selector="SelectableTextBlock.label">
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
       <Setter Property="Margin" Value="0,0,12,10" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style Selector="TextBlock.value">
+    <Style Selector="SelectableTextBlock.value">
       <Setter Property="Margin" Value="0,0,0,10" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="VerticalAlignment" Value="Center" />
@@ -23,8 +23,8 @@
 
   <ScrollViewer>
     <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}" HorizontalAlignment="Left">
-      <TextBlock Text="{loc:T overview.title}" FontSize="19" FontWeight="SemiBold" />
-      <TextBlock MaxWidth="760"
+      <SelectableTextBlock Text="{loc:T overview.title}" FontSize="19" FontWeight="SemiBold" />
+      <SelectableTextBlock MaxWidth="760"
                  TextWrapping="Wrap"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
                  Text="{loc:T overview.intro}" />
@@ -39,26 +39,26 @@
               BoxShadow="0 1 3 0 #1A000000">
         <Grid ColumnDefinitions="150,*"
               RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-          <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="{loc:T overview.version}" />
-          <TextBlock Grid.Row="0" Grid.Column="1" Classes="value" Text="{Binding Version}" />
+          <SelectableTextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="{loc:T overview.version}" />
+          <SelectableTextBlock Grid.Row="0" Grid.Column="1" Classes="value" Text="{Binding Version}" />
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Classes="label" Text="{loc:T overview.runtime}" />
-          <TextBlock Grid.Row="1" Grid.Column="1" Classes="value" Text="{Binding Framework}" />
+          <SelectableTextBlock Grid.Row="1" Grid.Column="0" Classes="label" Text="{loc:T overview.runtime}" />
+          <SelectableTextBlock Grid.Row="1" Grid.Column="1" Classes="value" Text="{Binding Framework}" />
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Classes="label" Text="{loc:T overview.os}" />
-          <TextBlock Grid.Row="2" Grid.Column="1" Classes="value" Text="{Binding OperatingSystem}" />
+          <SelectableTextBlock Grid.Row="2" Grid.Column="0" Classes="label" Text="{loc:T overview.os}" />
+          <SelectableTextBlock Grid.Row="2" Grid.Column="1" Classes="value" Text="{Binding OperatingSystem}" />
 
-          <TextBlock Grid.Row="3" Grid.Column="0" Classes="label" Text="{loc:T overview.arch}" />
-          <TextBlock Grid.Row="3" Grid.Column="1" Classes="value" Text="{Binding Architecture}" />
+          <SelectableTextBlock Grid.Row="3" Grid.Column="0" Classes="label" Text="{loc:T overview.arch}" />
+          <SelectableTextBlock Grid.Row="3" Grid.Column="1" Classes="value" Text="{Binding Architecture}" />
 
-          <TextBlock Grid.Row="4" Grid.Column="0" Classes="label" Text="{loc:T overview.dataDir}" />
-          <TextBlock Grid.Row="4" Grid.Column="1" Classes="value" Text="{Binding DataDirectory}" />
+          <SelectableTextBlock Grid.Row="4" Grid.Column="0" Classes="label" Text="{loc:T overview.dataDir}" />
+          <SelectableTextBlock Grid.Row="4" Grid.Column="1" Classes="value" Text="{Binding DataDirectory}" />
 
-          <TextBlock Grid.Row="5" Grid.Column="0" Classes="label" Text="{loc:T overview.logDir}" />
-          <TextBlock Grid.Row="5" Grid.Column="1" Classes="value" Text="{Binding LogDirectory}" />
+          <SelectableTextBlock Grid.Row="5" Grid.Column="0" Classes="label" Text="{loc:T overview.logDir}" />
+          <SelectableTextBlock Grid.Row="5" Grid.Column="1" Classes="value" Text="{Binding LogDirectory}" />
 
-          <TextBlock Grid.Row="6" Grid.Column="0" Classes="label" Text="{loc:T overview.logFiles}" />
-          <TextBlock Grid.Row="6" Grid.Column="1" Classes="value" Text="{Binding LogSummary}" />
+          <SelectableTextBlock Grid.Row="6" Grid.Column="0" Classes="label" Text="{loc:T overview.logFiles}" />
+          <SelectableTextBlock Grid.Row="6" Grid.Column="1" Classes="value" Text="{Binding LogSummary}" />
         </Grid>
       </Border>
 
@@ -67,7 +67,7 @@
         <Button Content="{loc:T overview.openLogs}" Command="{Binding OpenLogFolderCommand}" />
       </StackPanel>
 
-      <TextBlock Text="{Binding ActionHint}"
+      <SelectableTextBlock Text="{Binding ActionHint}"
                  IsVisible="{Binding ActionHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                  FontSize="12"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />

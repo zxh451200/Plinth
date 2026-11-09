@@ -6,8 +6,8 @@
              x:DataType="vm:AdvancedTableViewModel">
   <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="12">
     <StackPanel Spacing="4">
-      <TextBlock Text="{loc:T nav.advancedTable}" FontSize="19" FontWeight="SemiBold" />
-      <TextBlock Text="{loc:T advanced.notice}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{loc:T nav.advancedTable}" FontSize="19" FontWeight="SemiBold" />
+      <SelectableTextBlock Text="{loc:T advanced.notice}" TextWrapping="Wrap" />
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button x:Name="ImportButton" Content="{loc:T advanced.import}" Click="OnImportClick" IsEnabled="{Binding CanInteract}" />
         <Button x:Name="CancelImportButton" Content="{loc:T advanced.cancel}" Command="{Binding CancelImportCommand}" />
@@ -34,23 +34,23 @@
       </TableView.Columns>
     </TableView>
     <StackPanel Grid.Row="3" Spacing="4">
-      <TextBlock Text="{Binding ScopeText}" TextWrapping="Wrap" />
-      <TextBlock Text="{Binding TotalText}" />
-      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding ScopeText}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding TotalText}" />
+      <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
     </StackPanel>
     <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
       <Button Content="{loc:T advanced.previous}" Command="{Binding PreviousPageCommand}" />
-      <TextBlock VerticalAlignment="Center" Text="{Binding Page}" />
+      <SelectableTextBlock VerticalAlignment="Center" Text="{Binding Page}" />
       <Button Content="{loc:T advanced.next}" Command="{Binding NextPageCommand}" />
     </StackPanel>
     <Border Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Top" Width="280" Margin="0,8,16,0"
             Padding="12" Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="1" IsVisible="{Binding CanEditSelected}">
       <StackPanel Spacing="8">
-        <TextBlock Text="Edit selected detail" FontWeight="SemiBold" />
-        <TextBlock Text="Quantity" />
+        <SelectableTextBlock Text="Edit selected detail" FontWeight="SemiBold" />
+        <SelectableTextBlock Text="Quantity" />
         <NumericUpDown Value="{Binding EditQuantity}" Minimum="-100000" Maximum="100000" Increment="1" FormatString="0" />
-        <TextBlock Text="Amount" />
+        <SelectableTextBlock Text="Amount" />
         <NumericUpDown Value="{Binding EditAmount}" Minimum="-1000000000000" Maximum="1000000000000"
                        Increment="0.01" FormatString="0.00" />
         <StackPanel Orientation="Horizontal" Spacing="8">

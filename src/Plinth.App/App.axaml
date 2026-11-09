@@ -47,6 +47,7 @@
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthControlPadding}" />
             <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource PlinthTextSelectionBrush}" />
         </Style>
         <Style Selector="ComboBox">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
@@ -56,6 +57,32 @@
         <Style Selector="NumericUpDown">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
             <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
+        </Style>
+        <!-- 数字框：焦点只由最外层画一圈；内层 TextBox 再画小圆角蓝框会像套了个内胆 -->
+        <Style Selector="NumericUpDown:focus-within">
+            <Setter Property="BorderBrush" Value="{DynamicResource PlinthFocusBrush}" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox">
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <!-- 内层文本框带 -1 边距,焦点/悬停态的不透明底色会盖住整块的外圈焦点线,这里保持透明 -->
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <!-- 微调按钮悬停/按下用应用浅灰(Fluent 的 10% 黑在卡片白底上偏脏)；
+             最右按钮的外沿跟随输入框圆角，底色不再顶出圆角。 -->
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton#PART_DecreaseButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="0,6,6,0" />
         </Style>
         <Style Selector="CheckBox">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
@@ -74,6 +101,13 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <!-- 菜单分割线:主题给 40% 黑底 + 左右各 12px 外边距,像一条粗灰带还两头断开;
+             改成 1px 边框色通栏,只保留上下 4px 呼吸。 -->
+        <Style Selector="Separator">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
+            <Setter Property="Margin" Value="0,4" />
         </Style>
         <!-- 字段按钮(下拉/日期)的按下与悬停统一用应用浅灰:Fluent 的 40% 黑底在白底上呈 #999,发脏 -->
         <Style Selector="Button.field:pointerover /template/ ContentPresenter#PART_ContentPresenter">

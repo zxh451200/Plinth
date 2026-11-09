@@ -4,8 +4,8 @@
              xmlns:loc="using:Plinth.App.Localization"
              x:Class="Plinth.App.Modules.Notes.Views.NoteView" x:DataType="vm:NoteViewModel">
   <Grid Margin="{DynamicResource PlinthPageMargin}" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="{DynamicResource PlinthSectionSpacing}">
-    <TextBlock Text="{loc:T notes.title}" FontSize="19" FontWeight="SemiBold" />
-    <TextBlock Grid.Row="1" Text="{loc:T notes.hint}" TextWrapping="Wrap" />
+    <SelectableTextBlock Text="{loc:T notes.title}" FontSize="19" FontWeight="SemiBold" />
+    <SelectableTextBlock Grid.Row="1" Text="{loc:T notes.hint}" TextWrapping="Wrap" />
     <TextBox Grid.Row="2" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap"
              MaxLength="2000" IsEnabled="{Binding IsLoaded}" IsReadOnly="{Binding IsBusy}"
              AutomationProperties.Name="{loc:T notes.title}" />
@@ -13,6 +13,6 @@
       <Button Content="{loc:T menu.file.save}" Command="{Binding SaveCommand}" />
       <Button Content="{loc:T notes.reload}" Command="{Binding ReloadCommand}" />
     </StackPanel>
-    <TextBlock Grid.Row="4" Text="{Binding StatusText}" TextWrapping="Wrap" />
+    <SelectableTextBlock Grid.Row="4" Text="{Binding StatusText}" TextWrapping="Wrap" />
   </Grid>
 </UserControl>

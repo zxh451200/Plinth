@@ -26,37 +26,37 @@
       <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}"
              Width="64" Height="64" Stretch="Uniform" HorizontalAlignment="Center"
              AutomationProperties.Name="{Binding ProductName}" />
-      <TextBlock Text="{Binding ProductName}" FontSize="24" FontWeight="SemiBold"
+      <SelectableTextBlock Text="{Binding ProductName}" FontSize="24" FontWeight="SemiBold"
                  HorizontalAlignment="Center" Foreground="{DynamicResource PlinthAccentBrush}" />
-      <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold"
+      <SelectableTextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold"
                  HorizontalAlignment="Center" Margin="0,4,0,0" />
-      <TextBlock Text="{Binding Subtitle}" TextWrapping="Wrap" TextAlignment="Center"
+      <SelectableTextBlock Text="{Binding Subtitle}" TextWrapping="Wrap" TextAlignment="Center"
                  MaxWidth="320" HorizontalAlignment="Center"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}" Margin="0,0,0,8" />
 
-      <TextBlock Text="{loc:T login.username}" />
+      <SelectableTextBlock Text="{loc:T login.username}" />
       <TextBox x:Name="UsernameBox"
                Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
                AutomationProperties.Name="{loc:T login.username}" />
 
-      <TextBlock Text="{loc:T login.password}" Margin="0,4,0,0" />
+      <SelectableTextBlock Text="{loc:T login.password}" Margin="0,4,0,0" />
       <TextBox x:Name="PasswordBox"
                Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
                PasswordChar="●"
                AutomationProperties.Name="{loc:T login.password}" />
 
       <StackPanel x:Name="ConfirmPanel" IsVisible="{Binding IsSetup}" Spacing="8" Margin="0,4,0,0">
-        <TextBlock Text="{loc:T login.confirm}" />
+        <SelectableTextBlock Text="{loc:T login.confirm}" />
         <TextBox x:Name="ConfirmBox"
                  Text="{Binding ConfirmPassword, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="●"
                  AutomationProperties.Name="{loc:T login.confirm}" />
       </StackPanel>
 
-      <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}"
+      <SelectableTextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}"
                  TextWrapping="Wrap" FontSize="12"
                  Foreground="{DynamicResource PlinthErrorBrush}" Margin="0,4,0,0" />
-      <TextBlock Text="{loc:T login.busy}" IsVisible="{Binding IsBusy}"
+      <SelectableTextBlock Text="{loc:T login.busy}" IsVisible="{Binding IsBusy}"
                  FontSize="12" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
 
       <Button Content="{Binding SubmitText}" Command="{Binding SubmitCommand}"

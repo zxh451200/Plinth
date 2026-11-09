@@ -88,26 +88,40 @@
       <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
       <Setter Property="Padding" Value="12,0" />
     </Style>
-    <!-- 标签关闭:Fluent 的 Button 自带 MinHeight=32,会把 ✕ 撑成 17x32 的竖条;
-         这里定成 18x18 的方块,悬停底色用应用浅灰而不是主题默认的深灰。 -->
+    <!-- 标签关闭:Fluent 的 Button 自带 MinHeight=32,会把图标撑成竖条;
+         这里定成 20×20 圆形图标键,✕ 用 Segoe Fluent Icons(E711),悬停浅灰底、按下加深,非当前标签收一点存在感。 -->
     <Style Selector="Button.tabClose">
-      <Setter Property="Width" Value="18" />
-      <Setter Property="Height" Value="18" />
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="MinWidth" Value="0" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="FontSize" Value="10" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+    <!-- 非当前标签的关闭键先弱化,悬停整条标签或选中后再完全亮起 -->
+    <Style Selector="TabItem Button.tabClose">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+    <Style Selector="TabItem:pointerover Button.tabClose, TabItem:selected Button.tabClose">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.tabClose:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+    </Style>
     <Style Selector="Button.tabClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+      <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
     </Style>
     <Style Selector="Button.tabClose:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
+      <Setter Property="Background" Value="{DynamicResource PlinthBorderStrongBrush}" />
+    </Style>
+    <Style Selector="Button.tabClose:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <!-- 导航行密度:图标轨道与展开态统一 36,避免行高随内容跳动 -->
     <Style Selector="ListBox#NavigationList ListBoxItem" x:DataType="nav:NavigationItem">
@@ -208,7 +222,7 @@
     <Style Selector="Button.statusItem.warning">
       <Setter Property="Foreground" Value="{DynamicResource PlinthWarningBrush}" />
     </Style>
-    <Style Selector="TextBlock.statusMeta">
+    <Style Selector="SelectableTextBlock.statusMeta">
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -330,7 +344,7 @@
             Background="{DynamicResource PlinthPanelBrush}"
             BorderBrush="{DynamicResource PlinthAccentBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock x:Name="ModuleFailureText" Text="{Binding ModuleFailureText}"
+        <SelectableTextBlock x:Name="ModuleFailureText" Text="{Binding ModuleFailureText}"
                    TextWrapping="Wrap" VerticalAlignment="Center" />
         <Button x:Name="ModuleFailureLogsButton" Grid.Column="1" Margin="8,0,0,0"
                 Content="{loc:T logs.viewRelated}" Command="{Binding ShowModuleFailureLogsCommand}" />
@@ -342,7 +356,7 @@
             Background="{DynamicResource PlinthPanelBrush}"
             BorderBrush="{DynamicResource PlinthAccentBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto,Auto">
-        <TextBlock Text="{Binding TaskNotificationText}" VerticalAlignment="Center"
+        <SelectableTextBlock Text="{Binding TaskNotificationText}" VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TaskNotificationText}" />
         <Button Grid.Column="1" Content="{loc:T tasks.notification.view}"
                 Command="{Binding ViewCompletedTaskCommand}" Margin="8,0" />
@@ -358,7 +372,7 @@
             BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding StatusMessage}"
+        <SelectableTextBlock Text="{Binding StatusMessage}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
                    Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
@@ -371,13 +385,13 @@
           <Button x:Name="TaskStatusButton" Classes="statusItem" Content="{Binding ShellStatus.TaskText}"
                   Command="{Binding ShowTaskPanelCommand}" ToolTip.Tip="{loc:T tasks.title}"
                   AutomationProperties.Name="{Binding ShellStatus.TaskText}" MinHeight="0" />
-          <TextBlock Classes="statusMeta" Text="{Binding ShellStatus.UserText}" ToolTip.Tip="{Binding ShellStatus.UserText}"
+          <SelectableTextBlock Classes="statusMeta" Text="{Binding ShellStatus.UserText}" ToolTip.Tip="{Binding ShellStatus.UserText}"
                      MaxWidth="200" TextTrimming="CharacterEllipsis" />
-          <TextBlock Classes="statusMeta" Text="{Binding ShellStatus.EnvironmentText}" />
-          <TextBlock Text="{Binding TabCountText}"
+          <SelectableTextBlock Classes="statusMeta" Text="{Binding ShellStatus.EnvironmentText}" />
+          <SelectableTextBlock Text="{Binding TabCountText}"
                      VerticalAlignment="Center"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBlock Text="{Binding VersionText}"
+          <SelectableTextBlock Text="{Binding VersionText}"
                      VerticalAlignment="Center"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
         </StackPanel>
@@ -419,7 +433,7 @@
                          Fill="{DynamicResource PlinthForegroundBrush}" />
             </Canvas>
           </Button>
-          <TextBlock x:Name="NavigationTitle"
+          <SelectableTextBlock x:Name="NavigationTitle"
                      Grid.Row="1"
                      Text="{loc:T shell.nav.title}"
                      IsVisible="{Binding IsSidebarCompact, Converter={x:Static conv:BoolConverters.Not}}"
@@ -472,10 +486,10 @@
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Spacing="6">
-          <TextBlock Text="{loc:T shell.empty.hint}"
+          <SelectableTextBlock Text="{loc:T shell.empty.hint}"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-          <TextBlock Text="{loc:T shell.empty.keys}"
+          <SelectableTextBlock Text="{loc:T shell.empty.keys}"
                      HorizontalAlignment="Center"
                      FontSize="11"
                      Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
@@ -502,12 +516,17 @@
                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
                            MaxWidth="220" TextTrimming="CharacterEllipsis"
                            ToolTip.Tip="{Binding Title}" />
-                <Button Content="✕" Classes="tabClose"
+                <Button Classes="tabClose"
                         AutomationProperties.Name="{Binding Title}"
+                        AutomationProperties.HelpText="{loc:T shell.tab.close}"
                         VerticalAlignment="Center"
                         ToolTip.Tip="{loc:T shell.tab.close}"
                         Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloseTabItemCommand}"
-                        CommandParameter="{Binding}" />
+                        CommandParameter="{Binding}">
+                  <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons,Segoe MDL2 Assets"
+                             FontSize="10" VerticalAlignment="Center"
+                             AutomationProperties.AccessibilityView="Raw" />
+                </Button>
               </StackPanel>
             </DataTemplate>
           </TabControl.ItemTemplate>
@@ -534,15 +553,15 @@
             <TabItem Header="{loc:T shell.details}">
               <ScrollViewer>
                 <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="12">
-                  <TextBlock Text="{Binding PageDetailsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                  <TextBlock Text="{loc:T shell.details.empty}" IsVisible="{Binding !HasPageDetails}"
+                  <SelectableTextBlock Text="{Binding PageDetailsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <SelectableTextBlock Text="{loc:T shell.details.empty}" IsVisible="{Binding !HasPageDetails}"
                              TextWrapping="Wrap" />
                   <ItemsControl ItemsSource="{Binding PageDetails}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="nav:PageDetail">
                         <StackPanel Spacing="4" Margin="0,0,0,12">
-                          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-                          <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                          <SelectableTextBlock Text="{Binding Label}" Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+                          <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" />
                         </StackPanel>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -552,7 +571,7 @@
             </TabItem>
             <TabItem Header="{loc:T tasks.title}">
               <DockPanel Margin="12">
-                <TextBlock DockPanel.Dock="Top" Text="{loc:T shell.tasks.empty}"
+                <SelectableTextBlock DockPanel.Dock="Top" Text="{loc:T shell.tasks.empty}"
                            IsVisible="{Binding !HasPanelTasks}" TextWrapping="Wrap" />
                 <Button DockPanel.Dock="Bottom" Content="{loc:T nav.taskDiagnostics}"
                         Command="{Binding ShowTaskDiagnosticsCommand}" Margin="0,8,0,0" />
@@ -561,9 +580,9 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="services:WorkItem">
                         <StackPanel Spacing="6" Margin="0,0,0,16">
-                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                          <TextBlock Text="{Binding StatusText}" />
-                          <TextBlock Text="{Binding ProgressText}" />
+                          <SelectableTextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <SelectableTextBlock Text="{Binding StatusText}" />
+                          <SelectableTextBlock Text="{Binding ProgressText}" />
                           <StackPanel Spacing="6">
                             <Button Content="{loc:T tasks.cancel}" IsEnabled="{Binding CanCancel}"
                                     Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CancelPanelTaskCommand}"

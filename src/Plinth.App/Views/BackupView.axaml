@@ -10,15 +10,15 @@
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
   <StackPanel Margin="{DynamicResource PlinthPageMargin}" Spacing="{DynamicResource PlinthSectionSpacing}" HorizontalAlignment="Left" MaxWidth="640">
-    <TextBlock Text="{loc:T backup.title}" FontSize="19" FontWeight="SemiBold" />
+    <SelectableTextBlock Text="{loc:T backup.title}" FontSize="19" FontWeight="SemiBold" />
     <Border Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
             BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
             BoxShadow="0 1 3 0 #1A000000">
       <StackPanel Spacing="{DynamicResource PlinthSectionSpacing}">
-        <TextBlock Text="{loc:T backup.intro}"
+        <SelectableTextBlock Text="{loc:T backup.intro}"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-        <TextBlock Text="{Binding ServerBackupNotice}" IsVisible="{Binding IsServerDatabase}"
+        <SelectableTextBlock Text="{Binding ServerBackupNotice}" IsVisible="{Binding IsServerDatabase}"
                    TextWrapping="Wrap" Foreground="{DynamicResource PlinthErrorBrush}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -29,20 +29,20 @@
     </Border>
 
     <StackPanel IsVisible="{Binding HasBackupPreview}" Spacing="8">
-      <TextBlock Text="{Binding CreatePreview}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding CreatePreview}" TextWrapping="Wrap" />
       <Button Content="{loc:T backup.confirmCreate}" Command="{Binding ConfirmBackupCommand}"
               IsEnabled="{Binding CanChooseFile}" />
-      <TextBlock Text="{loc:T backup.exit.snapshotNote}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{loc:T backup.exit.snapshotNote}" TextWrapping="Wrap" />
       <Button Content="{loc:T backup.exit.confirm}" Click="OnBackupAndExitClick"
               IsEnabled="{Binding CanChooseFile}" />
     </StackPanel>
     <StackPanel IsVisible="{Binding HasRestorePreview}" Spacing="8">
-      <TextBlock Text="{Binding RestorePreview}" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding RestorePreview}" TextWrapping="Wrap" />
       <CheckBox Content="{loc:T backup.confirm}" IsChecked="{Binding RestoreConfirmed}" />
       <Button Content="{loc:T backup.confirmRestore}" Command="{Binding ConfirmRestoreCommand}"
               IsEnabled="{Binding CanConfirmRestore}" />
     </StackPanel>
-    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+    <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
   </StackPanel>
   </ScrollViewer>
 </UserControl>

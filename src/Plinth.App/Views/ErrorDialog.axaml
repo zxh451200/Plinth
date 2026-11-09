@@ -11,10 +11,10 @@
         Background="{DynamicResource PlinthBackgroundBrush}">
 
   <StackPanel Margin="20" Spacing="12">
-    <TextBlock Text="{loc:T error.body}" TextWrapping="Wrap" />
-    <TextBlock x:Name="DetailText" TextWrapping="Wrap" FontSize="11"
+    <SelectableTextBlock Text="{loc:T error.body}" TextWrapping="Wrap" />
+    <SelectableTextBlock x:Name="DetailText" TextWrapping="Wrap" FontSize="11"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
-    <TextBlock x:Name="LogPathText" TextWrapping="Wrap" FontSize="11"
+    <SelectableTextBlock x:Name="LogPathText" TextWrapping="Wrap" FontSize="11"
                Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
     <WrapPanel HorizontalAlignment="Right">
       <Button x:Name="RelatedLogsButton" IsEnabled="False" Content="{loc:T logs.viewRelated}" Click="OnLogsClick" Margin="0,0,8,0" />

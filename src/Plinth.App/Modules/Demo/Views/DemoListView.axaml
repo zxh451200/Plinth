@@ -25,7 +25,7 @@
   <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource PlinthPageMargin}">
 
     <DockPanel Grid.Column="0" LastChildFill="True">
-      <TextBlock DockPanel.Dock="Top" Text="{loc:T nav.demo}" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,12" />
+      <SelectableTextBlock DockPanel.Dock="Top" Text="{loc:T nav.demo}" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,12" />
 
       <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
         <Button Content="{loc:T demo.new}" Command="{Binding NewCommand}" Margin="0,0,8,4" />
@@ -37,7 +37,7 @@
                 IsVisible="{Binding CanInlineEdit}" Margin="0,0,8,4" />
         <Button Content="{loc:T demo.cancel}" Command="{Binding CancelCommand}"
                 IsVisible="{Binding CanInlineEdit}" Margin="0,0,8,4" />
-        <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding CanInlineEdit}"
+        <SelectableTextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding CanInlineEdit}"
                    Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                    VerticalAlignment="Center" Margin="0,0,8,4" />
         <TextBox x:Name="SearchBox" Width="240"
@@ -50,12 +50,12 @@
       <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
         <WrapPanel>
           <WrapPanel.Styles>
-            <Style Selector="TextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+            <Style Selector="SelectableTextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
             <Style Selector="ComboBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
             <Style Selector="CheckBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
             <Style Selector="Button"><Setter Property="Margin" Value="0,0,8,4" /></Style>
           </WrapPanel.Styles>
-          <TextBlock Text="{loc:T demo.list.sort}" VerticalAlignment="Center" />
+          <SelectableTextBlock Text="{loc:T demo.list.sort}" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding SortLabels}" SelectedIndex="{Binding SortIndex}" Width="150"
                     AutomationProperties.Name="{loc:T demo.list.sort}" />
           <CheckBox Content="{loc:T demo.list.descending}" IsChecked="{Binding Descending}" />
@@ -66,10 +66,10 @@
         <WrapPanel>
           <Button x:Name="ToggleBatchButton" Content="{loc:T demo.batch.toggle}"
                   Command="{Binding ToggleBatchSelectionCommand}" IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
-          <TextBlock Text="{loc:T demo.batch.active}" IsVisible="{Binding IsBatchSelecting}" VerticalAlignment="Center" />
+          <SelectableTextBlock Text="{loc:T demo.batch.active}" IsVisible="{Binding IsBatchSelecting}" VerticalAlignment="Center" />
         </WrapPanel>
         <WrapPanel IsVisible="{Binding IsBatchSelecting}">
-          <TextBlock Text="{Binding BatchSelectionText}" VerticalAlignment="Center" Margin="0,0,8,4" />
+          <SelectableTextBlock Text="{Binding BatchSelectionText}" VerticalAlignment="Center" Margin="0,0,8,4" />
           <Button x:Name="SelectPageButton" Content="{loc:T demo.batch.selectPage}" Click="OnSelectPageClick"
                   IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
           <Button x:Name="ClearBatchButton" Content="{loc:T demo.batch.clear}" Click="OnClearBatchClick"
@@ -85,22 +85,22 @@
       <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
         <WrapPanel.Styles>
           <Style Selector="Button"><Setter Property="Margin" Value="0,0,8,4" /></Style>
-          <Style Selector="TextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
+          <Style Selector="SelectableTextBlock"><Setter Property="Margin" Value="0,0,8,4" /></Style>
           <Style Selector="ComboBox"><Setter Property="Margin" Value="0,0,8,4" /></Style>
         </WrapPanel.Styles>
         <Button Content="{loc:T demo.list.previous}" Command="{Binding PreviousPageCommand}" />
-        <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
+        <SelectableTextBlock Text="{Binding PageText}" VerticalAlignment="Center" />
         <Button Content="{loc:T demo.list.next}" Command="{Binding NextPageCommand}" />
-        <TextBlock Text="{loc:T demo.list.pageSize}" VerticalAlignment="Center" />
+        <SelectableTextBlock Text="{loc:T demo.list.pageSize}" VerticalAlignment="Center" />
         <ComboBox ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" Width="90"
                   AutomationProperties.Name="{loc:T demo.list.pageSize}" />
       </WrapPanel>
-      <TextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.preferencesFailed}"
+      <SelectableTextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.preferencesFailed}"
                  IsVisible="{Binding PreferencesSaveFailed}" TextWrapping="Wrap"
                  Foreground="{DynamicResource PlinthErrorBrush}" />
-      <TextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.empty}" IsVisible="{Binding IsEmpty}" />
+      <SelectableTextBlock DockPanel.Dock="Bottom" Text="{loc:T demo.list.empty}" IsVisible="{Binding IsEmpty}" />
 
-      <TextBlock DockPanel.Dock="Bottom"
+      <SelectableTextBlock DockPanel.Dock="Bottom"
                  Margin="0,12,0,0"
                  Text="{Binding StatusText}"
                  Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
@@ -334,65 +334,65 @@
             IsVisible="{Binding IsEditing}">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="10" IsEnabled="{Binding !IsSaving}">
-        <TextBlock Text="{loc:T demo.form.title}" FontWeight="SemiBold" />
-        <TextBlock Text="{loc:T demo.form.unsaved}" IsVisible="{Binding IsDirty}" />
+        <SelectableTextBlock Text="{loc:T demo.form.title}" FontWeight="SemiBold" />
+        <SelectableTextBlock Text="{loc:T demo.form.unsaved}" IsVisible="{Binding IsDirty}" />
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.code}" />
+          <SelectableTextBlock Text="{loc:T demo.col.code}" />
           <TextBox x:Name="EditCodeBox" Text="{Binding EditCode}" MaxLength="50" AutomationProperties.Name="{loc:T demo.col.code}" />
-          <TextBlock Text="{Binding CodeError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding CodeError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding CodeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.name}" />
+          <SelectableTextBlock Text="{loc:T demo.col.name}" />
           <TextBox Text="{Binding EditName}" MaxLength="200" AutomationProperties.Name="{loc:T demo.col.name}" />
-          <TextBlock Text="{Binding NameError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding NameError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.remark}" />
+          <SelectableTextBlock Text="{loc:T demo.col.remark}" />
           <TextBox Text="{Binding EditRemark}"
                    MaxLength="500"
                    AcceptsReturn="True"
                    Height="90"
                    TextWrapping="Wrap"
                    AutomationProperties.Name="{loc:T demo.col.remark}" />
-          <TextBlock Text="{Binding RemarkError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding RemarkError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding RemarkError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.quantity}" />
+          <SelectableTextBlock Text="{loc:T demo.col.quantity}" />
           <NumericUpDown x:Name="EditQuantityBox" Value="{Binding EditQuantity, Mode=TwoWay}"
                          Minimum="{Binding QuantityMinimum}" Maximum="{Binding QuantityMaximum}"
                          Increment="1" FormatString="0"
                          AutomationProperties.Name="{loc:T demo.col.quantity}" />
-          <TextBlock Text="{Binding QuantityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding QuantityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding QuantityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.dueDate}" />
+          <SelectableTextBlock Text="{loc:T demo.col.dueDate}" />
           <controls:DateField SelectedDate="{Binding EditDueDate, Mode=TwoWay}"
                               Placeholder="{loc:T demo.col.dueDate}"
                               AutomationProperties.Name="{loc:T demo.col.dueDate}" />
-          <TextBlock Text="{Binding DueDateError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding DueDateError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding DueDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="4">
-          <TextBlock Text="{loc:T demo.col.priority}" />
+          <SelectableTextBlock Text="{loc:T demo.col.priority}" />
           <ComboBox ItemsSource="{Binding PriorityLabels}" SelectedIndex="{Binding SelectedPriorityIndex, Mode=TwoWay}"
                     AutomationProperties.Name="{loc:T demo.col.priority}" />
-          <TextBlock Text="{Binding PriorityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
+          <SelectableTextBlock Text="{Binding PriorityError}" Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                      IsVisible="{Binding PriorityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <CheckBox Content="{loc:T demo.col.active}" IsChecked="{Binding EditActive, Mode=TwoWay}" />
 
-        <TextBlock Text="{Binding ErrorMessage}"
+        <SelectableTextBlock Text="{Binding ErrorMessage}"
                    Foreground="{DynamicResource PlinthErrorBrush}"
                    TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -406,7 +406,7 @@
         <!-- 删除前再确认一次 -->
         <Border IsVisible="{Binding IsConfirmingDelete}" Padding="0,4,0,0">
           <StackPanel Spacing="8">
-            <TextBlock Text="{loc:T demo.delete.confirm}" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{loc:T demo.delete.confirm}" TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Content="{loc:T demo.delete}" Command="{Binding ConfirmDeleteCommand}" />
               <Button Content="{loc:T demo.delete.keep}" Command="{Binding CancelDeleteCommand}" />
