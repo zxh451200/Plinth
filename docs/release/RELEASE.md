@@ -17,7 +17,7 @@
 - 系统 Toast：固定状态文案进入 Windows 通知历史（`Setting=Enabled`），冷启动与已有实例均通过 `plinth://tasks` 进入任务中心，证据见 [通知接入记录](../WINDOWS_NOTIFICATIONS.md)。
 - 便携包：ZIP 解压后 316 文件、无测试程序集，`--version`、GUI、两个数据目录并行启动通过；PATH 仅保留 System32 时版本与 GUI 仍可启动（近似无 SDK 环境，机器仍装有 SDK）。
 - 卸装边界：未知文件与未知目录在卸载后保留、重装后仍在，数据库 hash 不变；两个安装器并发退出 0/5 且最终安装可用；目录 junction 拒绝 4 且目标零写入。环境、NuGet 审计与 SQLite smoke 已归档。
-- 未执行：安装器/升级在干净用户账户与磁盘满下的完整矩阵（应用首启与 CLI 备份已于 2026-11-08 实测，见 [实现记录](../IMPLEMENTATION_STATUS.md)）、代码签名（本机无代码签名证书，产物 `NotSigned`）、真实 OS DPI 设置切换／IME／Narrator 朗读、真实 API／IdP、通知横幅物理点击。
+- 未执行：安装器/升级在磁盘满下的完整矩阵与旧版升级/恢复（应用首启、CLI 备份与安装器干净账户安装/卸载冒烟已实测，见 [实现记录](../IMPLEMENTATION_STATUS.md)）、代码签名（本机无代码签名证书，产物 `NotSigned`）、真实 OS DPI 设置切换／IME／Narrator 朗读、真实 API／IdP、通知横幅物理点击。
 
 ## 提交级门禁
 
@@ -172,4 +172,4 @@ python scripts/release_checks.py package artifacts/Plinth-0.1.0-win-x64.zip
 
 许可策略：`Avalonia.Angle.Windows.Natives 2.1.27548.20260419` 的包内 `LICENSE` 为标准 BSD-3-Clause，已加入版本锁定的显式文件许可白名单；`third_party.py --publish-directory` 只统计发布 `deps.json` 中实际分发的 84 个包，Debug-only 的 `AvaloniaUI.DiagnosticsSupport` 不再进入清单。
 
-未执行：代码签名、安装器在干净账户下的目录链接/磁盘满/失败回滚/旧版本升级/重装恢复全矩阵（应用首启与 CLI 备份已实测）、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX Office 抽查、系统 Toast。
+未执行：代码签名、安装器在磁盘满下的目录链接/失败回滚/旧版本升级/重装恢复全矩阵（安装器干净账户安装/卸载冒烟已实测）、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX Office 抽查、系统 Toast。
