@@ -64,6 +64,9 @@ class ReleaseToolTests(unittest.TestCase):
             report = synthetic_report()
             report[field] = value
             invalid.append(json.dumps(report).encode())
+        report = synthetic_report()
+        report["reconciled_publish_packages"] = [{"package": "runtimepack.Fixture/1.0.0"}]
+        invalid.append(json.dumps(report).encode())
         for path in ("/home/private/asset.json", "C:/Users/private/asset.json", "../asset.json"):
             report = synthetic_report()
             report["inputs"]["assets"][0]["path"] = path

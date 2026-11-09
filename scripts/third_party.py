@@ -100,11 +100,96 @@ def publish_inventory(packages, publish_directory):
              if f"{key[0]}/{key[1]}".casefold() in shipped}, gaps)
 
 
-def reconcile_runtime_gaps(gaps, supplemental_components):
-    """Link runtime-pack gaps to exact explicit evidence; never infer approval.
+def runtimepack_evidence(location, component, package_id, version):
+    """Match supplied texts to the pack's nuspec declaration and bundled files."""
+    nuspecs = list(location.glob("*.nuspec"))
+    if len(nuspecs) != 1:
+        return None, "Expected one runtime pack nuspec"
+    metadata = ET.parse(nuspecs[0]).getroot()
+    metadata_nodes = [node for node in metadata
+                      if node.tag.rsplit("}", 1)[-1] == "metadata"]
+    if len(metadata_nodes) != 1:
+        return None, "Expected one runtime pack nuspec metadata element"
+    fields = {}
+    for node in metadata_nodes[0]:
+        field = node.tag.rsplit("}", 1)[-1]
+        if field in fields:
+            return None, f"Duplicate runtime pack nuspec field: {field}"
+        fields[field] = node
+    declared_name, declared_version = fields.get("id"), fields.get("version")
+    if (declared_name is None or declared_version is None
+            or not (declared_name.text or "").strip()
+            or not (declared_version.text or "").strip()
+            or declared_name.text.casefold() != package_id.casefold()
+            or declared_version.text.casefold() != version.casefold()):
+        return None, "Runtime pack nuspec identity does not match the published identity"
+    license_node = fields.get("license")
+    if (license_node is None or license_node.attrib.get("type") != "expression"
+            or not (license_node.text or "").strip()):
+        return None, "Runtime pack nuspec has no license expression"
+    declaration = license_node.text.strip()
+    supplied = component["licenses"][0]["license"]["name"]
+    if declaration.casefold() != supplied.casefold():
+        return None, (f"Runtime pack nuspec license {declaration!r} does not match "
+                      f"supplied declaration {supplied!r}")
+    supplied_hashes = set()
+    for prop in component["properties"]:
+        if prop["name"] == "plinth:supplemental-evidence":
+            evidence = json.loads(prop["value"])
+            supplied_hashes.add((evidence["sha256"], evidence["kind"]))
+    bundled = []
+    for file in sorted(location.iterdir()):
+        if not file.is_file():
+            continue
+        if re.match(r"^(license|licence)([._-]|$)", file.name, re.I):
+            kind = "LICENSE"
+        elif re.match(r"^(notice)([._-]|$)|^third[- ]party[- ]notices", file.name, re.I):
+            kind = "NOTICE"
+        else:
+            continue
+        digest = hashlib.sha256(file.read_bytes()).hexdigest()
+        if (digest, kind) not in supplied_hashes:
+            return None, (f"Bundled runtime pack {kind} {file.name} is not the supplied "
+                          "evidence (hash or kind mismatch)")
+        bundled.append({"kind": kind, "path": file.name, "sha256": digest})
+    if not any(item["kind"] == "LICENSE" for item in bundled):
+        return None, "Runtime pack has no bundled LICENSE file"
+    if not any(item["kind"] == "NOTICE" for item in bundled):
+        return None, "Runtime pack has no bundled NOTICE file"
+    return {"declaration": declaration, "texts": bundled}, None
 
-    Only an identity/version match with category runtime plus LICENSE and NOTICE
-    texts reconciles a gap. Anything else remains uncovered.
+
+def published_contents(gap, publish_directory):
+    """Hash every runtime/native file the runtime pack contributes to publish."""
+    try:
+        data = json.loads((Path(publish_directory) / gap["deps"]).read_text(encoding="utf-8-sig"))
+        target = {key.casefold(): value for key, value in
+                  data["targets"][gap["target"]].items()}
+        entry = target[gap["package"].casefold()]
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        return None, f"Could not read runtime pack deps entry: {error}"
+    names = sorted(set(entry.get("runtime", {})) | set(entry.get("native", {})))
+    if not names:
+        return None, "Runtime pack deps entry lists no runtime/native files"
+    contents = []
+    for name in names:
+        try:
+            file = inside(Path(publish_directory), name)
+        except ValueError:
+            return None, f"Published runtime pack file escapes publish directory: {name}"
+        if not file.is_file() or file.stat().st_size == 0:
+            return None, f"Published runtime pack file is missing or empty: {name}"
+        contents.append({"path": name,
+                         "sha256": hashlib.sha256(file.read_bytes()).hexdigest()})
+    return contents, None
+
+
+def reconcile_runtime_gaps(gaps, supplemental_components, package_folders, publish_directory):
+    """Reconcile runtime-pack gaps against package and published-file evidence.
+
+    Only exact identity/version, category runtime, LICENSE and NOTICE texts, the
+    pack's nuspec declaration, bundled license/notice bytes and every published
+    runtime/native file reconcile a gap. Anything else remains uncovered.
     """
     index = {}
     for component in supplemental_components:
@@ -114,18 +199,36 @@ def reconcile_runtime_gaps(gaps, supplemental_components):
         kinds = {json.loads(p["value"])["kind"] for p in properties
                  if p["name"] == "plinth:supplemental-evidence"}
         index[(component["name"].casefold(), component["version"].casefold())] = (
-            component["bom-ref"], category, kinds)
+            component, category, kinds)
     reconciled, uncovered = [], []
     for gap in gaps:
         name, version = gap["package"].rsplit("/", 1)
         match = index.get((name.casefold(), version.casefold()))
-        if match and match[1] == "runtime" and {"LICENSE", "NOTICE"} <= match[2]:
-            reconciled.append(dict(gap, evidence=[match[0]], reason=(
-                "SDK runtime pack reconciled with explicit supplemental evidence matching "
-                "identity and version, including LICENSE and NOTICE; "
-                "not a license/attribution review approval.")))
-        else:
+        if not (match and match[1] == "runtime" and {"LICENSE", "NOTICE"} <= match[2]):
             uncovered.append(gap)
+            continue
+        component = match[0]
+        package_id = re.sub(r"^runtimepack\.", "", name, flags=re.I)
+        location = next((folder / package_id.lower() / version for folder in package_folders
+                         if (folder / package_id.lower() / version).is_dir()), None)
+        if location is None:
+            uncovered.append(dict(gap, reason=gap["reason"] + (
+                " Runtime pack package directory was not found for evidence reconciliation.")))
+            continue
+        evidence, error = runtimepack_evidence(location, component, package_id, version)
+        if error:
+            uncovered.append(dict(gap, reason=gap["reason"] + " " + error + "."))
+            continue
+        contents, error = published_contents(gap, publish_directory)
+        if error:
+            uncovered.append(dict(gap, reason=gap["reason"] + " " + error + "."))
+            continue
+        reconciled.append(dict(
+            gap, evidence=[component["bom-ref"]], license=evidence["declaration"],
+            bundled_texts=evidence["texts"], contents=contents, reason=(
+                "SDK runtime pack reconciled against the package nuspec, bundled "
+                f"LICENSE/NOTICE and {len(contents)} published runtime/native files; "
+                "not a license/attribution review approval.")))
     return reconciled, uncovered
 
 
@@ -151,9 +254,11 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
     package_sources = {}
     packages = {}
     asset_identities = {}
+    package_folders = set()
     for asset, asset_path in zip(assets, asset_paths):
         data = json.loads(asset.read_text(encoding="utf-8-sig"))
         folders = [Path(p) for p in data["packageFolders"]]
+        package_folders.update(folders)
         for key, library in data["libraries"].items():
             if library["type"] != "package":
                 continue
@@ -174,7 +279,8 @@ def generate(assets, output, supplemental_file=None, publish_directory=None):
     gaps, reconciled_gaps = [], []
     if publish_directory is not None:
         packages, gaps = publish_inventory(packages, publish_directory)
-        reconciled_gaps, gaps = reconcile_runtime_gaps(gaps, supplemental_components)
+        reconciled_gaps, gaps = reconcile_runtime_gaps(
+            gaps, supplemental_components, package_folders, publish_directory)
     coverage = (
         "Coverage: restored NuGet inventory plus explicitly supplied supplemental components only. "
         "Not a complete distribution inventory or a compliance/review approval. "

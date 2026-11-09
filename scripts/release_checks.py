@@ -76,6 +76,11 @@ def coverage_report(data):
             evidence(item)
     for field in ("uncovered_publish_packages", "reconciled_publish_packages", "pending_scope_checks"):
         require(all(isinstance(entry, dict) for entry in data[field]), field)
+    for entry in data["reconciled_publish_packages"]:
+        require(isinstance(entry.get("contents"), list) and bool(entry["contents"]),
+                "reconciled contents")
+        for item in entry["contents"]:
+            evidence(item)
 
 
 def package(path):

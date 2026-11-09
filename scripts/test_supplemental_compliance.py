@@ -4,6 +4,7 @@ import copy
 import hashlib
 import io
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -351,14 +352,35 @@ class PublishInventoryTests(unittest.TestCase):
         self.write_inventory([self.entry])
         return self.entry
 
+    def prepare_runtime_pack(self, *, declaration="MIT", license_bytes=None,
+                             notice_bytes=None, publish_file=True):
+        package_id = "Microsoft.NETCore.App.Runtime.win-x64"
+        pack = self.root / "packages" / package_id.lower() / "10.0.0"
+        pack.mkdir(parents=True, exist_ok=True)
+        (pack / (package_id.lower() + ".nuspec")).write_text(
+            f'<package><metadata><id>{package_id}</id><version>10.0.0</version>'
+            f'<license type="expression">{declaration}</license></metadata></package>',
+            encoding="utf-8")
+        (pack / "LICENSE.TXT").write_bytes(
+            self.raw if license_bytes is None else license_bytes)
+        (pack / "THIRD-PARTY-NOTICES.TXT").write_bytes(
+            (self.evidence / "NOTICE").read_bytes() if notice_bytes is None else notice_bytes)
+        if publish_file:
+            (self.publish / "fixture.dll").write_bytes(b"synthetic runtime fixture")
+        return pack
+
     def test_runtime_gap_reconciled_only_by_exact_explicit_evidence(self):
         self.runtime_evidence()
+        self.prepare_runtime_pack()
         self.deps(["Fixture/1.0", self.runtime])
         sbom, notice, stdout = self.run_publish(supplemental=True)
         reconciled = [json.loads(p["value"]) for p in sbom["metadata"]["properties"]
                       if p["name"] == "plinth:reconciled-publish-package"]
         self.assertEqual([entry["package"] for entry in reconciled], [self.runtime])
         self.assertEqual(reconciled[0]["evidence"], ["urn:plinth:supplemental:fixture-runtime"])
+        self.assertEqual(reconciled[0]["license"], "MIT")
+        self.assertEqual(len(reconciled[0]["bundled_texts"]), 2)
+        self.assertEqual([item["path"] for item in reconciled[0]["contents"]], ["fixture.dll"])
         self.assertIn("not a license/attribution review approval", reconciled[0]["reason"])
         self.assertFalse(any(p["name"] == "plinth:uncovered-publish-package"
                              for p in sbom["metadata"]["properties"]))
@@ -383,6 +405,32 @@ class PublishInventoryTests(unittest.TestCase):
             with self.subTest(label=label):
                 self.entry = copy.deepcopy(base)
                 self.runtime_evidence(notice=notice, **overrides)
+                self.deps(["Fixture/1.0", self.runtime])
+                sbom, notice_text, _ = self.run_publish(supplemental=True)
+                self.assertIn("UNCOVERED: " + self.runtime, notice_text)
+                self.assertFalse(any(p["name"] == "plinth:reconciled-publish-package"
+                                     for p in sbom["metadata"]["properties"]))
+                report = json.loads((self.output / "coverage-report.json").read_text(encoding="utf-8-sig"))
+                self.assertEqual(report["reconciled_publish_packages"], [])
+                self.assertEqual(len(report["uncovered_publish_packages"]), 1)
+
+    def test_runtime_reconciliation_rejects_pack_or_publish_mismatch(self):
+        base = copy.deepcopy(self.entry)
+        for label, options in (
+                ("missing pack", None),
+                ("license mismatch", {"declaration": "Apache-2.0"}),
+                ("license bytes mismatch", {"license_bytes": b"different license\n"}),
+                ("notice bytes mismatch", {"notice_bytes": b"different notice\n"}),
+                ("missing publish file", {"publish_file": False})):
+            with self.subTest(label=label):
+                self.entry = copy.deepcopy(base)
+                self.runtime_evidence()
+                pack = self.root / "packages/microsoft.netcore.app.runtime.win-x64/10.0.0"
+                if pack.exists():
+                    shutil.rmtree(pack)
+                (self.publish / "fixture.dll").unlink(missing_ok=True)
+                if options is not None:
+                    self.prepare_runtime_pack(**options)
                 self.deps(["Fixture/1.0", self.runtime])
                 sbom, notice_text, _ = self.run_publish(supplemental=True)
                 self.assertIn("UNCOVERED: " + self.runtime, notice_text)
