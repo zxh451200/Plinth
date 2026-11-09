@@ -17,6 +17,11 @@
 - 拆分：暖启动数据库初始化约 3.8s、主窗口初始化约 3.0s；冷启动迁移把数据库就绪增加约 1.6s。`SettingsViewModel.Prewarm` 已在后台线程，不阻塞窗口；`App` 新增“数据库已就绪”与“主窗口已打开”诊断日志。
 - 边界：非交互会话只测到主窗口 `Opened`，未测首帧绘制、滚动/编辑内存、低配设备与长期资源趋势；单机数字不代表 GA 性能门槛。后续可评估把编译期模型/迁移检查从每次启动移到测试/CI，或延迟/缓存窗口初始化。
 
+## 2026-11-09 XLSX 真实宏样本
+
+- 临时将 Excel 12.0 的 `AccessVBOM` 设为 1，用 Excel COM 创建带 VBA 模块与 `MsgBox` 的真实 `.xlsm`（13,640 B），随后恢复原设置（值不存在）。
+- 产品 `SpreadsheetService.ImportAsync` 按扩展名拒绝该真实样本；`SpreadsheetServiceTests.Real_excel_macro_workbook_is_rejected` 在设置 `PLINTH_XLSM_SAMPLE` 时执行并通过（Spreadsheet 49/49），CI 无样本变量时按设计 skip，不计为通过。产品不导入、不执行宏；ClosedXML 许可终审仍属发布决策。
+
 ## 2026-11-09 本地登录门禁
 
 - 新增受信任部署开关 `LocalLogin.Enabled`（默认 false，`deployment.example.json` 已含 `LocalLogin`）。关闭时启动路径与既有版本一致；开启时 `App` 先显示登录窗口，登录成功后才创建主窗口，关闭登录窗口视为退出；`LocalLogin.Username` 只作为首次设置的用户名预填。
@@ -35,7 +40,7 @@
 
 - 用本机 Excel COM（`Visible=false`、`DisplayAlerts=false`、`AutomationSecurity=ForceDisable`）生成真实 Office 文件：文本工作簿、外部链接工作簿、宏启用扩展。服务实测：文本工作簿导入 2 行 0 错误；外部链接工作簿被 `External workbook relationships are not supported.` 拒绝；`.xlsm` 被扩展名拒绝。
 - 发现并修复真实 Excel 包被误拒：Office 会写 `xl/`、`docProps/` 等零长度目录条目，旧白名单只允许 `.xml`／`.rels`／`.psmdcp`，导致所有真实 Excel 保存的 xlsx 被判“非法部件”。现在零长度目录条目跳过，带数据的同名目录条目仍拒绝；`SpreadsheetServiceTests` 新增回归（套件 48 项），负控制移除跳过后如期转红，按字节还原。
-- 宏内容的真实 Office 样本仍受阻：本机 Excel 信任中心不允许访问 VBA 工程对象模型，宏模块未能生成；合成 `vbaProject.bin` 的拒绝路径仍由现有测试覆盖，没有改动该安全设置。
+- 2026-11-09 已解除真实宏样本阻塞，见下方“XLSX 真实宏样本”；合成 `vbaProject.bin` 的拒绝路径仍由现有测试覆盖。
 - 许可证据：`.nuget/packages/closedxml/0.105.1/closedxml.nuspec` 为 `<license type="expression">MIT</license>`，包内无独立 LICENSE 文件；notices／SBOM 由现有发布工具生成。终审仍属发布决策。
 
 - 测试稳定性：全量并行执行时，`SettingsTests.Region_titles_follow_the_interface_language` 会被并发用例把进程级 `Loc` 改回英文而偶发红。现把 19 个会调用 `Loc.Initialize` 的测试类收进 `[CollectionDefinition("Localization", DisableParallelization = true)]` 集合，与其余集合串行隔离；随后全量 1183 项（1181 通过、2 跳过）连续两次通过（约 5／9 分钟），未再出现该竞争。

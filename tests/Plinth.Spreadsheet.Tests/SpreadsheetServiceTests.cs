@@ -465,4 +465,13 @@ public sealed class SpreadsheetServiceTests : IDisposable
             CsvReader.ReadFileAsync(path, "utf-8", expectedSha256: sha256));
         Assert.Equal("CSV_CHANGED_AFTER_PREVIEW", error.Message);
     }
+
+    [Fact]
+    public async Task Real_excel_macro_workbook_is_rejected()
+    {
+        var sample = Environment.GetEnvironmentVariable("PLINTH_XLSM_SAMPLE");
+        Assert.SkipWhen(string.IsNullOrWhiteSpace(sample) || !File.Exists(sample),
+            "Set PLINTH_XLSM_SAMPLE to a real Excel macro-enabled workbook for the optional Office check.");
+        await Assert.ThrowsAsync<InvalidDataException>(() => _service.ImportAsync(sample!));
+    }
 }

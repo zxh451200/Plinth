@@ -172,4 +172,4 @@ python scripts/release_checks.py package artifacts/Plinth-0.1.0-win-x64.zip
 
 许可策略：`Avalonia.Angle.Windows.Natives 2.1.27548.20260419` 的包内 `LICENSE` 为标准 BSD-3-Clause，已加入版本锁定的显式文件许可白名单；`third_party.py --publish-directory` 只统计发布 `deps.json` 中实际分发的 84 个包，Debug-only 的 `AvaloniaUI.DiagnosticsSupport` 不再进入清单。
 
-未执行：代码签名、安装器在磁盘满下的目录链接/失败回滚/旧版本升级/重装恢复全矩阵（干净账户安装/卸载与磁盘满首次安装失败已实测）、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX Office 抽查、系统 Toast。
+未执行：代码签名、安装器在磁盘满下的目录链接/失败回滚/旧版本升级/重装恢复全矩阵（干净账户安装/卸载与磁盘满首次安装失败已实测）、真实 UIA／IME／DPI／读屏与截图、真实 API／IdP、XLSX 正式启用与许可终审（真实 Office 文本/宏样本已测）、系统 Toast。
