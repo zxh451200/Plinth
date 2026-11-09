@@ -11,6 +11,12 @@
 - **干净账户安装器冒烟（2026-11-09）**：在本地标准用户 `PlinthClean`（非管理员）上用现有 0.1.0 Setup（2026-11-08 产物，per-user NSIS）执行 `/S` 安装：退出 0、安装 302 文件、`Plinth.App.exe --version` 退出 0；HKCU 卸载键、开始菜单、AUMID 与 `plinth://` 协议写入。`/S` 卸载退出 0，程序目录、卸载键、开始菜单、AUMID、协议删除；`%LOCALAPPDATA%\Plinth` 数据标记保留。演练后账户与配置文件删除。边界：这是 0.1.0 安装器在干净账户下的安装/卸载冒烟；登录门禁在当前源码/应用级测试中，不在这份旧安装包；安装器/升级在磁盘满、旧版升级/恢复与真实无 SDK 机器的完整矩阵仍未覆盖。证据：`D:\tmp\clean-install-orchestrator.txt`、`D:\tmp\clean-install-profile-cleanup.txt`。
 - **磁盘满安装器（2026-11-09）**：PlinthClean 标准用户的 Local AppData shell 文件夹重定向到独立 300MB VHD（X:），填到 0 可用；`/S` 安装 0.1.0 Setup 退出 **7**，X: 安装目录仅 1 个部分文件、`Plinth.App.exe` 不存在，HKCU 卸载键/开始菜单/AUMID/`plinth://` 协议均未写，C: 未产生安装。随后解挂/删除 VHD、删除账户与配置文件。边界：这是首次安装在磁盘满目标上的失败路径；安装器/升级在磁盘满下的升级/回滚、旧版创建备份后升级/恢复仍未覆盖；Setup 是 0.1.0 产物。证据：`D:\tmp\installer-diskfull-result.txt`、`D:\tmp\installer-diskfull-child.out.txt`。
 
+## 2026-11-09 桌面启动性能
+
+- 在 Release 构建、非交互会话、临时数据目录实测（进程 StartTime 到日志事件，UTC 对齐）：冷启动（空目录，含 4 个迁移）应用启动日志 0.87s、数据库就绪 6.10s、主窗口打开 9.51s；暖启动应用启动日志 0.66s、数据库就绪 4.47s、主窗口打开 7.45s。
+- 拆分：暖启动数据库初始化约 3.8s、主窗口初始化约 3.0s；冷启动迁移把数据库就绪增加约 1.6s。`SettingsViewModel.Prewarm` 已在后台线程，不阻塞窗口；`App` 新增“数据库已就绪”与“主窗口已打开”诊断日志。
+- 边界：非交互会话只测到主窗口 `Opened`，未测首帧绘制、滚动/编辑内存、低配设备与长期资源趋势；单机数字不代表 GA 性能门槛。后续可评估把编译期模型/迁移检查从每次启动移到测试/CI，或延迟/缓存窗口初始化。
+
 ## 2026-11-09 本地登录门禁
 
 - 新增受信任部署开关 `LocalLogin.Enabled`（默认 false，`deployment.example.json` 已含 `LocalLogin`）。关闭时启动路径与既有版本一致；开启时 `App` 先显示登录窗口，登录成功后才创建主窗口，关闭登录窗口视为退出；`LocalLogin.Username` 只作为首次设置的用户名预填。

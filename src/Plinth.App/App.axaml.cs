@@ -51,6 +51,7 @@ public partial class App : Application
 
         // 先把数据库准备好再开窗口。失败会让程序明确地启动失败,不带着坏数据库继续运行
         _services.EnsureDatabase();
+        Log.Information("数据库已就绪");
 
         // 按用户保存的设置应用主题
         _services.GetRequiredService<SettingsService>().ApplyTheme();
@@ -126,6 +127,7 @@ public partial class App : Application
         // 系统通知点击冷启动时只进入任务中心;普通启动保持原标签恢复。
         mainWindow.Opened += (_, _) =>
         {
+            Log.Information("主窗口已打开");
             if (Program.StartupIntent == ActivationIntent.TaskCenter)
             {
                 mainViewModel.OpenTaskCenter();
