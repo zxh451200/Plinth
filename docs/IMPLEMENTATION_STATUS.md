@@ -24,6 +24,12 @@
 - 字体核查推翻了“纯系统字体”的旧结论：`Avalonia.Dialogs.dll` 内嵌 Roboto Light 2.137，`ClosedXML.dll` 内嵌 CarlitoBare 1.104 四字重，两个 DLL 均在发布 ZIP 中；版本取自从 DLL 提取的字体 name 表。Carlito 的 OFL 含 Reserved Font Name "Carlito"，派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断；图标仍为应用自有 `plinth.ico`。
 - 实跑 `third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（528,949／506,086／142,305 B）；补充材料专项测试 34 项、发布工具测试 12 项通过；`runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 由 uncovered 转为 reconciled（包内许可/通知与 187 个发布文件逐项对账，仍非许可审查通过）。工具只验证身份/路径/原文/哈希，不代替法务审查。
 
+## 2026-11-09 发布包重打包与法务审查证据
+
+- 安装 NSIS 3.11（`D:\tmp\nsis`）后用 `publish.ps1 -SupplementalComplianceFile reviewed-materials/inventory.json -RequireInstaller` 重建 0.1.0 候选：ZIP 83,013,062 B（SHA256 `64d8f00467f400ca1a0141610ccf61ab914eef5777c2bd6fb5cadb32c16b96f6`）、Setup 57,657,905 B（SHA256 `0793a363700618776d4b0d1bf7daab01d3d129458efce966305fc7fc3a8d3a32`）；`release_checks.py package` 两个产物通过。
+- ZIP 内报告 `uncovered=[]`、`reconciled=1`、supplemental=8，两个批准标志仍为 false；安装器内嵌 notices/SBOM/coverage 的 SHA-256 与 `artifacts/compliance` 一致（`1326…`／`2d03…`／`f184…`）。
+- 法务审查证据包 [LEGAL_REVIEW.md](release/LEGAL_REVIEW.md) 已出，签核栏为空；Carlito OFL 的 Reserved Font Name "Carlito" 与内嵌 `CarlitoBare` 的冲突列为发布阻断候选，需人工决定。安装/升级/卸载、真实机器验收与正式 CA 签名仍待。
+
 ## 2026-11-09 XLSX 真实宏样本
 
 - 临时将 Excel 12.0 的 `AccessVBOM` 设为 1，用 Excel COM 创建带 VBA 模块与 `MsgBox` 的真实 `.xlsm`（13,640 B），随后恢复原设置（值不存在）。
@@ -82,7 +88,7 @@
 - **XLSX 内存 POC**：满额上限负载（5000 行 × 3 列 ~450 字符文本）经真实服务 PreviewAsync/ImportAsync，测试进程分页内存峰值 **61 MiB**（基线 43 MiB、增量 18 MiB）——有界，符合 5000 行／5 MiB／32 MiB 展开上限的预检设计。POC 用临时测试采样，跑完已删除，数字如实记录于此。
 - **自建本地 OIDC IdP 与契约 API 的真实端到端**：为关闭"真实 IdP 验收"清单，按"没有环境就自建测试租户"的口径，在 `D:\tmp\idp`（不入库）实现了本地专用 IdP（HTTPS 5443、自签证书、RS256/JWKS、S256 PKCE、授权码一次性、刷新令牌轮换与登出吊销）及符合 [REMOTE_DEMO 契约](REMOTE_DEMO.md) 的 API（服务端分页/排序/搜索、强 If-Match、`demo:read/save/delete` 权限、409/412/401）。使用产品同库的 Duende OidcClient + 产品 `SignedIdentityTokenValidator`（RS256/issuer/audience/过期），经 **13 项断言全部通过**：discovery、授权码+PKCE 交换、id_token 签名/audience/nonce 校验、身份与权限 claim、UserInfo、API 新建 201/分页 200/If-Match 更新/旧版本 412/无令牌 401、刷新轮换且旧令牌拒绝、end_session state 校验、登出后刷新令牌吊销。loopback 回调由测试 IBrowser 承载（产品注释认可的注入方式）：真实 HTTPS authorize 302 + 真实 loopback 监听捕获；真实浏览器 UI 环节（人输入账号）以自动同意测试租户替代。调试中修正的三个 IdP 自身缺陷（id_token aud 误用 API audience、iat 序列化为 ISO 字符串违反 NumericDate 规范、API 排序键大小写）均发生在测试服务端，产品代码未改动。浏览器内人工输入、桌面 UI 登录流程与真实第三方 IdP 租户管理不在本演练范围。
 
-**仍未验收**：日志卷磁盘满（日志目录创建 IO 故障与只读日志文件已实测）与安装器在磁盘满下的升级/回滚、旧版升级/恢复（应用启动、CLI 备份、安装器干净账户安装/卸载与磁盘满首次安装失败已实测，但 GUI 以未处理异常退出）；非 NuGet 许可的法务审查（材料与工具校验已完成）；正式 CA 代码签名；真实 OS DPI/多显示器/高对比度/IME/Narrator 朗读；通知横幅物理点击；真实第三方 IdP 与符合 REMOTE_DEMO 契约的外部 API 端到端（远程模式未交付时为条件项，本仓库不附带生产 API/IdP）。
+**仍未验收**：日志卷磁盘满（日志目录创建 IO 故障与只读日志文件已实测）与安装器在磁盘满下的升级/回滚、旧版升级/恢复（应用启动、CLI 备份、安装器干净账户安装/卸载与磁盘满首次安装失败已实测，但 GUI 以未处理异常退出）；非 NuGet 许可的法务签核（证据包已出，待人工；Carlito RFN 为阻断候选）；正式 CA 代码签名；真实 OS DPI/多显示器/高对比度/IME/Narrator 朗读；通知横幅物理点击；真实第三方 IdP 与符合 REMOTE_DEMO 契约的外部 API 端到端（远程模式未交付时为条件项，本仓库不附带生产 API/IdP）。
 
 ## 2026-11-08 Windows 实机构建与测试收口
 

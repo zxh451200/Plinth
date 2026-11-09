@@ -87,3 +87,10 @@ JSON 顶层必须恰好包含 `schema_version`（整数 1）与非空 `component
 - 字体不是纯系统字体：`Avalonia.Dialogs.dll`（Avalonia 12.1.4）内嵌 Roboto Light 2.137，`ClosedXML.dll`（0.105.1）内嵌 CarlitoBare 1.104 四字重；两个 DLL 都在 ZIP 与安装器发布清单中。组件版本取自从 DLL 提取的字体 name 表，Regular 提取件 SHA-256 分别为 `db02096a91c20ab62d459001a1059bc8d78caa35d637dc91494c4440815a6ac1`（Roboto）与 `ec7c1357b67ac184a52ce7e6b4d9f6f8cf3c9518864bfea0d0e88ba07e1183c8`（Carlito）。Carlito 的 OFL 含 Reserved Font Name "Carlito"，内嵌派生名 "CarlitoBare" 是否满足 RFN 条款属法务判断。图标仍为应用自有 `plinth.ico`，无第三方 icon 组件。
 - 实跑 `python scripts/third_party.py --assets src/Plinth.App/obj/project.assets.json --output artifacts/compliance-supplemental --publish-directory artifacts/publish/win-x64 --supplemental-compliance-file reviewed-materials/inventory.json`：生成 91 个 NuGet 包 + 8 个补充组件的 notices/SBOM/coverage（`THIRD_PARTY_NOTICES.md` 528,949 B、`sbom.cdx.json` 506,086 B、`coverage-report.json` 142,305 B）；补充材料专项测试 34 项通过，发布工具测试 12 项通过。
 - 覆盖边界：publish deps 的 `runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14` 不再列为 `uncovered`；生成器按严格条件（身份/版本、nuspec、根目录 LICENSE/NOTICE 字节、187 个发布文件）将其写入 `reconciled_publish_packages` 与 SBOM 的 `plinth:reconciled-publish-package`，coverage 明确“reconciled … not a license review approval”。`distribution_inventory_complete` 与 `license_review_approved` 仍为 false；缺少 NOTICE、类别或版本不符、nuspec/正文哈希不符、发布文件缺失或为空时仍回到 uncovered（正反例测试覆盖）。工具只验证身份/路径/原文/哈希，不代替法务审查；“审查通过”仍属发布决策。
+
+### 2026-11-09 D) 发布包重打包与法务审查证据
+
+- 使用 NSIS 3.11 与 `publish.ps1 -SupplementalComplianceFile ... -RequireInstaller` 重建 0.1.0 候选：ZIP 83,013,062 B（SHA256 `64d8f00467f400ca1a0141610ccf61ab914eef5777c2bd6fb5cadb32c16b96f6`）、Setup 57,657,905 B（SHA256 `0793a363700618776d4b0d1bf7daab01d3d129458efce966305fc7fc3a8d3a32`）；`release_checks.py package` 两者通过。
+- ZIP 内报告 `uncovered=[]`、`reconciled=1`、supplemental=8，两个批准标志仍为 false；安装器内嵌 notices/SBOM/coverage 与 `artifacts/compliance` 逐字节一致。
+- 法务审查证据包见 [LEGAL_REVIEW.md](release/LEGAL_REVIEW.md)：Carlito OFL 保留字体名与内嵌 `CarlitoBare` 的冲突列为发布阻断候选，签核栏为空，未宣称审查通过。
+- 安装/升级/卸载、真实机器验收与正式 CA 代码签名仍是独立门禁。
