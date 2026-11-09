@@ -215,4 +215,42 @@ public sealed class SearchSelectTests
             Application.Current.RequestedThemeVariant = previous;
         }
     }
+
+    [AvaloniaFact]
+    public void Mouse_open_keeps_the_popup_aligned_with_the_field()
+    {
+        var select = new SearchSelect
+        {
+            Items = Options, SelectedItem = Options[0], Searchable = false, Width = 280,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+        };
+        var panel = new StackPanel { Margin = new Thickness(24) };
+        panel.Children.Add(select);
+        var window = new Window { Content = new ScrollViewer { Content = panel }, Width = 700, Height = 500 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        window.Measure(new Size(700, 500));
+        window.Arrange(new Rect(0, 0, 700, 500));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var button = select.GetVisualDescendants().OfType<Button>().First();
+        var card = select.FindControl<Border>("PopupCard")!;
+        var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(point);
+        window.MouseDown(point, MouseButton.Left);
+        window.MouseUp(point, MouseButton.Left);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        window.Measure(new Size(700, 500));
+        window.Arrange(new Rect(0, 0, 700, 500));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var field = select.TranslatePoint(new Point(0, 0), window)!.Value;
+        var cardOrigin = card.TranslatePoint(new Point(0, 0), window)!.Value;
+        Assert.True(select.OptionsPopup.IsOpen);
+        // 字段按下时不再缩放,弹层左缘/宽度与字段严格重合,点击前后不会移动。
+        Assert.Equal(field.X, cardOrigin.X, 1);
+        Assert.Equal(select.Bounds.Width, card.Bounds.Width, 1);
+        Assert.Equal(field.Y + select.Bounds.Height + 4, cardOrigin.Y, 1);
+        window.Close();
+    }
 }

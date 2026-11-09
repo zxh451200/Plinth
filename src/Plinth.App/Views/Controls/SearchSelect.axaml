@@ -4,7 +4,12 @@
              x:Class="Plinth.App.Views.Controls.SearchSelect">
 
   <UserControl.Styles>
+    <!-- Fluent 12 的按钮按下时会套一个 0.98 缩放:字段在点击瞬间的坐标会偏移 2–3px,
+         弹层一旦按这个临时坐标定位就会永久错位,并且松手回弹时看起来“动一下”。
+         下拉字段不需要这个按压动画,直接去掉,保证几何在点击前后一致。 -->
     <Style Selector="Button#FieldButton">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
+      <Setter Property="Transitions" Value="{x:Null}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Padding" Value="12,0,10,0" />
@@ -18,6 +23,12 @@
     <Style Selector="Button#FieldButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource PlinthRowHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
+    </Style>
+    <Style Selector="Button#FieldButton:pressed">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button#FieldButton:pointerover">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
     </Style>
     <Style Selector="Button#FieldButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />

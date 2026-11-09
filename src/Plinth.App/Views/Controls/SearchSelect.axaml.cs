@@ -142,9 +142,7 @@ public partial class SearchSelect : UserControl
             ClosePopup();
             return;
         }
-        // 鼠标抬起这一轮里 target 的变换还没刷新,立即打开会按旧位置落点(约差 3px);
-        // 等本轮输入/布局跑完再开,首帧就贴在字段正下方。
-        Dispatcher.UIThread.Post(OpenPopup, DispatcherPriority.Background);
+        OpenPopup();
     }
 
     private void OpenPopup()
