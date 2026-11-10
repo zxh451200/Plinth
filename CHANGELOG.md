@@ -4,6 +4,11 @@
 
 以下为源码变更，不代表已发布或通过桌面验收。当前工程版本仍为 `0.1.0`，发版时统一修改 `Directory.Build.props`。
 
+### 2026-11-10 XLSX 变体 CI 修复与升级演练
+
+- CI／验收：XLSX 变体在默认 restore 后用 `--no-restore`，ClosedXML 运行时资产被 `ExcludeAssets=runtime` 排除，36 项中 30 项失败；改为先按 `PlinthEnableXlsx=true` 做 locked restore，再 `--no-restore` 测试，复验 36/36 通过。
+- 升级演练：0.1.0→0.1.1 自动备份路径实机通过（退 0、版本 0.1.1、备份含探针、库哈希不变）；旧版无备份命令路径确认退 2 并显示手选 ZIP 提示，手选 ZIP 通过新版校验，但模态文件选择自动化未完成，未应用升级。
+
 ### 2026-11-09 验收门禁格式与 TRX 修复
 
 - 去掉 `SearchSelect.axaml.cs` 与 `SearchSelectTests.cs` 的 UTF-8 BOM、把工作树换行统一为 LF，并按格式器拆分测试对象初始化器；`dotnet format --verify-no-changes` 重新通过（此前 HEAD 会因 599 条 CHARSET/ENDOFLINE/WHITESPACE 诊断在验收入口中止）。

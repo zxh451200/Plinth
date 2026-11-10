@@ -49,6 +49,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
     }
     if ($EnableXlsx) {
+        dotnet restore tests/Plinth.App.Tests/Plinth.App.Tests.csproj --locked-mode --configfile scripts/nuget.config -p:PlinthEnableXlsx=true
+        if ($LASTEXITCODE -ne 0) { throw 'XLSX restore failed' }
         $xlsxResultsDirectory = Join-Path (Get-Location) 'artifacts/test-results-xlsx'
         dotnet test tests/Plinth.App.Tests/Plinth.App.Tests.csproj -c Release --no-restore -p:PlinthEnableXlsx=true -p:TestingPlatformDotnetTestSupport=true -- --results-directory $xlsxResultsDirectory --report-xunit-trx --report-xunit-trx-filename xlsx.trx --filter-class "*Spreadsheet*"
         if ($LASTEXITCODE -ne 0) { throw 'XLSX page tests failed' }

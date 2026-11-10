@@ -4,6 +4,13 @@
 
 阅读口径：本文件包含历史实施记录。下文旧条目中的“缺少 SDK／锁文件”“C# 尚未运行”等描述，已由本页“2026-11-04 Windows 实机执行”“2026-11-08 Windows 实机构建与测试收口”“2026-11-08 真实数据库、升级与签名验收”和 [当前需求核对表](REQUIREMENTS_STATUS.md) 中的执行记录更新，不再代表当前全局状态。后续新增变更仍须另行验证。
 
+## 2026-11-10 XLSX 变体 CI 根因与安装/升级演练
+
+- **CI XLSX 失败根因（已修复，未推送）**：run 42646217502 的 6 个 pilot 全绿，两个 gate 仅 `Check optional XLSX page` 失败。默认 restore 在 `PlinthEnableXlsx != true` 时给 ClosedXML 加 `ExcludeAssets=runtime`；CI 随后用 `--no-restore` 构建 XLSX 变体，运行时缺少 ClosedXML 资产，36 项中 30 项失败。本地复现：默认 restore + `--no-restore` → 30/36 失败；按 `-p:PlinthEnableXlsx=true` 做 locked restore 后 `--no-restore` → **36/36 通过**。已给 `.github/workflows/ci.yml` 与 `scripts/acceptance.ps1` 的 XLSX 步骤加属性 restore，待新 CI run 验证。
+- **自动备份升级路径（2026-11-10 实机通过）**：drill 构建 0.1.1（HEAD，手工 NSIS 编译；合规文件复用现有 artifacts，因 SPDX 源不可达）覆盖旧 0.1.0 官方包。交互升级退出 0；注册表与应用版本均为 0.1.1；自动备份 `Plinth-Upgrade-Backups\nspE588.tmp.zip`（2,079 B）经 `--inspect-backup-before-upgrade` 退出 0（Application 0.1.0、Schema `20261108125013_DemoTypedColumns`、2 文件/49,482 B），备份内 `demo_records` 含探针 `PROBE-001`；升级前后 `plinth.db` SHA-256 均为 `9f0d617d…`。
+- **旧版无备份命令路径（部分验证）**：旧版取自 `aeca465`（0.1.0），`--backup-before-upgrade` 退出 2 且不产 ZIP；探针 `PROBE-OLD`，库 SHA-256 `f924d1f4…`。新版安装器正确显示“旧版自动备份未完成…”提示并打开手选文件对话框；手动 ZIP（新版对旧库副本创建，1,979 B）经新版 `--inspect` 退出 0（Application 0.1.1、Schema `20261102000000_CodeIdentityKeys`、2 文件/49,482 B）。受测试自动化限制，Win32/UIA 未能可靠完成模态文件选择（Open 未生效），旧版升级未实际应用；**不记为通过**。
+- **现场恢复**：卸载退出 0，程序目录与卸载键删除；原 `%LOCALAPPDATA%\Plinth` 未触碰；`Plinth-Upgrade-Backups` 在证据复制后删除；无 Plinth 进程。边界：drill 构建不是发布候选；D: 100% 满，构建在 C:；SPDX 源不可达，合规文件复用现有产物。证据在 `C:\tmp\plinth-drill-20261109\evidence\`。
+
 ## 2026-11-09 当前 HEAD 全量验收与门禁修复
 
 - **format 门禁失败（仓库问题，已修复）**：`src/Plinth.App/Views/Controls/SearchSelect.axaml.cs` 与 `tests/Plinth.App.Tests/SearchSelectTests.cs` 带 UTF-8 BOM、工作树为 CRLF，违反 `.editorconfig` 的 `charset=utf-8`／`end_of_line=lf`；测试对象初始化器还把 5 个属性挤在一行。`dotnet format --verify-no-changes` 报 599 条诊断（CHARSET 2、ENDOFLINE 594、WHITESPACE 3），`acceptance.ps1` 在第 37 行 `throw 'Format failed'` 中止。已去掉 BOM、统一 LF、按格式器拆分初始化器，复验通过。
