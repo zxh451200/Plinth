@@ -143,12 +143,20 @@ public partial class App : Application
             Dispatcher.UIThread.Post(mainWindow.Close);
         };
 
-        // 恢复上次关闭时的窗口位置和大小,关闭时再记下来
+        // 恢复上次关闭时的窗口位置和大小,关闭时再记下来。
+        // 设置变更(含授权确认框)进行中会持有写入锁,Save 会抛异常;关窗只负责尽力记录,不能把退出变成异常弹窗。
         var settings = services.GetRequiredService<SettingsService>();
         WindowPlacementStore.Restore(mainWindow, settings);
-        mainWindow.Closing += (_, _) => WindowPlacementStore.Remember(mainWindow, settings);
+        mainWindow.Closing += (_, _) =>
+        {
+            try { WindowPlacementStore.Remember(mainWindow, settings); }
+            catch (Exception ex) { Log.Warning(ex, "关闭时记录窗口位置失败"); }
+        };
 
         CreateTrayIcon(desktopLifetime, mainWindow, branding);
+
+        // 定时自动备份:后台循环自己决定是否到期,失败只记日志。容器释放时会先停循环。
+        services.GetRequiredService<AutoBackupService>().Start();
 
         // 用户又启动了一次程序时,把已有的窗口带到前台;通知点击还要进入任务中心
         if (Program.SingleInstance is { } singleInstance)
@@ -224,6 +232,11 @@ public partial class App : Application
 
     private void DisposeServices()
     {
+        if (_trayLanguageHandler is not null)
+        {
+            Loc.Unsubscribe(_trayLanguageHandler);
+            _trayLanguageHandler = null;
+        }
         _tray?.Dispose();
         _tray = null;
         _services?.Dispose();

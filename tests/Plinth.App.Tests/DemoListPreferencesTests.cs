@@ -176,6 +176,8 @@ public sealed class DemoListPreferencesTests : IDisposable
             Dispatcher.UIThread.RunJobs();
             var resized = table.Columns[0].ActualWidth;
             Assert.True(resized > before + 20, "Pointer drag must change the actual column width.");
+            // 列宽落盘现在合并延后 500ms,测试里显式冲刷。
+            vm.FlushPreferencesForTests();
             var saved = new WorkspacePreferencesService(ConfigPath);
             Assert.Equal(resized, saved.Demo.Columns["Code"].Width, 1);
             using var reopened = Create(saved);

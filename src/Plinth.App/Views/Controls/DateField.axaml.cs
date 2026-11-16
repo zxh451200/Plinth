@@ -6,13 +6,14 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Plinth.App.Localization;
+using Plinth.App.Services;
 
 namespace Plinth.App.Views.Controls;
 
 /// <summary>
 /// 紧凑日期选择:自绘月历弹层,替代 Fluent CalendarDatePicker——后者模板里写死了灰底灰格,样式改不动。
+/// 弹层颜色走 XAML 的 DynamicResource 跟随主题;日期格式走应用的地区设置,星期/月份名走界面语言。
 /// </summary>
 public partial class DateField : UserControl
 {
@@ -27,20 +28,28 @@ public partial class DateField : UserControl
         AvaloniaProperty.Register<DateField, string>(nameof(Placeholder), string.Empty);
 
     private DateTime _month = DateTime.Today;
+    private readonly Action _languageHandler;
 
     public DateField()
     {
         InitializeComponent();
-        PopupCard.Background = this.TryFindResource("PlinthPanelBrush", out var panel) && panel is IBrush brush
-            ? brush
-            : Brushes.White;
-        PopupCard.BorderBrush = this.TryFindResource("PlinthBorderBrush", out var border) && border is IBrush borderBrush
-            ? borderBrush
-            : Brushes.LightGray;
-        PopupCard.BorderThickness = new Thickness(1);
+        _languageHandler = OnUiLanguageChanged;
         BuildWeekdayHeader();
         BuildDays();
         UpdateValueText();
+    }
+
+    // 订阅/退订配对:标签页切换会 detach 视图,重挂载时重新订阅。
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        Loc.Subscribe(_languageHandler);
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        Loc.Unsubscribe(_languageHandler);
     }
 
     public DateTimeOffset? SelectedDate
@@ -78,6 +87,17 @@ public partial class DateField : UserControl
         }
     }
 
+    /// <summary>语言切换后重建星期头与月历文字;地区(格式)变化在下次打开弹层时生效。</summary>
+    private void OnUiLanguageChanged()
+    {
+        BuildWeekdayHeader();
+        BuildDays();
+        UpdateValueText();
+    }
+
+    /// <summary>日期显示跟随应用地区设置(与其它格式化一致),不再用机器 culture。</summary>
+    private static CultureInfo FormatCulture => FormattingService.Current.Culture;
+
     private void UpdateValueText()
     {
         // 没选日期时用字段名当提示(起始日期/截止日期),别把格式串丢给用户看。
@@ -85,7 +105,7 @@ public partial class DateField : UserControl
             ? Placeholder
             : !string.IsNullOrWhiteSpace(Label) ? Label : Loc.Get("date.placeholder");
         ValueText.Text = SelectedDate is { } date
-            ? date.ToString("d", CultureInfo.CurrentCulture)
+            ? date.ToString("d", FormatCulture)
             : hint;
         ValueText.Classes.Set("placeholder", SelectedDate is null);
     }
@@ -93,7 +113,7 @@ public partial class DateField : UserControl
     private void BuildWeekdayHeader()
     {
         WeekdayHeader.Children.Clear();
-        var names = CultureInfo.CurrentCulture.DateTimeFormat.ShortestDayNames;
+        var names = Loc.Culture.DateTimeFormat.ShortestDayNames;
         for (var i = 0; i < 7; i++)
         {
             var day = (DayOfWeek)(((int)DayOfWeek.Monday + i) % 7);
@@ -105,7 +125,7 @@ public partial class DateField : UserControl
 
     private void BuildDays()
     {
-        MonthText.Text = _month.ToString("Y", CultureInfo.CurrentCulture);
+        MonthText.Text = _month.ToString("Y", Loc.Culture);
         DaysGrid.Children.Clear();
         var first = new DateTime(_month.Year, _month.Month, 1);
         var start = first.AddDays(-(((int)first.DayOfWeek + 6) % 7));
@@ -114,7 +134,7 @@ public partial class DateField : UserControl
         {
             var date = start.AddDays(i);
             var button = new Button { Content = date.Day, Tag = date, Classes = { "day" } };
-            AutomationProperties.SetName(button, date.ToString("d", CultureInfo.CurrentCulture));
+            AutomationProperties.SetName(button, date.ToString("d", FormatCulture));
             if (date.Month != _month.Month) button.Classes.Add("other");
             if (date == today) button.Classes.Add("today");
             if (SelectedDate is { } selected && selected.Date == date) button.Classes.Add("selected");

@@ -35,10 +35,54 @@ IDENTITY_SQL = re.search(r'UpgradeSql = """(.*?)""";', IDENTITY_SOURCE, re.S).gr
 TYPED_SOURCE = SOURCE.with_name("20261108125013_DemoTypedColumns.cs").read_text(encoding="utf-8-sig")
 TYPED_DDL = re.search(r'AddColumnsSql = """(.*?)""";', TYPED_SOURCE, re.S).group(1)
 TYPED_DESIGNER = SOURCE.with_name("20261108125013_DemoTypedColumns.Designer.cs").read_text(encoding="utf-8-sig")
+SOFT_DELETE_SOURCE = SOURCE.with_name("20261112000000_DemoSoftDelete.cs").read_text(encoding="utf-8-sig")
+SOFT_DELETE_DDL = re.search(r'AddColumnsSql = """(.*?)""";', SOFT_DELETE_SOURCE, re.S).group(1)
+SOFT_DELETE_DESIGNER = SOURCE.with_name("20261112000000_DemoSoftDelete.Designer.cs").read_text(encoding="utf-8-sig")
 NOTES_ID = "20261101010000_NotesEntries"
 IDENTITY_ID = "20261102000000_CodeIdentityKeys"
 TYPED_ID = "20261108125013_DemoTypedColumns"
 TABLES = ("demo_records", "notes_entries")
+
+# 安全扫描要求测试文件里不出现任何动态构造的 SQL:每张表的语句都写成纯字面量,
+# 表名/列名来自固定常量,宁可重复也不拼接。VALUES 的数据一律走 ? 参数绑定。
+STATEMENTS = {
+    "demo_records": {
+        "table_info": "PRAGMA table_info(demo_records)",
+        "select_all": "SELECT * FROM demo_records ORDER BY Id",
+        "select_code_key": "SELECT Code,CodeKey FROM demo_records",
+        "index_list": "PRAGMA index_list(demo_records)",
+        "index_xinfo": 'PRAGMA index_xinfo("IX_demo_records_CodeKey")',
+        "count_code": "SELECT count(*) FROM demo_records WHERE Code = ?",
+        "clear_key": "UPDATE demo_records SET CodeKey=NULL WHERE Id=?",
+        "drop_code_index": 'DROP INDEX "IX_demo_records_Code"',
+        "insert": (
+            "INSERT INTO demo_records (Id,Code,Name,Remark,Version,CreatedAtUtc,"
+            "CreatedBy,UpdatedAtUtc,UpdatedBy) VALUES (?,?,?,?,?,?,?,?,?)"
+        ),
+        "insert_keyed": (
+            "INSERT INTO demo_records (Id,Code,Name,Remark,Version,CreatedAtUtc,"
+            "CreatedBy,UpdatedAtUtc,UpdatedBy,CodeKey) VALUES (?,?,?,?,?,?,?,?,?,?)"
+        ),
+    },
+    "notes_entries": {
+        "table_info": "PRAGMA table_info(notes_entries)",
+        "select_all": "SELECT * FROM notes_entries ORDER BY Id",
+        "select_code_key": "SELECT Code,CodeKey FROM notes_entries",
+        "index_list": "PRAGMA index_list(notes_entries)",
+        "index_xinfo": 'PRAGMA index_xinfo("IX_notes_entries_CodeKey")',
+        "count_code": "SELECT count(*) FROM notes_entries WHERE Code = ?",
+        "clear_key": "UPDATE notes_entries SET CodeKey=NULL WHERE Id=?",
+        "drop_code_index": 'DROP INDEX "IX_notes_entries_Code"',
+        "insert": (
+            "INSERT INTO notes_entries (Id,Code,Text,Version,CreatedAtUtc,"
+            "CreatedBy,UpdatedAtUtc,UpdatedBy) VALUES (?,?,?,?,?,?,?,?)"
+        ),
+        "insert_keyed": (
+            "INSERT INTO notes_entries (Id,Code,Text,Version,CreatedAtUtc,"
+            "CreatedBy,UpdatedAtUtc,UpdatedBy,CodeKey) VALUES (?,?,?,?,?,?,?,?,?)"
+        ),
+    },
+}
 
 
 def code_key(code):
@@ -48,16 +92,12 @@ def code_key(code):
 
 
 def insert_record(db, table, row_id, code, *, keyed=False):
-    content = ["Name", "Remark"] if table == "demo_records" else ["Text"]
-    columns = ["Id", "Code"] + content + [
-        "Version", "CreatedAtUtc", "CreatedBy", "UpdatedAtUtc", "UpdatedBy"]
-    values = [row_id, code] + ["保留内容 " + name for name in content] + [
+    content = {"demo_records": ["保留内容 Name", "保留内容 Remark"], "notes_entries": ["保留内容 Text"]}[table]
+    values = [row_id, code] + content + [
         17, "2024-02-29 23:59:58.1234567", "creator", "2025-03-01 01:02:03.7654321", "editor"]
     if keyed:
-        columns.append("CodeKey")
         values.append(code_key(code))
-    db.execute(f'INSERT INTO "{table}" ({",".join(columns)}) VALUES ({",".join("?" for _ in values)})',
-               values)
+    db.execute(STATEMENTS[table]["insert_keyed" if keyed else "insert"], values)
 
 
 def execute_statements(db, script, parameters=None):
@@ -118,15 +158,19 @@ class SqliteMigrationSmoke(unittest.TestCase):
 
     def test_snapshot_and_new_frozen_target_match(self):
         # 静态检查不代替 EF HasPendingModelChanges 或 C# 编译。
+        # 冻结目标是最新一个迁移的 Designer 模型,它必须与当前 AppDbContext 快照一致。
         snapshot = SOURCE.with_name("AppDbContextModelSnapshot.cs").read_text(encoding="utf-8-sig")
         pattern = r"protected override void %s\(ModelBuilder modelBuilder\)\s*\{(.*?)\n        \}"
-        migration_model = re.search(pattern % "BuildTargetModel", TYPED_DESIGNER, re.S).group(1)
+        migration_model = re.search(pattern % "BuildTargetModel", SOFT_DELETE_DESIGNER, re.S).group(1)
         snapshot_model = re.search(pattern % "BuildModel", snapshot, re.S).group(1)
         self.assertEqual(re.sub(r"\s+", " ", migration_model).strip(),
                          re.sub(r"\s+", " ", snapshot_model).strip())
         self.assertIn('b.Property<string>("Priority")', migration_model)
         self.assertIn('b.Property<DateOnly?>("DueDate")', migration_model)
+        self.assertIn('b.Property<bool>("IsDeleted")', migration_model)
+        self.assertIn('b.Property<DateTime?>("DeletedAtUtc")', migration_model)
         self.assertIn("b.HasIndex(\"CodeKey\")", migration_model)
+        self.assertIn("b.HasIndex(\"IsDeleted\")", migration_model)
         self.assertEqual(migration_model.count('b.Property<string>("CodeKey")'), 2)
         self.assertEqual(migration_model.count(".HasMaxLength(300)"), 2)
         self.assertNotIn("UseCollation", migration_model)
@@ -134,6 +178,7 @@ class SqliteMigrationSmoke(unittest.TestCase):
         self.assertNotIn("BuildInitialModel", migration_model)
         self.assertNotIn("BuildNotesModel", migration_model)
         self.assertIn("throw new NotSupportedException", TYPED_SOURCE)
+        self.assertIn("throw new NotSupportedException", SOFT_DELETE_SOURCE)
 
     def test_typed_columns_upgrade_preserves_existing_text_rows(self):
         with managed_connect(":memory:") as db:
@@ -161,30 +206,30 @@ class SqliteMigrationSmoke(unittest.TestCase):
         codes = ["  AbC  ", "É", "é", "Σ", "σ", "ς", "İ", "i", "ß", "SS",
                  "Ａ", "ａ", "中文😀Z", "e\u0301", "", "\tA\n", "中" * 50]
         with managed_connect(":memory:") as db:
+            db.row_factory = sqlite3.Row
             db.executescript(DDL + NOTES_DDL)
             for table in TABLES:
                 for index, code in enumerate(codes):
                     insert_record(db, table, str(index), code)
             db.commit()
-            old_columns = {table: [row[1] for row in db.execute(f"PRAGMA table_info({table})")]
-                           for table in TABLES}
-            before = {table: db.execute(f'SELECT * FROM "{table}" ORDER BY Id').fetchall()
+            # 迁移只新增 CodeKey 列:用 SELECT * 的字典行剔除该列后与迁移前整行比较。
+            before = {table: [dict(row) for row in db.execute(STATEMENTS[table]["select_all"])]
                       for table in TABLES}
             with db:
                 db.execute("BEGIN IMMEDIATE")
                 execute_statements(db, IDENTITY_SQL)
             for table in TABLES:
-                self.assertEqual(db.execute(
-                    f'SELECT {",".join(old_columns[table])} FROM "{table}" ORDER BY Id').fetchall(),
-                    before[table])
-                actual = dict(db.execute(f'SELECT Code,CodeKey FROM "{table}"'))
+                after = [dict(row) for row in db.execute(STATEMENTS[table]["select_all"])]
+                self.assertEqual([{k: v for k, v in row.items() if k != "CodeKey"} for row in after],
+                                 before[table])
+                actual = {row["Code"]: row["CodeKey"] for row in after}
                 self.assertEqual(actual, {code: code_key(code) for code in codes})
                 self.assertEqual(actual["  AbC  "], "20206162632020")
                 self.assertEqual(actual["中文😀Z"], "E4B8ADE69687F09F98807A")
                 self.assertEqual(len(actual["中" * 50]), 300)
                 self.assertNotEqual(actual["É"], actual["é"])
                 self.assertNotEqual(actual["e\u0301"], actual["é"])
-            self.assertEqual(db.execute("PRAGMA integrity_check").fetchall(), [("ok",)])
+            self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
 
     def test_sql_backfill_matches_ascii_only_strict_utf8_reference(self):
         # 穷举 ASCII 字符与两侧非 ASCII，防止误用 trim、Unicode lower/casefold 或小写 hex。
@@ -204,12 +249,12 @@ class SqliteMigrationSmoke(unittest.TestCase):
             db.executescript(DDL + NOTES_DDL + IDENTITY_SQL)
             for table in TABLES:
                 with self.subTest(table=table):
-                    columns = {row[1]: row for row in db.execute(f"PRAGMA table_info({table})")}
+                    columns = {row[1]: row for row in db.execute(STATEMENTS[table]["table_info"])}
                     self.assertEqual(columns["CodeKey"][2:4], ("TEXT", 1))
-                    indexes = db.execute(f"PRAGMA index_list({table})").fetchall()
+                    indexes = db.execute(STATEMENTS[table]["index_list"]).fetchall()
                     self.assertNotIn(f"IX_{table}_Code", [row[1] for row in indexes])
                     self.assertIn((f"IX_{table}_CodeKey", 1), [(row[1], row[2]) for row in indexes])
-                    indexed = db.execute(f'PRAGMA index_xinfo("IX_{table}_CodeKey")').fetchall()
+                    indexed = db.execute(STATEMENTS[table]["index_xinfo"]).fetchall()
                     self.assertEqual([(row[2], row[4]) for row in indexed if row[5]], [("CodeKey", "BINARY")])
                     insert_record(db, table, "one", "AbC", keyed=True)
                     with self.assertRaises(sqlite3.IntegrityError):
@@ -217,14 +262,17 @@ class SqliteMigrationSmoke(unittest.TestCase):
                     for index, code in enumerate(("É", "é", " AbC ", "Σ", "σ", "😀")):
                         insert_record(db, table, "unicode-" + str(index), code, keyed=True)
                     self.assertEqual(db.execute(
-                        f'SELECT count(*) FROM "{table}" WHERE Code = ?', ("abc",)).fetchone()[0], 0)
+                        STATEMENTS[table]["count_code"], ("abc",)).fetchone()[0], 0)
                     with self.assertRaises(sqlite3.IntegrityError):
-                        db.execute(f'UPDATE "{table}" SET CodeKey=NULL WHERE Id=?', ("one",))
+                        db.execute(STATEMENTS[table]["clear_key"], ("one",))
 
     def test_non_utf8_database_cannot_run_identity_migration_directly(self):
         for encoding in ("UTF-16le", "UTF-16be"):
             with self.subTest(encoding=encoding), managed_connect(":memory:") as db:
-                db.execute(f"PRAGMA encoding='{encoding}'")
+                if encoding == "UTF-16le":
+                    db.execute("PRAGMA encoding='UTF-16le'")
+                else:
+                    db.execute("PRAGMA encoding='UTF-16be'")
                 db.executescript(DDL + NOTES_DDL)
                 insert_record(db, "demo_records", "one", "AbC")
                 db.commit()
@@ -239,17 +287,18 @@ class SqliteMigrationSmoke(unittest.TestCase):
     def test_identity_failure_rolls_back_both_rebuilds_and_history(self):
         for failing_table in TABLES:
             with self.subTest(failing_table=failing_table), managed_connect(":memory:") as db:
+                db.row_factory = sqlite3.Row
                 db.executescript(DDL + NOTES_DDL)
                 execute_statements(db, BASELINE_SQL, {"id": BASELINE_ID})
                 db.execute('INSERT INTO "__EFMigrationsHistory" VALUES (?, ?)', (NOTES_ID, "10.0.14"))
                 for table in TABLES:
                     insert_record(db, table, "one", "AbC")
                 # 模拟历史唯一索引丢失后的 ASCII 重复值，使新唯一索引创建真实失败。
-                db.execute(f'DROP INDEX "IX_{failing_table}_Code"')
+                db.execute(STATEMENTS[failing_table]["drop_code_index"])
                 insert_record(db, failing_table, "two", "aBc")
                 db.commit()
                 old_schema = schema(db)
-                before = {table: db.execute(f'SELECT * FROM "{table}" ORDER BY Id').fetchall()
+                before = {table: [dict(row) for row in db.execute(STATEMENTS[table]["select_all"])]
                           for table in TABLES}
                 db.execute("BEGIN IMMEDIATE")
                 # 历史写入也必须与迁移一起回滚。
@@ -259,11 +308,12 @@ class SqliteMigrationSmoke(unittest.TestCase):
                 db.rollback()
                 self.assertEqual(schema(db), old_schema)
                 for table in TABLES:
-                    self.assertEqual(db.execute(f'SELECT * FROM "{table}" ORDER BY Id').fetchall(),
+                    self.assertEqual([dict(row) for row in db.execute(STATEMENTS[table]["select_all"])],
                                      before[table])
-                self.assertEqual(db.execute('SELECT MigrationId FROM "__EFMigrationsHistory" ORDER BY MigrationId')
-                                 .fetchall(), [(BASELINE_ID,), (NOTES_ID,)])
-                self.assertEqual(db.execute("PRAGMA integrity_check").fetchall(), [("ok",)])
+                self.assertEqual([row[0] for row in db.execute(
+                    'SELECT MigrationId FROM "__EFMigrationsHistory" ORDER BY MigrationId')],
+                    [BASELINE_ID, NOTES_ID])
+                self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
 
     def test_six_column_chain_reaches_identity_schema_on_copy(self):
         with tempfile.TemporaryDirectory() as directory:

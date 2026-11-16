@@ -34,6 +34,12 @@ public partial class DemoListView : UserControl, IPageSearchTarget
     public DemoListView()
     {
         InitializeComponent();
+        // 显示列开关直接控制列复选框那一行的显隐,不改展开组件语义。
+        ColumnToggle.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ToggleButton.IsCheckedProperty)
+                ColumnMenu.IsVisible = ColumnToggle.IsChecked == true;
+        };
         // 先走现有未保存确认，再打开菜单，不能让表格先切行后对旧记录执行操作。
         RecordsTable.AddHandler(PointerPressedEvent, OnRecordPointerPressed, RoutingStrategies.Tunnel);
         // 行内编辑把单元格换成 TextBox，其类处理器会吞掉右键的 ContextRequested；
@@ -359,7 +365,9 @@ public partial class DemoListView : UserControl, IPageSearchTarget
             {
                 Title = Loc.Get("csv.exportErrors"),
                 DefaultExtension = "csv",
-                SuggestedFileName = "csv-preview-errors.csv",
+                // 错误报告永不覆盖已存在文件(安全契约),建议名带时间戳减少撞名;
+                // 覆盖提示关掉是有意的,避免暗示"会覆盖"。
+                SuggestedFileName = $"csv-preview-errors-{DateTime.Now:yyyyMMdd-HHmmss}.csv",
                 FileTypeChoices = [new FilePickerFileType("CSV") { Patterns = ["*.csv"] }],
                 ShowOverwritePrompt = false,
             });

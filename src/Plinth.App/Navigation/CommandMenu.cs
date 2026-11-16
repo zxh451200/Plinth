@@ -36,20 +36,37 @@ public interface IPageSearchTarget
 }
 
 /// <summary>转发当前页面的原命令及 CanExecute，不复制业务逻辑。</summary>
-public sealed class CommandMenu : ICommand, IDisposable
+public sealed class CommandMenu : ICommand, System.ComponentModel.INotifyPropertyChanged, IDisposable
 {
+    private readonly string _headerKey;
     private readonly Func<ICommand?> _resolve;
     private ICommand? _target;
+    private string _header;
 
     public CommandMenu(string headerKey, Func<ICommand?> resolve)
     {
-        Header = Loc.Get(headerKey);
+        _headerKey = headerKey;
+        _header = Loc.Get(headerKey);
         _resolve = resolve;
     }
 
-    public string Header { get; }
+    private string Header
+    {
+        get => _header;
+        set
+        {
+            if (string.Equals(_header, value, StringComparison.Ordinal)) return;
+            _header = value;
+            PropertyChanged?.Invoke(this, new(nameof(Header)));
+        }
+    }
+
+    /// <summary>切换语言后重取词条;Header 有变更通知,菜单项会跟着刷新。</summary>
+    public void RefreshLanguage() => Header = Loc.Get(_headerKey);
+
     public ICommand Command => this;
     public event EventHandler? CanExecuteChanged;
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
     public bool CanExecute(object? parameter) => _resolve()?.CanExecute(parameter) == true;
 

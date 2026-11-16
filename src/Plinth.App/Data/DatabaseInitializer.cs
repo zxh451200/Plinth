@@ -237,6 +237,18 @@ public static class DatabaseInitializer
             if (!Schema(connection).SequenceEqual(Schema(expected), StringComparer.Ordinal))
                 throw new InvalidDataException("数据库结构与声明的迁移版本不一致。");
         }
+        else if (applied[^1] == DemoSoftDelete.MigrationId)
+        {
+            using var expected = new SqliteConnection("Data Source=:memory:");
+            expected.Open();
+            using var create = expected.CreateCommand();
+            create.CommandText = InitialSchema.CreateSql + NotesEntries.CreateSql
+                + CodeIdentityKeys.UpgradeSql + DemoTypedColumns.AddColumnsSql
+                + DemoSoftDelete.AddColumnsSql;
+            create.ExecuteNonQuery();
+            if (!Schema(connection).SequenceEqual(Schema(expected), StringComparer.Ordinal))
+                throw new InvalidDataException("数据库结构与声明的迁移版本不一致。");
+        }
         return applied[^1];
     }
 

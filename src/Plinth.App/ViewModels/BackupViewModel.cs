@@ -18,6 +18,8 @@ public partial class BackupViewModel : ViewModelBase
     private readonly ILogger<BackupViewModel> _logger;
     private readonly TaskService? _tasks;
     private readonly SensitiveOperationService _operations;
+    private readonly SettingsService? _settings;
+    private bool _autoUiReady;
     private string? _restorePath;
     private byte[]? _restoreHash;
     private BackupService.BackupPreview? _backupPreview;
@@ -108,12 +110,14 @@ public partial class BackupViewModel : ViewModelBase
     }
 
     public BackupViewModel(BackupService backup, ILogger<BackupViewModel> logger,
-        TaskService? tasks = null, SensitiveOperationService? operations = null)
+        TaskService? tasks = null, SensitiveOperationService? operations = null,
+        SettingsService? settings = null)
     {
         _backup = backup;
         _logger = logger;
         _tasks = tasks;
         _operations = operations ?? backup.Operations;
+        _settings = settings;
         if (IsServerDatabase)
         {
             StatusText = Loc.Get("backup.serverManaged");
@@ -121,6 +125,15 @@ public partial class BackupViewModel : ViewModelBase
         else if (BackupService.HasPendingRestore())
         {
             StatusText = Loc.Get("backup.status.pending");
+        }
+        if (!IsServerDatabase && settings is not null)
+        {
+            var current = settings.Current;
+            IsAutoBackupEnabled = current.AutoBackupEnabled;
+            AutoBackupIntervalDays = Math.Clamp(current.AutoBackupIntervalDays, 1, 365);
+            AutoBackupKeepCount = Math.Clamp(current.AutoBackupKeepCount, 1, 100);
+            RefreshAutoBackupStatus();
+            _autoUiReady = true;
         }
     }
 
@@ -130,6 +143,62 @@ public partial class BackupViewModel : ViewModelBase
 
     /// <summary>默认的备份文件名,带日期,选择框里直接用。</summary>
     public static string SuggestedFileName => $"plinth-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+
+    // ---- 定时自动备份设置(备份页直接编辑,经 SettingsService.ChangeAsync 授权落盘) ----
+
+    /// <summary>服务器库由服务器端备份,自动备份设置不适用。</summary>
+    public bool CanEditAutoBackup => !IsServerDatabase;
+    [ObservableProperty] public partial bool IsAutoBackupEnabled { get; set; }
+    [ObservableProperty] public partial int AutoBackupIntervalDays { get; set; }
+    [ObservableProperty] public partial int AutoBackupKeepCount { get; set; }
+    /// <summary>最近一次自动备份时间;切换设置或页面打开时刷新。</summary>
+    [ObservableProperty] public partial string AutoBackupStatusText { get; set; } = string.Empty;
+
+    partial void OnIsAutoBackupEnabledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowAutoBackupSchedule));
+        QueueAutoBackupSetting(nameof(AppSettings.AutoBackupEnabled), value);
+    }
+
+    partial void OnAutoBackupIntervalDaysChanged(int value) =>
+        QueueAutoBackupSetting(nameof(AppSettings.AutoBackupIntervalDays), value);
+
+    partial void OnAutoBackupKeepCountChanged(int value) =>
+        QueueAutoBackupSetting(nameof(AppSettings.AutoBackupKeepCount), value);
+
+    /// <summary>间隔/保留数只在合法范围内生效,越界值按 AutoBackupService 的钳制写回当前值。</summary>
+    public bool ShowAutoBackupSchedule => IsAutoBackupEnabled && CanEditAutoBackup;
+
+    private async void QueueAutoBackupSetting(string field, object value)
+    {
+        if (_settings is null || !_autoUiReady) return;
+        try
+        {
+            await _settings.ChangeAsync(field, value);
+            RefreshAutoBackupStatus();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "自动备份设置保存失败:{Field}", field);
+            AutoBackupStatusText = Loc.Get("settings.saveFailed");
+        }
+    }
+
+    private void RefreshAutoBackupStatus()
+    {
+        var directory = AppPaths.BackupDirectory;
+        var files = Directory.Exists(directory)
+            ? Directory.GetFiles(directory, AutoBackupService.FilePrefix + "*.zip")
+            : [];
+        if (files.Length == 0)
+        {
+            AutoBackupStatusText = Loc.Get("backup.auto.none");
+            return;
+        }
+        var latest = files.Select(File.GetLastWriteTime).Max();
+        AutoBackupStatusText = Loc.Format("backup.auto.last",
+            latest.ToString("g", Loc.Culture), files.Length);
+    }
 
     [ObservableProperty]
     public partial string RestorePreview { get; set; } = "";
@@ -307,6 +376,12 @@ public partial class BackupViewModel : ViewModelBase
     {
         ClearBackupPreview();
         StatusText = Loc.Get("backup.status.failed");
+    }
+
+    public override void OnUiLanguageChanged()
+    {
+        base.OnUiLanguageChanged();
+        if (_settings is not null && !IsServerDatabase) RefreshAutoBackupStatus();
     }
 
     public async Task RestoreFromAsync(string path)

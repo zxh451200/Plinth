@@ -135,6 +135,19 @@ public sealed class BackupService(IDbContextFactory<AppDbContext> dbFactory, Sen
         }, cancellationToken);
     }
 
+    /// <summary>定时自动备份:与手动备份同一核心,但走权限检查而非确认对话框——
+    /// 无人值守时不能弹窗。认证启用时未登录或无 backup:export 会抛出,由调度方记日志跳过。</summary>
+    public async Task BackupScheduledAsync(string destination, CancellationToken cancellationToken = default,
+        IProgress<double?>? progress = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _operations.ExecuteAsync("backup:export", "Backup", "backup.create", async token =>
+        {
+            await Task.Run(() => BackupCoreAsync(destination, token, progress), token);
+            return true;
+        }, cancellationToken);
+    }
+
     internal SensitiveOperationService Operations => _operations;
 
     internal Task<SensitiveOperationService.Confirmation> ConfirmOperationAsync()

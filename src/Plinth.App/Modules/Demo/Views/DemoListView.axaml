@@ -21,13 +21,73 @@
       <MenuItem Header="{loc:T demo.delete}" Command="{Binding AskDeleteCommand}" IsEnabled="{Binding HasDeletePermission}" />
     </ContextMenu>
   </UserControl.Resources>
+  <UserControl.Styles>
+    <!-- 显示列开关:描边输入框形,高度与同排按钮一致;展开时不整块染强调色 -->
+    <Style Selector="ToggleButton.columnToggle">
+      <Setter Property="MinHeight" Value="{DynamicResource PlinthControlHeight}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource PlinthControlCornerRadius}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,8,4" />
+    </Style>
+    <Style Selector="ToggleButton.columnToggle /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.columnToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderStrongBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.columnToggle:checked /template/ ContentPresenter#PART_ContentPresenter,
+                     ToggleButton.columnToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PlinthForegroundBrush}" />
+    </Style>
+    <!-- 列开关箭头用矢量 Path 而不是图标字体:图标字体的行盒/基线度量会把字形顶离几何中心,
+         Path 的布局盒就是墨迹本身,任何后端都稳定。几何按 10x5 盒子内缩描边半径画出。 -->
+    <Style Selector="Path.columnChevron">
+      <Setter Property="Stroke" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="Data" Value="M 1,1.25 L 5,4 L 9,1.25" />
+      <Setter Property="Width" Value="10" />
+      <Setter Property="Height" Value="5" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <!-- RelativePoint 的比例语法是百分数;写 0.5,0.5 会被当成 0.5px,支点跑到左上角 -->
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    </Style>
+    <!-- 展开态转 180° 并染成强调色;对 Path 旋转是精确的,支点就是墨迹中心 -->
+    <Style Selector="ToggleButton.columnToggle:checked Path.columnChevron">
+      <Setter Property="Stroke" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="RenderTransform">
+        <RotateTransform Angle="180" />
+      </Setter>
+    </Style>
+  </UserControl.Styles>
   <!-- 左边:搜索 + 列表。右边:编辑表单(选中一行或点"新增"后出现) -->
   <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource PlinthPageMargin}">
 
     <DockPanel Grid.Column="0" LastChildFill="True">
-      <SelectableTextBlock DockPanel.Dock="Top" Text="{loc:T nav.demo}" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,12" />
+      <!-- 搜索贴标题行右侧:不和按钮组抢同一行,WrapPanel 只按按钮宽度换行 -->
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+        <SelectableTextBlock Text="{loc:T nav.demo}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" x:Name="SearchBox" Width="240"
+                 MaxLength="500"
+                 VerticalAlignment="Center" Margin="16,0,0,0"
+                 PlaceholderText="{loc:T demo.search.placeholder}"
+                 Text="{Binding SearchText}"
+                 AutomationProperties.Name="{loc:T demo.search.name}" />
+      </Grid>
 
-      <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+      <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
         <Button Content="{loc:T demo.new}" Command="{Binding NewCommand}" Margin="0,0,8,4" />
         <Button Content="{loc:T demo.export}" Command="{Binding ExportCommand}" Margin="0,0,8,4" />
         <Button Content="{loc:T demo.exportPdf}" Click="OnExportPdfClick" IsEnabled="{Binding !IsEmpty}" Margin="0,0,8,4" />
@@ -40,11 +100,6 @@
         <SelectableTextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding CanInlineEdit}"
                    Foreground="{DynamicResource PlinthErrorBrush}" TextWrapping="Wrap"
                    VerticalAlignment="Center" Margin="0,0,8,4" />
-        <TextBox x:Name="SearchBox" Width="240"
-                 MaxLength="500"
-                 PlaceholderText="{loc:T demo.search.placeholder}"
-                 Text="{Binding SearchText}"
-                 AutomationProperties.Name="{loc:T demo.search.name}" />
       </WrapPanel>
 
       <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
@@ -64,9 +119,22 @@
                   AutomationProperties.Name="{loc:T demo.list.reset}" />
         </WrapPanel>
         <WrapPanel>
+          <!-- 回收站:只显示已删除记录,勾选后列表只读、出现恢复按钮 -->
+          <CheckBox x:Name="TrashToggle" Content="{loc:T demo.trash}" IsChecked="{Binding ShowTrash}"
+                    AutomationProperties.Name="{loc:T demo.trash}" Margin="0,0,8,4" />
           <Button x:Name="ToggleBatchButton" Content="{loc:T demo.batch.toggle}"
                   Command="{Binding ToggleBatchSelectionCommand}" IsEnabled="{Binding CanManageBatch}" Margin="0,0,8,4" />
-          <SelectableTextBlock Text="{loc:T demo.batch.active}" IsVisible="{Binding IsBatchSelecting}" VerticalAlignment="Center" />
+          <SelectableTextBlock Text="{loc:T demo.batch.active}" IsVisible="{Binding IsBatchSelecting}"
+                     VerticalAlignment="Center" Margin="0,0,8,4" />
+          <!-- 显示列:与批量选择同排的描边开关,高度对齐同排按钮;
+               原来的 Expander 头部是 60px 高的整块描边盒,单独占一行还把工具栏撑高 -->
+          <ToggleButton x:Name="ColumnToggle" Classes="columnToggle"
+                        AutomationProperties.Name="{loc:T demo.list.columns}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{loc:T demo.list.columns}" VerticalAlignment="Center" />
+              <Path Classes="columnChevron" AutomationProperties.AccessibilityView="Raw" />
+            </StackPanel>
+          </ToggleButton>
         </WrapPanel>
         <WrapPanel IsVisible="{Binding IsBatchSelecting}">
           <SelectableTextBlock Text="{Binding BatchSelectionText}" VerticalAlignment="Center" Margin="0,0,8,4" />
@@ -77,9 +145,12 @@
           <Button x:Name="CopyBatchButton" Content="{loc:T demo.batch.copy}" Click="OnCopyBatchClick"
                   IsEnabled="{Binding CanCopyBatch}" Margin="0,0,8,4" />
         </WrapPanel>
-        <Expander Header="{loc:T demo.list.columns}">
-          <StackPanel x:Name="ColumnMenu" Orientation="Horizontal" Spacing="8" />
-        </Expander>
+        <!-- 回收站模式下的恢复操作;编辑/批量/导出在该模式下都不可用 -->
+        <WrapPanel IsVisible="{Binding ShowTrash}">
+          <Button x:Name="RestoreTrashButton" Content="{loc:T demo.trash.restore}"
+                  Command="{Binding RestoreTrashCommand}" IsEnabled="{Binding CanRestoreTrash}" Margin="0,0,8,4" />
+        </WrapPanel>
+        <StackPanel x:Name="ColumnMenu" Orientation="Horizontal" Spacing="8" IsVisible="False" />
         <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsLoading}" />
       </StackPanel>
       <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">

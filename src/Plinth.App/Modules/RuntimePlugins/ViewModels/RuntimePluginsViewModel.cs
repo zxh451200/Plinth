@@ -23,6 +23,10 @@ public partial class RuntimePluginsViewModel : ViewModelBase, IUnsavedChanges, I
     [ObservableProperty][NotifyCanExecuteChangedFor(nameof(InvokeCommand))] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; }
     [ObservableProperty] public partial string Output { get; set; } = string.Empty;
+    // 记住当前状态来自哪个词条:语言切换时重新翻译原消息,而不是把错误冲成"ready"。
+    private string? _statusKey; private object? _statusArg;
+    private void SetStatus(string key, object? arg = null)
+    { _statusKey = key; _statusArg = arg; StatusText = arg is null ? RuntimePluginStrings.Get(key) : string.Format(RuntimePluginStrings.Get(key), arg); }
     private bool CanInvoke() => !_disposed && !IsBusy && SelectedOperation is not null && Allowed();
     [RelayCommand(CanExecute = nameof(CanInvoke))]
     private async Task InvokeAsync()
@@ -36,16 +40,16 @@ public partial class RuntimePluginsViewModel : ViewModelBase, IUnsavedChanges, I
             var r = await _host.InvokeAsync(selected.PluginId, selected.Operation, Input, invocation.Token);
             if (_disposed) return;
             Output = r.Success ? r.Output ?? string.Empty : string.Empty;
-            StatusText = r.Success ? RuntimePluginStrings.Get("success") : string.Format(RuntimePluginStrings.Get("error"), r.Error);
+            SetStatus(r.Success ? "success" : "error", r.Success ? null : r.Error);
         }
         catch (OperationCanceledException)
         {
-            if (!_disposed) StatusText = string.Format(RuntimePluginStrings.Get("error"), PluginError.Cancelled);
+            if (!_disposed) SetStatus("error", PluginError.Cancelled);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Runtime plugin invocation failed");
-            if (!_disposed) StatusText = string.Format(RuntimePluginStrings.Get("error"), PluginError.StartFailed);
+            if (!_disposed) SetStatus("error", PluginError.StartFailed);
         }
         finally
         {
@@ -54,7 +58,8 @@ public partial class RuntimePluginsViewModel : ViewModelBase, IUnsavedChanges, I
         }
     }
     [RelayCommand] private void Cancel() => _invocation?.Cancel();
-    public override void OnUiLanguageChanged() { StatusText = IsBusy ? StatusText : RuntimePluginStrings.Get("ready"); base.OnUiLanguageChanged(); }
+    public override void OnUiLanguageChanged()
+    { if (!IsBusy) { if (_statusKey is not null) SetStatus(_statusKey, _statusArg); else StatusText = RuntimePluginStrings.Get("ready"); } base.OnUiLanguageChanged(); }
     public Task<bool> TryLeaveAsync() { if (IsBusy) _invocation?.Cancel(); return Task.FromResult(true); }
     public void Dispose() { if (_disposed) return; _disposed = true; _lifetime.Cancel(); _invocation?.Cancel(); _lifetime.Dispose(); }
     private bool Allowed() => !DeploymentConfiguration.Current.Authentication.Enabled || _permissions.HasPermission(InvokePermission);

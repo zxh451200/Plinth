@@ -20,8 +20,15 @@ public sealed class AppSettings
     public string Theme { get; set; } = SettingsService.ThemeSystem;
     public string Density { get; set; } = DensityService.Standard;
 
-    /// <summary>界面语言:zh-CN 或 en-US。修改后重启程序生效。</summary>
+    /// <summary>界面语言:zh-CN 或 en-US。保存成功后 Loc.SetLanguage 立即切换,无需重启。</summary>
     public string Language { get; set; } = Localization.Loc.DefaultLanguage;
+
+    /// <summary>定时自动备份:写入数据目录的 backups 文件夹,默认关闭,在备份页开启。</summary>
+    public bool AutoBackupEnabled { get; set; }
+    /// <summary>自动备份间隔天数(1-365)。</summary>
+    public int AutoBackupIntervalDays { get; set; } = 7;
+    /// <summary>自动备份保留份数,超出后删最旧(1-100)。</summary>
+    public int AutoBackupKeepCount { get; set; } = 5;
 
     /// <summary>地区和时区独立于界面语言；空值跟随系统，重启生效。</summary>
     public string Region { get; set; } = string.Empty;

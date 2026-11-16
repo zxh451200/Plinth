@@ -65,6 +65,8 @@ def check(root: Path) -> list[str]:
             errors.append(f"{path.relative_to(root)}: undefined resource {key}")
         if path.suffix == ".axaml":
             try:
+                if "<!DOCTYPE" in text or "<!ENTITY" in text:
+                    raise ET.ParseError("DOCTYPE and ENTITY are rejected")
                 ET.fromstring(text)
             except ET.ParseError as ex:
                 errors.append(f"{path.relative_to(root)}: invalid XML: {ex}")

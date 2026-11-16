@@ -38,7 +38,13 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     public bool CanSync => Allowed(SyncPermission);
     public bool CanResolve => Allowed(ResolvePermission);
     public bool HasSelection => Selected is not null;
-    public bool IsBusy { get; private set; }
+    private bool _isBusy;
+    /// <summary>忙碌态必须通知视图,否则按钮不置灰,双击会并发触发两次授权操作。</summary>
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set { if (_isBusy != value) { _isBusy = value; OnPropertyChanged(); } }
+    }
 
     [ObservableProperty] private PilotOperation? selected;
     [ObservableProperty] private string recordIdText = "";
@@ -64,18 +70,26 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        if (!Guard()) return;
-        try { IsBusy = true; await pilot.InitializeAsync(lifetime.Token); if (!Guard()) return; var rows = await pilot.ListAsync(token: lifetime.Token); if (!Guard()) return; Items.Clear(); foreach (var x in rows) Items.Add(x); StatusText = $"已加载 {Items.Count} 项。Pending 可发送，Uncertain 必须先核对。"; }
+        if (IsBusy || !Guard()) return;
+        IsBusy = true;
+        try { await RefreshCoreAsync(); }
+        finally { if (!disposed) IsBusy = false; }
+    }
+
+    /// <summary>不带忙碌检查的刷新体:命令内部完成操作后复用它重载列表,
+    /// 用户命令入口才做 IsBusy 防重入。</summary>
+    private async Task RefreshCoreAsync()
+    {
+        try { await pilot.InitializeAsync(lifetime.Token); if (!Guard()) return; var rows = await pilot.ListAsync(token: lifetime.Token); if (!Guard()) return; Items.Clear(); foreach (var x in rows) Items.Add(x); StatusText = $"已加载 {Items.Count} 项。Pending 可发送，Uncertain 必须先核对。"; }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "加载状态失败"); }
-        finally { if (!disposed) IsBusy = false; }
     }
 
     [RelayCommand]
     private async Task EditOfflineAsync()
     {
-        if (!Guard() || !CanEdit || !Guid.TryParse(RecordIdText, out var id) || !int.TryParse(ExpectedVersionText, out var version)) { StatusText = "请输入有效的记录 ID 和正整数版本。"; return; }
-        try { IsBusy = true; await authorized.ExecuteAsync(EditPermission, "offlineSync", "edit", _ => pilot.EditOfflineAsync(id, version, new(Code, Name, Remark), Selected?.State == PilotState.Pending ? Selected.OperationId : null, lifetime.Token), lifetime.Token); StatusText = "离线草稿已持久化，尚未发送。"; await RefreshAsync(); }
+        if (IsBusy || !Guard() || !CanEdit || !Guid.TryParse(RecordIdText, out var id) || !int.TryParse(ExpectedVersionText, out var version)) { if (!IsBusy) StatusText = "请输入有效的记录 ID 和正整数版本。"; return; }
+        try { IsBusy = true; await authorized.ExecuteAsync(EditPermission, "offlineSync", "edit", _ => pilot.EditOfflineAsync(id, version, new(Code, Name, Remark), Selected?.State == PilotState.Pending ? Selected.OperationId : null, lifetime.Token), lifetime.Token); StatusText = "离线草稿已持久化，尚未发送。"; await RefreshCoreAsync(); }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "离线编辑失败"); }
         finally { if (!disposed) IsBusy = false; }
@@ -84,8 +98,8 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     [RelayCommand]
     private async Task SyncOneAsync()
     {
-        if (!Guard() || !CanSync) return;
-        try { IsBusy = true; var sent = await authorized.ExecuteAsync(SyncPermission, "offlineSync", "sync", _ => pilot.SyncOneAsync(lifetime.Token), lifetime.Token); StatusText = sent ? "已发送一个 Pending；未知结果请核对。" : "没有可安全发送的 Pending。"; await RefreshAsync(); }
+        if (IsBusy || !Guard() || !CanSync) return;
+        try { IsBusy = true; var sent = await authorized.ExecuteAsync(SyncPermission, "offlineSync", "sync", _ => pilot.SyncOneAsync(lifetime.Token), lifetime.Token); StatusText = sent ? "已发送一个 Pending；未知结果请核对。" : "没有可安全发送的 Pending。"; await RefreshCoreAsync(); }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "同步失败；请刷新并核对 Uncertain"); }
         finally { if (!disposed) IsBusy = false; }
@@ -94,14 +108,14 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     [RelayCommand]
     private async Task ReconcileAsync()
     {
-        if (!Guard() || !CanResolve || Selected?.State != PilotState.Uncertain || string.IsNullOrWhiteSpace(EvidenceReference)) { StatusText = "请选择 Uncertain 并填写权威证据引用。"; return; }
+        if (IsBusy || !Guard() || !CanResolve || Selected?.State != PilotState.Uncertain || string.IsNullOrWhiteSpace(EvidenceReference)) { if (!IsBusy) StatusText = "请选择 Uncertain 并填写权威证据引用。"; return; }
         PilotRecord? server = null;
         if (ReconcileOutcome == PilotOutcome.Applied)
         {
             if (!Guid.TryParse(RecordIdText, out var id) || !int.TryParse(ServerVersionText, out var version) || version <= 0) { StatusText = "Applied 核对需要有效服务端记录 ID 和版本。"; return; }
             server = new(id, version, new(Code, Name, Remark));
         }
-        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "reconcile", async _ => { await pilot.ReconcileAsync(Selected.OperationId, new(ReconcileOutcome, server), EvidenceReference, lifetime.Token); return true; }, lifetime.Token); StatusText = "不确定状态已按权威结果解除；不会自动重试。"; await RefreshAsync(); }
+        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "reconcile", async _ => { await pilot.ReconcileAsync(Selected.OperationId, new(ReconcileOutcome, server), EvidenceReference, lifetime.Token); return true; }, lifetime.Token); StatusText = "不确定状态已按权威结果解除；不会自动重试。"; await RefreshCoreAsync(); }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "核对失败；仍保持原状态"); }
         finally { if (!disposed) IsBusy = false; }
@@ -110,8 +124,8 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     [RelayCommand]
     private async Task AcceptServerAsync()
     {
-        if (!Guard() || !CanResolve || Selected?.State != PilotState.Conflict) return;
-        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "acceptServer", _ => pilot.ResolveConflictAsync(Selected.OperationId, null, lifetime.Token), lifetime.Token); StatusText = "已接受保存的服务端快照；未产生网络写入。"; await RefreshAsync(); }
+        if (IsBusy || !Guard() || !CanResolve || Selected?.State != PilotState.Conflict) return;
+        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "acceptServer", _ => pilot.ResolveConflictAsync(Selected.OperationId, null, lifetime.Token), lifetime.Token); StatusText = "已接受保存的服务端快照；未产生网络写入。"; await RefreshCoreAsync(); }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "接受服务端快照失败"); }
         finally { if (!disposed) IsBusy = false; }
@@ -120,8 +134,8 @@ public partial class OfflineSyncViewModel : ViewModelBase, IPageDetails, IDispos
     [RelayCommand]
     private async Task MergeAsync()
     {
-        if (!Guard() || !CanResolve || Selected?.State != PilotState.Conflict) return;
-        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "merge", _ => pilot.ResolveConflictAsync(Selected.OperationId, new(Code, Name, Remark), lifetime.Token), lifetime.Token); StatusText = "已生成新的 Pending 合并操作；请单独发送。"; await RefreshAsync(); }
+        if (IsBusy || !Guard() || !CanResolve || Selected?.State != PilotState.Conflict) return;
+        try { IsBusy = true; await authorized.ExecuteAsync(ResolvePermission, "offlineSync", "merge", _ => pilot.ResolveConflictAsync(Selected.OperationId, new(Code, Name, Remark), lifetime.Token), lifetime.Token); StatusText = "已生成新的 Pending 合并操作；请单独发送。"; await RefreshCoreAsync(); }
         catch (OperationCanceledException) when (disposed) { }
         catch (Exception ex) { if (!disposed) Fail(ex, "合并冲突失败"); }
         finally { if (!disposed) IsBusy = false; }

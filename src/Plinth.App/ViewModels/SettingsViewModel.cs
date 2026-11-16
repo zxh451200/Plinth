@@ -395,7 +395,7 @@ public partial class SettingsViewModel : ViewModelBase, Plinth.App.Navigation.IU
             QueueChange(nameof(AppSettings.Theme), value.Key, "settings.saved");
     }
 
-    /// <summary>语言改了要重启程序才生效(界面文字在启动时就定了)。</summary>
+    /// <summary>语言保存成功后立即切换界面文字(见 PersistChangeAsync 里的 Loc.SetLanguage)。</summary>
     partial void OnSelectedLanguageChanged(SettingOption value)
     {
         if (!_initializing && _settings.Current.Language != value.Key)

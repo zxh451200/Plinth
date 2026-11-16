@@ -120,10 +120,16 @@ public sealed class SearchSelectTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var button = select.GetVisualDescendants().OfType<Button>().First();
-        var chevron = button.GetVisualDescendants().OfType<TextBlock>()
+        var chevron = button.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>()
             .Single(t => t.Classes.Contains("chevron"));
-        Assert.Equal("\uE70D", chevron.Text);
+        // 箭头是矢量 Path 而不是图标字体:字体的行盒/基线度量会把墨迹顶离几何中心,
+        // Path 的布局盒就是墨迹,可以在这里直接断言它落在字段的垂直中心。
+        Assert.Null(chevron.RenderTransform);
         Assert.False(button.Classes.Contains("open"));
+        var closedOrigin = chevron.TranslatePoint(new Point(0, 0), button)!.Value;
+        Assert.Equal(button.Bounds.Height / 2, closedOrigin.Y + chevron.Bounds.Height / 2, 0.5);
+        var closedCenter = chevron.TranslatePoint(
+            new Point(chevron.Bounds.Width / 2, chevron.Bounds.Height / 2), button)!.Value;
 
         var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
         window.MouseDown(point, MouseButton.Left);
@@ -132,6 +138,14 @@ public sealed class SearchSelectTests
 
         Assert.True(select.OptionsPopup.IsOpen);
         Assert.True(button.Classes.Contains("open"));
+        // 展开态把 Path 转 180°:盒子就是墨迹,0.5,0.5 支点即墨迹中心,位置不动、只换指向。
+        // TranslatePoint 会带上 RenderTransform,直接比原点会差一个对角线;比中心点(旋转不动点)才对。
+        var rotate = Assert.IsType<RotateTransform>(chevron.RenderTransform);
+        Assert.Equal(180, rotate.Angle);
+        var openCenter = chevron.TranslatePoint(
+            new Point(chevron.Bounds.Width / 2, chevron.Bounds.Height / 2), button)!.Value;
+        Assert.Equal(closedCenter.X, openCenter.X, 1);
+        Assert.Equal(closedCenter.Y, openCenter.Y, 1);
 
         select.OptionsPopup.IsOpen = false;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

@@ -73,6 +73,11 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
         </Style>
+        <!-- 微调箭头不抢焦点:NumericUpDown 一获焦就会全选数值,蓝色选区随第一次点击闪现、
+             再点又消失;箭头只负责加减,焦点留在原处,选区不再跟着跳。 -->
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+        </Style>
         <!-- 微调按钮悬停/按下用应用浅灰(Fluent 的 10% 黑在卡片白底上偏脏)；
              最右按钮的外沿跟随输入框圆角，底色不再顶出圆角。 -->
         <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -116,6 +121,28 @@
         <Style Selector="Button.field:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource PlinthNavHoverBrush}" />
         </Style>
+        <!-- 表格滚动条:Fluent 默认水平轨道是一条十几像素高的灰带,末行被裁一半时
+             下面再挂一条灰槽,看起来像表格缺了一块。收窄、去掉轨道底色,
+             拇指用边框色圆角,与列表(ListBox)滚动条同一套观感。 -->
+        <Style Selector="TableView ScrollBar">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="TableView ScrollBar:horizontal">
+            <Setter Property="Height" Value="6" />
+        </Style>
+        <Style Selector="TableView ScrollBar:horizontal /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="MinWidth" Value="24" />
+        </Style>
+        <Style Selector="TableView ScrollBar:vertical">
+            <Setter Property="Width" Value="6" />
+        </Style>
+        <Style Selector="TableView ScrollBar:vertical /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource PlinthBorderBrush}" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="MinHeight" Value="24" />
+        </Style>
         <Style Selector="TableViewRow">
             <Setter Property="MinHeight" Value="{DynamicResource PlinthRowHeight}" />
             <Setter Property="Padding" Value="{DynamicResource PlinthRowPadding}" />
@@ -152,15 +179,17 @@
             <Setter Property="FocusAdorner" Value="{x:Null}" />
         </Style>
         <!-- 勾选与子菜单箭头在 Fluent 模板里是写死的 16x16 / 8x16 盒子（模板优先级高于 Style，
-             Width/Height 覆盖不生效），只能居中缩放实际绘制：勾 16x13→10x8，箭头 8x16→6x8。 -->
+             Width/Height 覆盖不生效），只能居中缩放实际绘制：勾 16x13→10x8，箭头 8x16→6x8。
+             支点必须写百分数:RelativePoint 里 "0.5,0.5" 是绝对 0.5px(≈左上角),
+             缩放会把图标压向盒子顶部——箭头不居中就是这个原因。 -->
         <Style Selector="MenuItem /template/ ContentControl#PART_ToggleIconPresenter">
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
             <Setter Property="RenderTransform">
                 <ScaleTransform ScaleX="0.625" ScaleY="0.625" />
             </Setter>
         </Style>
         <Style Selector="MenuItem /template/ Path#PART_ChevronPath">
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
             <Setter Property="RenderTransform">
                 <ScaleTransform ScaleX="0.75" ScaleY="0.5" />
             </Setter>

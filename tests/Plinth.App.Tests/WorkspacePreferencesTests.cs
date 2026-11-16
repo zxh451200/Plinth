@@ -111,7 +111,7 @@ public sealed class WorkspacePreferencesTests : IDisposable
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Failed_preservation_blocks_all_saves_without_changing_originals(bool directory)
+    public void Unsupported_file_is_preserved_and_saves_continue_when_default_backup_name_is_taken(bool directory)
     {
         Directory.CreateDirectory(_directory);
         const string json = """{"Layout":{"Version":99},"Future":"keep"}""";
@@ -120,15 +120,12 @@ public sealed class WorkspacePreferencesTests : IDisposable
         if (directory) Directory.CreateDirectory(backup);
         else File.WriteAllText(backup, "earlier original");
         var store = new WorkspacePreferencesService(ConfigPath);
-        Assert.False(store.SaveLayout(new WorkspaceLayoutV1()));
-        Assert.False(store.SaveDemo(new DemoListPreferences { PageSize = 200 }));
-        Assert.False(store.SaveNavigation(new PageNavigationPreferences { FavoriteIds = ["demo"] }));
         Assert.Null(store.Layout);
-        Assert.Equal(50, store.Demo.PageSize);
-        Assert.Empty(store.Navigation.FavoriteIds);
-        Assert.Equal(json, File.ReadAllText(ConfigPath));
-        Assert.Null(new WorkspacePreferencesService(ConfigPath).Layout);
-        Assert.Equal(json, File.ReadAllText(ConfigPath));
+        // 默认档案名(.unsupported)被占用时改用时间戳名保留原文件,不再把保存永久锁死。
+        Assert.True(store.SaveDemo(new DemoListPreferences { PageSize = 200 }));
+        Assert.Equal(200, new WorkspacePreferencesService(ConfigPath).Demo.PageSize);
+        Assert.NotEmpty(Directory.GetFiles(_directory, Path.GetFileName(ConfigPath) + ".unsupported.*"));
+        // 先前留下的旧档案保持原样,没有被覆盖。
         if (!directory) Assert.Equal("earlier original", File.ReadAllText(backup));
     }
 

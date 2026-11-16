@@ -274,6 +274,16 @@ public partial class MainWindow : Window
                 QuickOpenBox.SelectAll();
             });
         }
+        if (e.PropertyName == nameof(MainViewModel.IsQuickOpen)
+            && DataContext is MainViewModel closedVm && !closedVm.IsQuickOpen)
+        {
+            // 关闭后把焦点还给工作区:面板随即隐藏,焦点若留在搜索框上,纯键盘操作会直接失焦。
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (!ReferenceEquals(DataContext, closedVm) || closedVm.IsQuickOpen) return;
+                WorkspaceTabs.Focus();
+            });
+        }
         if (e.PropertyName == nameof(MainViewModel.IsSidePanelVisible))
             ApplySidePanelVisibility();
         if ((e.PropertyName is nameof(MainViewModel.IsSidePanelVisible) or nameof(MainViewModel.SidePanelTab))

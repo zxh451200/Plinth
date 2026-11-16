@@ -76,7 +76,15 @@
   <data name="settings.saved" xml:space="preserve"><value>Saved</value></data>
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="settings.language.hint" xml:space="preserve"><value>Changes apply immediately.</value></data>
-  <data name="settings.language.saved" xml:space="preserve"><value>Saved. Restart the app to switch the language.</value></data>
+  <data name="settings.language.saved" xml:space="preserve"><value>Saved. The language has been switched.</value></data>
+  <data name="demo.undo"><value>Undo last edit</value></data>
+  <data name="demo.redo"><value>Redo last edit</value></data>
+  <data name="demo.status.undoDraft"><value>Previous values restored as a draft. Review them before saving.</value></data>
+  <data name="demo.status.recordGone"><value>The record no longer exists or is not on the current page. Undo is unavailable.</value></data>
+  <data name="demo.trash"><value>Trash</value></data>
+  <data name="demo.trash.restore"><value>Restore</value></data>
+  <data name="demo.trash.restored"><value>Restored {0} from the trash.</value></data>
+  <data name="demo.trash.conflict"><value>The code is already used by another record. Restore blocked.</value></data>
   <data name="demo.new" xml:space="preserve"><value>New</value></data>
   <data name="demo.search.placeholder" xml:space="preserve"><value>Search by code or name</value></data>
   <data name="demo.search.name" xml:space="preserve"><value>Search</value></data>
@@ -311,6 +319,13 @@
   <data name="settings.logRetentionDays"><value>Log retention days (1–365)</value></data>
   <data name="settings.logRetainedFiles"><value>Maximum log files (1–100, 10 MB each)</value></data>
   <data name="about.support"><value>Open support page</value></data>
+  <data name="backup.auto.title"><value>Scheduled backups</value></data>
+  <data name="backup.auto.hint"><value>Automatically back up the database and settings to the backups folder in the data directory. The app checks at startup and every 6 hours. In production mode you must be signed in and hold the backup:export permission, otherwise the check is skipped until the next one.</value></data>
+  <data name="backup.auto.enabled"><value>Enable scheduled backups</value></data>
+  <data name="backup.auto.intervalDays"><value>Interval (days)</value></data>
+  <data name="backup.auto.keepCount"><value>Copies to keep</value></data>
+  <data name="backup.auto.none"><value>No automatic backups yet.</value></data>
+  <data name="backup.auto.last"><value>Last automatic backup: {0} ({1} copies)</value></data>
   <data name="backup.preview.summary"><value>Application version: {0}; schema version: {1}; created (UTC): {2}. Verified files:</value></data>
   <data name="backup.confirm"><value>I have reviewed the ZIP content. Restore replaces the database and settings on next startup and keeps safety copies. Missing workspace preferences reset the layout.</value></data>
   <data name="backup.confirmRestore"><value>Confirm restore on next startup</value></data>
@@ -412,7 +427,7 @@
   <data name="shell.environment.development"><value>Development</value></data>
   <data name="shell.environment.test"><value>Test</value></data>
   <data name="shell.environment.production"><value>Production</value></data>
-  <data name="shell.quickOpen.placeholder"><value>Search pages (Ctrl+K)</value></data>
+  <data name="shell.quickOpen.placeholder"><value>Search pages and content (Ctrl+K)</value></data>
   <data name="shell.quickOpen.name"><value>Quick open pages</value></data>
   <data name="shell.quickOpen.results"><value>Page results</value></data>
   <data name="shell.view.missing"><value>No view for page "{0}"; expected {1}.</value></data>

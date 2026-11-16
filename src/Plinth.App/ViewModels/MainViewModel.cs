@@ -37,6 +37,7 @@ public partial class MainViewModel : ViewModelBase
     private bool _released;
     private Guid? _completedTaskId;
     private readonly CommandMenuContribution[] _commandContributions;
+    private readonly IContentSearchProvider[] _contentSearchProviders;
     private readonly Action _languageChangedHandler;
     private INotifyPropertyChanged? _commandPage;
     private IEnumerable<CommandMenu> AllPageCommands =>
@@ -55,9 +56,10 @@ public partial class MainViewModel : ViewModelBase
         IEnumerable<CommandMenuContribution>? commandContributions = null,
         ShellStatusViewModel? shellStatus = null,
         IPermissionService? permissions = null,
-        IIdentitySessionEvents? sessionEvents = null)
+        IIdentitySessionEvents? sessionEvents = null,
+        IEnumerable<IContentSearchProvider>? contentSearch = null)
         : this(navigationItems, lifetime, folderService, branding, preferences, changes,
-            tasks, commandContributions, shellStatus, null, permissions, sessionEvents)
+            tasks, commandContributions, shellStatus, null, permissions, sessionEvents, contentSearch)
     { }
 
     public MainViewModel(
@@ -72,7 +74,8 @@ public partial class MainViewModel : ViewModelBase
         ShellStatusViewModel? shellStatus,
         OptionalModuleState? optionalModule,
         IPermissionService? permissions = null,
-        IIdentitySessionEvents? sessionEvents = null)
+        IIdentitySessionEvents? sessionEvents = null,
+        IEnumerable<IContentSearchProvider>? contentSearch = null)
     {
         _optionalModule = optionalModule;
         _permissions = permissions;
@@ -86,6 +89,7 @@ public partial class MainViewModel : ViewModelBase
         ShellStatus = shellStatus;
         ShellStatus?.Refresh();
         _commandContributions = commandContributions?.ToArray() ?? [];
+        _contentSearchProviders = contentSearch?.ToArray() ?? [];
         CommandMenuContribution.Validate(_commandContributions);
         NewPageCommand = CreatePageCommand("menu.file.new", PageCommandAction.New);
         SavePageCommand = CreatePageCommand("menu.file.save", PageCommandAction.Save);
@@ -246,7 +250,29 @@ public partial class MainViewModel : ViewModelBase
     private void RefreshNavigationVisibility()
     {
         if (_released) return;
-        var selectedId = SelectedNavigationItem?.Id;
+        RebuildNavigationMenu(SelectedNavigationItem?.Id);
+        var ordered = BuildMenuItems(VisibleNavigationItems());
+        var visibleIds = ordered.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        var trimmed = false;
+        foreach (var page in FavoritePages.Where(page => !visibleIds.Contains(page.Id)).ToArray())
+        {
+            FavoritePages.Remove(page);
+            trimmed = true;
+        }
+        foreach (var page in RecentPages.Where(page => !visibleIds.Contains(page.Id)).ToArray())
+        {
+            RecentPages.Remove(page);
+            trimmed = true;
+        }
+        // 权限裁掉后立即落盘,与失败模块页面的移除路径一致;否则重启后这些收藏/最近又整批回来。
+        if (trimmed && _pageNavigationReady)
+            SavePageNavigation(FavoritePages.ToArray(), RecentPages.ToArray());
+        RefreshFavoriteCommands();
+    }
+
+    /// <summary>重建三个菜单集合并恢复选中项。登录/注销和语言切换都会改变内容或排序。</summary>
+    private void RebuildNavigationMenu(string? selectedId)
+    {
         var ordered = BuildMenuItems(VisibleNavigationItems());
         MenuItems.Clear();
         PrimaryMenuItems.Clear();
@@ -257,14 +283,8 @@ public partial class MainViewModel : ViewModelBase
             if (item.Section == NavigationSection.Footer) FooterMenuItems.Add(item);
             else PrimaryMenuItems.Add(item);
         }
-        var visibleIds = ordered.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var page in FavoritePages.Where(page => !visibleIds.Contains(page.Id)).ToArray())
-            FavoritePages.Remove(page);
-        foreach (var page in RecentPages.Where(page => !visibleIds.Contains(page.Id)).ToArray())
-            RecentPages.Remove(page);
         SelectedNavigationItem = MenuItems.FirstOrDefault(item => item.Id == selectedId)
             ?? MenuItems.FirstOrDefault();
-        RefreshFavoriteCommands();
     }
 
     internal static IReadOnlyList<NavigationItem> BuildMenuItems(IEnumerable<NavigationItem> items)
@@ -296,7 +316,10 @@ public partial class MainViewModel : ViewModelBase
     private void OnLanguageChanged()
     {
         foreach (var item in NavigationItems) item.RefreshTitle();
-        BuildMenuItems(VisibleNavigationItems());
+        // 标题排序随语言变化:重建菜单集合,否则侧栏留在旧语言的字母序,Alt+1..9 指向漂移。
+        RebuildNavigationMenu(SelectedNavigationItem?.Id);
+        // 模块贡献的页面命令头是构造时固化的,同步重取词条,避免菜单栏同屏两种语言。
+        foreach (var command in ModuleCommands) command.RefreshLanguage();
         foreach (var tab in Tabs)
         {
             if (NavigationItems.FirstOrDefault(item => item.Id == tab.Id) is { } source)

@@ -9,7 +9,12 @@
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
     </Style>
+    <!-- Fluent 12 的按钮按下时会套一个 0.98 缩放:字段在点击瞬间的坐标会偏移 2–3px,
+         弹层一旦按这个临时坐标定位就会错位,松手回弹时看起来“动一下”。
+         日期字段与下拉字段一致,去掉这个按压动画,保证几何在点击前后稳定。 -->
     <Style Selector="Button#FieldButton">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
+      <Setter Property="Transitions" Value="{x:Null}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Padding" Value="8,0" />
@@ -18,6 +23,12 @@
       <Setter Property="Background" Value="{DynamicResource PlinthPanelBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource PlinthBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button#FieldButton:pointerover">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button#FieldButton:pressed">
+      <Setter Property="RenderTransform" Value="{x:Null}" />
     </Style>
     <Style Selector="TextBlock.placeholder">
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
@@ -82,7 +93,11 @@
   <Button x:Name="FieldButton" Classes="field" Click="OnFieldClick">
     <Button.Flyout>
       <Flyout Placement="BottomEdgeAlignedLeft">
-        <Border x:Name="PopupCard" BorderThickness="0" CornerRadius="8" Padding="12" BoxShadow="0 6 16 0 #33000000">
+        <!-- 弹层在独立视觉根里,DynamicResource 仍能命中应用主题令牌;主题切换后弹层跟着换色,
+              不能在 code-behind 用 TryFindResource 捕获一次(那就永远停在构造时的主题)。 -->
+        <Border x:Name="PopupCard" BorderThickness="0" CornerRadius="8" Padding="12" BoxShadow="0 6 16 0 #33000000"
+                Background="{DynamicResource PlinthPanelBrush}"
+                BorderBrush="{DynamicResource PlinthBorderBrush}">
           <StackPanel Spacing="6">
             <Grid ColumnDefinitions="*,Auto,Auto">
               <TextBlock x:Name="MonthText" VerticalAlignment="Center"

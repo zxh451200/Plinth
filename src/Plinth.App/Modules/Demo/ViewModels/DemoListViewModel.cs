@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,8 @@ namespace Plinth.App.Modules.Demo.ViewModels;
 /// 这个页面是"业务页面怎么写"的样板:ViewModel 只管界面状态和命令,数据操作全部交给 DemoService。
 /// 数据库操作都是异步的,不会卡住界面。
 /// </summary>
-public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedChanges, IPageDetails, IDisposable
+public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedChanges, IPageDetails, IDisposable,
+    IOpenRequestTarget
 {
     private readonly DemoService _service;
     private readonly ILogger<DemoListViewModel> _logger;
@@ -42,6 +44,8 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     private DemoListPreferences _listPreferences = new();
     private readonly TaskService? _tasks;
     private readonly CancellationTokenSource _lifetimeCts = new();
+    private readonly List<EditUndoEntry> _undoStack = [];
+    private readonly List<EditUndoEntry> _redoStack = [];
     private (string Code, string Name, string Remark, decimal? Quantity, DateTimeOffset? DueDate,
         DemoPriority Priority, bool Active) _original;
     private bool _updatingSelection;
@@ -121,25 +125,73 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         set { if (value >= 0 && value < SortFields.Length) SortField = SortFields[value]; }
     }
 
+    /// <summary>查询条件/列偏好各自是否被本页签改过:落盘时谁脏写谁,
+    /// 避免多页签共享一份偏好文件时,旧快照整段写回回滚另一个页签刚保存的字段。</summary>
+    private bool _queryDirty;
+    private bool _columnsDirty;
+
     public DemoListPreferences ListPreferences => _listPreferences;
     public void SaveColumns(System.Collections.Generic.Dictionary<string, DemoColumnPreference> columns)
     {
-        _listPreferences = ListPreferences with { Columns = columns };
-        SaveListPreferences();
+        // 以持久化里的最新段为底稿,不用构造时的旧快照:两个页签同时开着,
+        // 拿旧快照整段写回会把另一个页签刚保存的查询条件回滚掉。
+        var latest = _preferences?.Demo ?? _listPreferences;
+        _listPreferences = latest with { Columns = columns };
+        OnPropertyChanged(nameof(ListPreferences));
+        _columnsDirty = true;
+        SchedulePreferencesSave();
     }
 
-    private void SaveListPreferences()
+    private void SaveListPreferences(DemoListPreferences? basePreferences = null)
     {
-        _listPreferences = ListPreferences with
+        // Reset 传入全量默认底稿:查询条件与列偏好整体清零。
+        if (basePreferences is not null)
         {
-            SearchText = SearchText,
-            PageSize = PageSize,
-            SortField = SortField,
-            Descending = Descending,
+            _queryDirty = true;
+            _columnsDirty = true;
+        }
+        var latest = basePreferences ?? _preferences?.Demo ?? _listPreferences;
+        _listPreferences = latest with
+        {
+            SearchText = _queryDirty ? SearchText : latest.SearchText,
+            PageSize = _queryDirty ? PageSize : latest.PageSize,
+            SortField = _queryDirty ? SortField : latest.SortField,
+            Descending = _queryDirty ? Descending : latest.Descending,
+            Columns = _columnsDirty ? _listPreferences.Columns : latest.Columns,
         };
         if (_preferences is not null)
             PreferencesSaveFailed = !_preferences.SaveDemo(_listPreferences);
+        _queryDirty = false;
+        _columnsDirty = false;
     }
+
+    private DispatcherTimer? _saveTimer;
+
+    /// <summary>搜索每个按键、列宽每格都在变:偏好落盘延后 500ms 合并成一次写,关页时立即冲刷。</summary>
+    private void SchedulePreferencesSave()
+    {
+        if (_preferences is null || _disposed) return;
+        if (_saveTimer is null)
+        {
+            _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _saveTimer.Tick += (_, _) => { _saveTimer!.Stop(); SaveListPreferences(); };
+        }
+        else
+        {
+            _saveTimer.Stop();
+        }
+        _saveTimer.Start();
+    }
+
+    private void FlushPreferencesSave()
+    {
+        _saveTimer?.Stop();
+        if (_preferences is null || _disposed) return;
+        SaveListPreferences();
+    }
+
+    /// <summary>测试与关页路径用:立即把防抖中的偏好写盘。</summary>
+    internal void FlushPreferencesForTests() => FlushPreferencesSave();
 
     [RelayCommand]
     private async Task ResetListAsync()
@@ -158,7 +210,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
             OnPropertyChanged(nameof(ListPreferences));
         }
         finally { _initializing = false; }
-        SaveListPreferences();
+        SaveListPreferences(new());
         await LoadAsync();
     }
     public int Page { get; private set; } = 1;
@@ -168,11 +220,66 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     public bool IsDirty => IsEditing
         && _original != (EditCode, EditName, EditRemark, EditQuantity, EditDueDate, EditPriority, EditActive);
     public bool IsEmpty => !IsLoading && Items.Count == 0;
-    public bool CanInlineEdit => IsEditing && !IsBatchSelecting && HasEditPermission && CanUseSelectedRecord;
-    public bool CanUseSelectedRecord => !_disposed && !_leaving && !IsLoading && !IsSaving
+    public bool CanInlineEdit => IsEditing && !IsBatchSelecting && !ShowTrash && HasEditPermission && CanUseSelectedRecord;
+    public bool CanUseSelectedRecord => !_disposed && !_leaving && !IsLoading && !IsSaving && !ShowTrash
         && SelectedItem is { } item && item.Id == _editingId;
     public bool HasEditPermission => !DeploymentConfiguration.Current.Authentication.Enabled
         || _permissions?.HasPermission("demo:save") == true;
+
+    // ---- 回收站:软删除记录的查看与恢复;回收站模式下列表只读,不提供编辑与批量选择 ----
+
+    /// <summary>回收站视图:只显示已删除记录。切换前走未保存确认,取消则回拨开关。</summary>
+    [ObservableProperty]
+    public partial bool ShowTrash { get; set; }
+    private bool _revertingTrash;
+
+    partial void OnShowTrashChanged(bool value)
+    {
+        if (_initializing || _revertingTrash || _disposed) return;
+        OnPropertyChanged(nameof(CanRestoreTrash));
+        OnPropertyChanged(nameof(CanInlineEdit));
+        OnPropertyChanged(nameof(CanUseSelectedRecord));
+        _ = ToggleTrashAsync();
+    }
+
+    private async Task ToggleTrashAsync()
+    {
+        if (!await TryLeaveAsync())
+        {
+            _revertingTrash = true;
+            try { ShowTrash = !ShowTrash; }
+            finally { _revertingTrash = false; }
+            return;
+        }
+        if (_disposed) return;
+        Page = 1;
+        await LoadAsync();
+    }
+
+    public bool CanRestoreTrash => !_disposed && !IsSaving && ShowTrash && SelectedItem is not null;
+
+    [RelayCommand(CanExecute = nameof(CanRestoreTrash))]
+    private async Task RestoreTrashAsync()
+    {
+        if (_disposed || IsSaving || SelectedItem is not { } record) return;
+        IsSaving = true;
+        try
+        {
+            var error = await _service.RestoreAsync(record.Id, _lifetimeCts.Token);
+            if (_disposed) return;
+            StatusText = error is null
+                ? Loc.Format("demo.trash.restored", record.Code)
+                : error;
+            await LoadAsync();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "恢复回收站记录失败");
+            if (!_disposed) StatusText = Loc.Get("demo.status.loadFailed");
+        }
+        finally { if (!_disposed) IsSaving = false; }
+    }
     public bool HasDeletePermission => !DeploymentConfiguration.Current.Authentication.Enabled
         || _permissions?.HasPermission("demo:delete") == true;
 
@@ -233,6 +340,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseSelectedRecord))]
     [NotifyPropertyChangedFor(nameof(CanInlineEdit))]
+    [NotifyPropertyChangedFor(nameof(CanRestoreTrash))]
     public partial bool IsSaving { get; set; }
     [ObservableProperty]
     public partial bool PreferencesSaveFailed { get; set; }
@@ -285,7 +393,8 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     {
         if (_initializing) return;
         Page = 1;
-        SaveListPreferences();
+        _queryDirty = true;
+        SchedulePreferencesSave();
         _ = LoadAsync();
     }
 
@@ -293,16 +402,29 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     private async Task PreviousPageAsync()
     {
         if (Page <= 1) return;
+        var attempted = Page;
         Page--;
-        await LoadAsync();
+        if (!await LoadAsync())
+        {
+            // 加载失败把页码退回去并刷新显示,否则界面停在 N+1,再点一下会静默跳页。
+            Page = attempted;
+            OnPropertyChanged(nameof(Page));
+            OnPropertyChanged(nameof(PageText));
+        }
     }
 
     [RelayCommand]
     private async Task NextPageAsync()
     {
         if (Page >= PageCount) return;
+        var attempted = Page;
         Page++;
-        await LoadAsync();
+        if (!await LoadAsync())
+        {
+            Page = attempted;
+            OnPropertyChanged(nameof(Page));
+            OnPropertyChanged(nameof(PageText));
+        }
     }
 
     [ObservableProperty]
@@ -364,6 +486,7 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
     partial void OnSelectedItemChanged(DemoRecord? oldValue, DemoRecord? newValue)
     {
+        OnPropertyChanged(nameof(CanRestoreTrash));
         if (_updatingSelection || _disposed || IsBatchSelecting || newValue is null) return;
         _updatingSelection = true;
         SelectedItem = oldValue;
@@ -384,6 +507,15 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     public async Task<bool> SelectRecordAsync(DemoRecord record)
     {
         if (_disposed || IsBatchSelecting || !Items.Any(item => item.Id == record.Id)) return false;
+        // 回收站只读:选中只看详情,不进编辑表单。
+        if (ShowTrash)
+        {
+            _updatingSelection = true;
+            try { SelectedItem = record; }
+            finally { _updatingSelection = false; }
+            OnPropertyChanged(nameof(CanRestoreTrash));
+            return true;
+        }
         if (record.Id == _editingId)
         {
             // 刷新或清空选择后重新选回同一行，只恢复选择，不能重建并覆盖草稿。
@@ -405,10 +537,33 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
     public void Refresh() => _ = LoadAsync();
 
-    /// <summary>按当前搜索条件重新读一遍列表。可以直接 await(测试里就这样用)。</summary>
-    public async Task LoadAsync()
+    /// <summary>全局搜索命中后定位记录;不在当前页(搜索词不同)时清一次过滤再找。</summary>
+    public void HandleOpenRequest(string? payload)
     {
-        if (_disposed) return;
+        if (_disposed || !Guid.TryParse(payload, out var id)) return;
+        _ = SelectRecordByIdAsync(id);
+    }
+
+    private async Task SelectRecordByIdAsync(Guid id)
+    {
+        var record = Items.FirstOrDefault(item => item.Id == id);
+        if (record is null && SearchText.Length > 0)
+        {
+            SearchText = string.Empty; // 触发 QueryChanged 重载
+            await LoadAsync();
+            record = Items.FirstOrDefault(item => item.Id == id);
+        }
+        if (record is not null) await SelectRecordAsync(record);
+    }
+
+    /// <summary>测试用:等待 HandleOpenRequest 的定位完成。</summary>
+    internal Task SelectRecordByIdForTestsAsync(Guid id) => SelectRecordByIdAsync(id);
+
+    /// <summary>按当前搜索条件重新读一遍列表。可以直接 await(测试里就这样用)。
+    /// 返回 false 只代表本次加载确实失败了;被更新的查询取代不算失败,调用方不要据此回滚。</summary>
+    public async Task<bool> LoadAsync()
+    {
+        if (_disposed) return true;
         // 又发起了新的查询时,取消还没完成的旧查询
         _loadCts?.Cancel();
         var cts = new CancellationTokenSource();
@@ -417,10 +572,11 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
 
         try
         {
-            var result = await _service.SearchPageAsync(SearchText, Page, PageSize, SortField, Descending, cts.Token);
+            var result = await _service.SearchPageAsync(SearchText, Page, PageSize, SortField, Descending,
+                cts.Token, trashOnly: ShowTrash);
             if (_disposed || cts.IsCancellationRequested || !ReferenceEquals(_loadCts, cts))
             {
-                return; // 已经被更新的查询取代
+                return true; // 已经被更新的查询取代,状态由最新的那次查询接管
             }
 
             _updatingSelection = true;
@@ -438,16 +594,19 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
             OnPropertyChanged(nameof(PageCount));
             OnPropertyChanged(nameof(PageText));
             StatusText = Loc.Format("demo.status.count", TotalCount);
+            return true;
         }
         catch (OperationCanceledException)
         {
             // 被新的查询取代,不用处理
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "加载示例数据失败");
             if (!_disposed && ReferenceEquals(_loadCts, cts))
                 StatusText = Loc.Get("demo.status.loadFailed");
+            return false;
         }
         finally
         {
@@ -464,6 +623,8 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
     public void Dispose()
     {
         if (_disposed) return;
+        // 冲刷防抖中的偏好落盘,再标记 disposed(冲刷内部要检查这个标志)。
+        FlushPreferencesSave();
         _disposed = true;
         UpdateBatchSelection([]);
         NotifyBatchAvailability();
@@ -588,7 +749,14 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
                 return false;
             }
 
+            // Before 必须在 CloseForm 之前取:MarkClean 会把 _original 刷成保存后的值。
+            var beforeSnapshot = SnapshotFrom(_original);
             CloseForm();
+            if (editingId is { } savedId)
+            {
+                // 已提交的编辑进撤销栈:Before 是表单打开时的基线,After 是本次保存的值。
+                PushUndo(new EditUndoEntry(savedId, beforeSnapshot, SnapshotFrom(snapshot)));
+            }
             await LoadAsync();
             return true;
         }
@@ -763,6 +931,13 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         {
             var error = await _service.DeleteAsync(id, _editingVersion, _lifetimeCts.Token);
             if (_disposed) return;
+            if (error is null)
+            {
+                // 记录已删除,无法撤销/重做,相关栈条目一并清除。
+                _undoStack.RemoveAll(entry => entry.Id == id);
+                _redoStack.RemoveAll(entry => entry.Id == id);
+                NotifyUndoCommands();
+            }
             if (error is not null)
             {
                 ErrorMessage = error;
@@ -813,6 +988,95 @@ public partial class DemoListViewModel : ViewModelBase, IRefreshable, IUnsavedCh
         MarkClean();
         OnPropertyChanged(nameof(CanDelete));
         OnPropertyChanged(nameof(CanUseSelectedRecord));
+    }
+
+    // ---- 撤销/重做:已提交的记录编辑,把值作为草稿放回表单,由用户再决定是否保存。
+    //      不做隐式数据库回写,也不绕过乐观并发;删除的记录不可恢复,相关栈条目直接清除。 ----
+
+    /// <summary>一次已提交编辑的前后值。</summary>
+    private sealed record EditUndoEntry(Guid Id, FormSnapshot Before, FormSnapshot After);
+
+    /// <summary>表单七个字段的快照,字段顺序与 _original 一致。</summary>
+    private sealed record FormSnapshot(string Code, string Name, string Remark, decimal? Quantity,
+        DateTimeOffset? DueDate, DemoPriority Priority, bool Active);
+
+    private static FormSnapshot SnapshotFrom((string Code, string Name, string Remark, decimal? Quantity,
+        DateTimeOffset? DueDate, DemoPriority Priority, bool Active) form) =>
+        new(form.Code, form.Name, form.Remark, form.Quantity, form.DueDate, form.Priority, form.Active);
+
+    private void PushUndo(EditUndoEntry entry)
+    {
+        _undoStack.Add(entry);
+        _redoStack.Clear();
+        NotifyUndoCommands();
+    }
+
+    public bool CanUndo => !_disposed && !IsSaving && !IsBatchSelecting && !ShowTrash
+        && _undoStack.Count > 0 && HasEditPermission;
+    public bool CanRedo => !_disposed && !IsSaving && !IsBatchSelecting && !ShowTrash
+        && _redoStack.Count > 0 && HasEditPermission;
+
+    private void NotifyUndoCommands()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private async Task UndoAsync()
+    {
+        if (_disposed || IsSaving || IsBatchSelecting || _undoStack.Count == 0) return;
+        var entry = _undoStack[^1];
+        if (await RestoreDraftAsync(entry, entry.Before))
+        {
+            _undoStack.RemoveAt(_undoStack.Count - 1);
+            _redoStack.Add(entry);
+            NotifyUndoCommands();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private async Task RedoAsync()
+    {
+        if (_disposed || IsSaving || IsBatchSelecting || _redoStack.Count == 0) return;
+        var entry = _redoStack[^1];
+        if (await RestoreDraftAsync(entry, entry.After))
+        {
+            _redoStack.RemoveAt(_redoStack.Count - 1);
+            _undoStack.Add(entry);
+            NotifyUndoCommands();
+        }
+    }
+
+    /// <summary>把快照放回编辑表单作为草稿。记录必须还在当前列表里;被并发删除/翻页丢失时提示并失败。</summary>
+    private async Task<bool> RestoreDraftAsync(EditUndoEntry entry, FormSnapshot target)
+    {
+        if (IsSaving) return false;
+        if (!await TryLeaveAsync()) return false;
+        if (_disposed) return false;
+        var record = Items.FirstOrDefault(item => item.Id == entry.Id);
+        if (record is null)
+        {
+            StatusText = Loc.Get("demo.status.recordGone");
+            return false;
+        }
+        _updatingSelection = true;
+        try { SelectedItem = record; }
+        finally { _updatingSelection = false; }
+        StartEdit(record);
+        EditCode = target.Code;
+        EditName = target.Name;
+        EditRemark = target.Remark;
+        EditQuantity = target.Quantity;
+        EditDueDate = target.DueDate;
+        EditPriority = target.Priority;
+        EditActive = target.Active;
+        ErrorMessage = string.Empty;
+        StatusText = Loc.Get("demo.status.undoDraft");
+        OnPropertyChanged(nameof(IsDirty));
+        return true;
     }
 
     private void MarkClean()

@@ -22,6 +22,9 @@ public static class AppPaths
     /// <summary>导出文件(CSV 等)默认放这里。</summary>
     public static string ExportDirectory => Path.Combine(DataDirectory, "exports");
 
+    /// <summary>定时自动备份的默认目录。</summary>
+    public static string BackupDirectory => Path.Combine(DataDirectory, "backups");
+
     public static string LogDirectory { get; } = Path.Combine(StateRoot("XDG_STATE_HOME", "state"), ProductName, "logs");
 
     /// <summary>Serilog 按天滚动,实际写入形如 plinth-20261101.ndjson。</summary>
@@ -31,6 +34,7 @@ public static class AppPaths
     {
         Directory.CreateDirectory(DataDirectory);
         Directory.CreateDirectory(LogDirectory);
+        Directory.CreateDirectory(BackupDirectory);
     }
 
     private static string ResolveDataDirectory()

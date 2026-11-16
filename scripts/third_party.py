@@ -2,9 +2,12 @@
 import argparse
 import base64
 import hashlib
+import ipaddress
 import json
 from pathlib import Path
 import re
+import socket
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from supplemental_compliance import load_supplemental
@@ -24,6 +27,27 @@ SPDX_SOURCE = "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/
 SPDX_CACHE = Path.home() / ".cache" / "plinth-spdx"
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """禁跟随重定向:SPDX 文本必须来自钉死的源,3xx 会作为错误暴露。"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def safe_urlopen(url, timeout):
+    """SSRF 边界:只允许 https + 钉死的 SPDX 主机,且解析出的 IP 必须是公网地址。"""
+    parts = urllib.parse.urlsplit(url)
+    pinned = urllib.parse.urlsplit(SPDX_SOURCE)
+    if parts.scheme != "https" or parts.hostname != pinned.hostname:
+        raise ValueError(f"SPDX fetch must stay on the pinned https host: {url}")
+    for info in socket.getaddrinfo(parts.hostname, 443, proto=socket.IPPROTO_TCP):
+        address = ipaddress.ip_address(info[4][0])
+        if (address.is_private or address.is_loopback or address.is_link_local
+                or address.is_reserved or address.is_multicast):
+            raise ValueError("SPDX source resolves to a non-public address")
+    return urllib.request.build_opener(_NoRedirect()).open(url, timeout=timeout)
+
+
 def fetch_spdx_text(license_id):
     """Use only the pinned upstream or its isolated cache; fail if neither is available."""
     # The URL includes the pinned release. Changing it must never reuse another
@@ -36,9 +60,11 @@ def fetch_spdx_text(license_id):
         text = cached.read_text(encoding="utf-8")
         if text.strip():
             return text
+    if not re.fullmatch(r"[A-Za-z0-9.+\-]+", license_id):
+        raise ValueError(f"unexpected SPDX license id: {license_id!r}")
     url = SPDX_SOURCE + license_id + ".txt"
     try:
-        with urllib.request.urlopen(url, timeout=30) as response:
+        with safe_urlopen(url, timeout=30) as response:
             text = response.read().decode("utf-8")
         if not text.strip():
             raise ValueError("empty text")

@@ -140,15 +140,22 @@ public sealed class WorkspacePreferencesService
 
     private void PreserveOriginal(string suffix)
     {
-        try
+        // 后缀档案已存在(上一次也损坏过)时换带时间戳的名字,而不是把保存永久锁死。
+        var candidates = new[] { _path + suffix, $"{_path}{suffix}.{DateTime.UtcNow:yyyyMMddHHmmssfff}" };
+        foreach (var target in candidates)
         {
-            File.Move(_path, _path + suffix, overwrite: false);
+            try
+            {
+                File.Move(_path, target, overwrite: false);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // 尝试下一个候选名
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            _saveBlocked = true;
-            Log.Warning("Workspace original could not be preserved; saving is blocked.");
-        }
+        _saveBlocked = true;
+        Log.Warning("Workspace original could not be preserved; saving is blocked.");
     }
 
     private static void ValidateVersions(string json)
@@ -211,12 +218,15 @@ public sealed class WorkspacePreferencesService
         if (demo is not null)
         {
             string[] fields = ["Code", "Name", "Remark", "UpdatedAt", "UpdatedBy"];
+            // 列偏好白名单必须是全部列定义:之前只列了 5 个排序字段,Quantity/日期/优先级/启用
+            // 4 列的宽度与显隐会在备份/恢复后永久丢失。新增列时这里要同步。
+            string[] columns = ["Code", "Name", "Remark", "Quantity", "DueDate", "Priority", "Active", "UpdatedAt", "UpdatedBy"];
             demo = demo with
             {
                 SearchText = demo.SearchText,
                 PageSize = demo.PageSize is 25 or 50 or 100 or 200 ? demo.PageSize : 50,
                 SortField = fields.Contains(demo.SortField) ? demo.SortField : "Code",
-                Columns = (demo.Columns ?? []).Where(c => fields.Contains(c.Key) && c.Value is not null)
+                Columns = (demo.Columns ?? []).Where(c => columns.Contains(c.Key) && c.Value is not null)
                     .ToDictionary(c => c.Key, c => c.Value with
                     {
                         Width = double.IsFinite(c.Value.Width) ? Math.Clamp(c.Value.Width, 40, 2000) : 140,

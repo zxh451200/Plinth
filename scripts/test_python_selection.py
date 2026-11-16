@@ -31,9 +31,12 @@ if config["launcher"]:
 if args[:1] == ["-c"]:
     if config["probe_exit"]:
         sys.exit(config["probe_exit"])
-    sys.version_info = tuple(config["version"])
-    sys.executable = config["reported"]
-    exec(args[1])
+    # 只接受 python.ps1 里固定的探针片段:fixture 不执行任何其他动态代码。
+    if args[1] != 'import sys; sys.exit(1) if sys.version_info < (3, 8) else None; print(sys.executable)':
+        sys.exit(config["exit_code"])
+    if tuple(config["version"]) < (3, 8):
+        sys.exit(1)
+    print(config["reported"])
 else:
     sys.exit(config["exit_code"])
 """

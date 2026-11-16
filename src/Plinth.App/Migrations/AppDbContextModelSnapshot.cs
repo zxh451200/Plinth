@@ -44,8 +44,14 @@ namespace Plinth.App.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -81,6 +87,8 @@ namespace Plinth.App.Migrations
 
                     b.HasIndex("CodeKey")
                         .IsUnique();
+
+                    b.HasIndex("IsDeleted");
 
                     b.ToTable("demo_records", (string)null);
                 });

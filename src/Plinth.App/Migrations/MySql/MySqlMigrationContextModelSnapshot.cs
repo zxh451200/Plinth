@@ -57,8 +57,14 @@ namespace Plinth.App.Migrations.MySql
 
                     MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("CreatedBy"), "utf8mb4");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -100,6 +106,8 @@ namespace Plinth.App.Migrations.MySql
 
                     b.HasIndex("CodeKey")
                         .IsUnique();
+
+                    b.HasIndex("IsDeleted");
 
                     b.ToTable("demo_records", (string)null);
 

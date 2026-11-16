@@ -13,6 +13,8 @@ public static class NotesModuleRegistration
     {
         services.AddTransient<NoteService>();
         services.AddTransient<NoteViewModel>();
+        services.AddSingleton<NotesContentSearchProvider>();
+        services.AddSingleton<IContentSearchProvider>(provider => provider.GetRequiredService<NotesContentSearchProvider>());
         services.AddSingleton<HelpTopic>(_ => new("notes.editing", Loc.Get("help.notes.title"),
             Loc.Get("help.notes.body"), PageId)
         { TitleKey = "help.notes.title", BodyKey = "help.notes.body" });

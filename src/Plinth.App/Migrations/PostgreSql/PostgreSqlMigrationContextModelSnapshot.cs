@@ -49,8 +49,14 @@ namespace Plinth.App.Migrations.PostgreSql
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -86,6 +92,8 @@ namespace Plinth.App.Migrations.PostgreSql
 
                     b.HasIndex("CodeKey")
                         .IsUnique();
+
+                    b.HasIndex("IsDeleted");
 
                     b.ToTable("demo_records", (string)null);
                 });

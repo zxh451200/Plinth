@@ -85,7 +85,15 @@
   <data name="settings.saved" xml:space="preserve"><value>已保存</value></data>
   <data name="settings.language" xml:space="preserve"><value>语言</value></data>
   <data name="settings.language.hint" xml:space="preserve"><value>选择后立即生效。</value></data>
-  <data name="settings.language.saved" xml:space="preserve"><value>已保存,重启程序后生效。</value></data>
+  <data name="settings.language.saved" xml:space="preserve"><value>已保存,界面语言已切换。</value></data>
+  <data name="demo.undo"><value>撤销上次编辑</value></data>
+  <data name="demo.redo"><value>重做上次编辑</value></data>
+  <data name="demo.status.undoDraft"><value>编辑前/后的值已放回表单作为草稿；核对无误后再保存。</value></data>
+  <data name="demo.status.recordGone"><value>该记录已不存在或不在当前页，无法撤销/重做。</value></data>
+  <data name="demo.trash"><value>回收站</value></data>
+  <data name="demo.trash.restore"><value>恢复</value></data>
+  <data name="demo.trash.restored"><value>已从回收站恢复 {0}。</value></data>
+  <data name="demo.trash.conflict"><value>该编码已被其他记录使用，无法恢复。</value></data>
   <data name="demo.new" xml:space="preserve"><value>新增</value></data>
   <data name="demo.search.placeholder" xml:space="preserve"><value>按编码或名称搜索</value></data>
   <data name="demo.search.name" xml:space="preserve"><value>搜索</value></data>
@@ -311,6 +319,13 @@
   <data name="settings.logRetentionDays"><value>日志保留天数（1–365）</value></data>
   <data name="settings.logRetainedFiles"><value>日志文件数量上限（1–100，每份 10 MB）</value></data>
   <data name="about.support"><value>打开支持页面</value></data>
+  <data name="backup.auto.title"><value>定时自动备份</value></data>
+  <data name="backup.auto.hint"><value>按设置的间隔把数据库与设置自动备份到数据目录的 backups 文件夹；应用启动和每 6 小时各检查一次。启用生产确认模式时，需要已登录并具备 backup:export 权限，否则本次检查跳过、等下一次。</value></data>
+  <data name="backup.auto.enabled"><value>启用定时自动备份</value></data>
+  <data name="backup.auto.intervalDays"><value>备份间隔（天）</value></data>
+  <data name="backup.auto.keepCount"><value>保留份数</value></data>
+  <data name="backup.auto.none"><value>尚无自动备份。</value></data>
+  <data name="backup.auto.last"><value>最近一次自动备份：{0}（共 {1} 份）</value></data>
   <data name="backup.preview.summary"><value>应用版本：{0}；结构版本：{1}；创建时间（UTC）：{2}。已校验文件：</value></data>
   <data name="backup.confirm"><value>我已核对 ZIP 内容。恢复将在下次启动替换数据库和设置，并保留安全副本；缺少工作区偏好时将恢复默认布局。</value></data>
   <data name="backup.confirmRestore"><value>确认下次启动恢复</value></data>
@@ -412,7 +427,7 @@
   <data name="shell.environment.development"><value>开发</value></data>
   <data name="shell.environment.test"><value>测试</value></data>
   <data name="shell.environment.production"><value>生产</value></data>
-  <data name="shell.quickOpen.placeholder"><value>搜索页面（Ctrl+K）</value></data>
+  <data name="shell.quickOpen.placeholder"><value>搜索页面与内容（Ctrl+K）</value></data>
   <data name="shell.quickOpen.name"><value>快速打开页面</value></data>
   <data name="shell.quickOpen.results"><value>页面搜索结果</value></data>
   <data name="shell.view.missing"><value>找不到页面「{0}」对应的界面，需要名为 {1} 的视图。</value></data>

@@ -43,23 +43,32 @@
     <Style Selector="Button#FieldButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="BorderBrush" Value="{DynamicResource PlinthAccentBrush}" />
     </Style>
-    <Style Selector="TextBlock.chevron">
-      <Setter Property="FontFamily" Value="Segoe Fluent Icons,Segoe MDL2 Assets" />
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+    <!-- 箭头用矢量 Path 而不是图标字体:Segoe Fluent Icons 的行盒/基线度量在真实字体里
+         会把字形顶到行盒上沿,VerticalAlignment=Center 居中的是行盒而不是墨迹,
+         headless 测试里字体度量还是打桩的,验证不到。Path 的布局盒就是墨迹本身,
+         几何中心永远确定,任何后端一致。几何按 10x5 盒子内缩 0.75 描边半径画出,墨迹正好铺满盒子。 -->
+    <Style Selector="Path.chevron">
+      <Setter Property="Stroke" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="Data" Value="M 1,1.25 L 5,4 L 9,1.25" />
+      <Setter Property="Width" Value="10" />
+      <Setter Property="Height" Value="5" />
+      <Setter Property="Stretch" Value="None" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="Margin" Value="8,0,0,0" />
-      <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-      <Setter Property="Transitions">
-        <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
-        </Transitions>
-      </Setter>
+      <!-- RelativePoint 的比例语法是百分数;写 0.5,0.5 会被当成 0.5px,支点跑到左上角 -->
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     </Style>
-    <!-- 展开时箭头翻半圈并染成强调色,让“已打开”这件事可被看见 -->
-    <Style Selector="Button#FieldButton.open TextBlock.chevron">
-      <Setter Property="RenderTransform" Value="rotate(180deg)" />
-      <Setter Property="Foreground" Value="{DynamicResource PlinthAccentBrush}" />
+    <!-- 展开态转 180° 并染成强调色,让"已打开"可被看见。
+         对 Path 转是安全的:它的盒子就是墨迹,50%,50% 支点就是墨迹中心;
+         之前文字字形旋转会偏,正是因为行盒被撑大、支点不在墨迹中心。 -->
+    <Style Selector="Button#FieldButton.open Path.chevron">
+      <Setter Property="Stroke" Value="{DynamicResource PlinthAccentBrush}" />
+      <Setter Property="RenderTransform">
+        <RotateTransform Angle="180" />
+      </Setter>
     </Style>
     <Style Selector="TextBlock.placeholder">
       <Setter Property="Foreground" Value="{DynamicResource PlinthSubtleForegroundBrush}" />
@@ -121,8 +130,8 @@
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock x:Name="ValueText" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                    Foreground="{DynamicResource PlinthForegroundBrush}" />
-        <TextBlock Grid.Column="1" Classes="chevron" Text="&#xE70D;"
-                   AutomationProperties.AccessibilityView="Raw" />
+        <Path Grid.Column="1" Classes="chevron"
+              AutomationProperties.AccessibilityView="Raw" />
       </Grid>
     </Button>
 

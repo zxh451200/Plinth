@@ -261,7 +261,8 @@ public class ShellTests
 
         shell.ViewModel.QuickOpenText = "设置";
         Assert.Single(shell.ViewModel.QuickOpenItems);
-        Assert.Equal(ShellNavigation.SettingsId, shell.ViewModel.QuickOpenItems[0].Id);
+        Assert.Equal(ShellNavigation.SettingsId,
+            Assert.IsType<NavigationItem>(shell.ViewModel.QuickOpenItems[0]).Id);
 
         shell.ViewModel.AcceptQuickOpenCommand.Execute(shell.ViewModel.QuickOpenSelection);
 

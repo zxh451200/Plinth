@@ -45,4 +45,32 @@ public class DemoRecord : Plinth.App.Data.AuditableEntity
 
     /// <summary>启用示例:布尔单元格。</summary>
     public bool Active { get; set; } = true;
+
+    /// <summary>软删除:删除进回收站,列表默认过滤,恢复时清除。改写走下面的 internal 方法。</summary>
+    public bool IsDeleted { get; private set; }
+
+    /// <summary>进回收站的时间(UTC)。</summary>
+    public DateTime? DeletedAtUtc { get; private set; }
+
+    /// <summary>进回收站:改写编码键避免占用唯一索引,由 DemoService 调用。</summary>
+    internal void MarkDeleted(DateTime atUtc, string trashCodeKey)
+    {
+        IsDeleted = true;
+        DeletedAtUtc = atUtc;
+        CodeKey = trashCodeKey;
+    }
+
+    /// <summary>从回收站恢复:编码键改回原值,由 DemoService 调用。</summary>
+    internal void MarkRestored()
+    {
+        IsDeleted = false;
+        DeletedAtUtc = null;
+    }
+
+    /// <summary>恢复时改回原编码键,由 DemoService 调用(冲突检查在服务层做)。</summary>
+    internal void SetCodeKeyForRestore(string key) => CodeKey = key;
+
+    // 表格行容器（TableViewRow）的读屏名称回落到 DataContext.ToString()；
+    // 不重写会念出裸类名，这里给出可朗读的记录标识。
+    public override string ToString() => string.IsNullOrWhiteSpace(Name) ? Code : $"{Code} {Name}";
 }

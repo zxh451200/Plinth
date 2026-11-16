@@ -42,6 +42,27 @@
       <Button Content="{loc:T backup.confirmRestore}" Command="{Binding ConfirmRestoreCommand}"
               IsEnabled="{Binding CanConfirmRestore}" />
     </StackPanel>
+    <!-- 定时自动备份:设置即改即存;服务器库由服务器备份,这一卡不显示 -->
+    <Border IsVisible="{Binding CanEditAutoBackup}"
+            Background="{DynamicResource PlinthPanelBrush}" BorderBrush="{DynamicResource PlinthBorderBrush}"
+            BorderThickness="1" CornerRadius="6" Padding="{DynamicResource PlinthPanelPadding}"
+            BoxShadow="0 1 3 0 #1A000000">
+      <StackPanel Spacing="12">
+        <SelectableTextBlock Text="{loc:T backup.auto.title}" FontWeight="SemiBold" />
+        <SelectableTextBlock Text="{loc:T backup.auto.hint}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource PlinthSubtleForegroundBrush}" />
+        <CheckBox Content="{loc:T backup.auto.enabled}" IsChecked="{Binding IsAutoBackupEnabled}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowAutoBackupSchedule}">
+          <TextBlock Text="{loc:T backup.auto.intervalDays}" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding AutoBackupIntervalDays}" Minimum="1" Maximum="365"
+                         Width="110" MinHeight="{DynamicResource PlinthControlHeight}" />
+          <TextBlock Text="{loc:T backup.auto.keepCount}" VerticalAlignment="Center" Margin="16,0,0,0" />
+          <NumericUpDown Value="{Binding AutoBackupKeepCount}" Minimum="1" Maximum="100"
+                         Width="110" MinHeight="{DynamicResource PlinthControlHeight}" />
+        </StackPanel>
+        <SelectableTextBlock Text="{Binding AutoBackupStatusText}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
     <SelectableTextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
   </StackPanel>
   </ScrollViewer>

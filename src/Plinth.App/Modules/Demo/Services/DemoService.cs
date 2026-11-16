@@ -44,7 +44,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
     public async Task<IReadOnlyList<DemoRecord>> SearchAsync(string? search, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        var query = db.Set<DemoRecord>().AsNoTracking();
+        var query = db.Set<DemoRecord>().AsNoTracking().Where(record => !record.IsDeleted);
 
         var keyword = search?.Trim() ?? string.Empty;
         if (keyword.Length > 0)
@@ -57,14 +57,15 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         return await query.OrderBy(record => record.CodeKey).ThenBy(record => record.Id).ToListAsync(cancellationToken);
     }
 
-    /// <summary>只读取当前页；排序字段使用白名单，所有排序追加唯一键。</summary>
+    /// <summary>只读取当前页；排序字段使用白名单，所有排序追加唯一键。trashOnly=true 时只看回收站。</summary>
     public async Task<DemoSearchPage> SearchPageAsync(
         string? search, int page = 1, int pageSize = 50, string sortField = "Code",
-        bool descending = false, CancellationToken cancellationToken = default)
+        bool descending = false, CancellationToken cancellationToken = default, bool trashOnly = false)
     {
         pageSize = Math.Clamp(pageSize, 1, 200);
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        var query = db.Set<DemoRecord>().AsNoTracking();
+        var query = db.Set<DemoRecord>().AsNoTracking()
+            .Where(record => record.IsDeleted == trashOnly);
         var keyword = search?.Trim() ?? string.Empty;
         if (keyword.Length > 0)
         {
@@ -122,7 +123,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         var records = db.Set<DemoRecord>();
 
         var codeKey = CodeIdentity.Create(code);
-        if (await records.AnyAsync(record => record.CodeKey == codeKey && record.Id != input.Id, cancellationToken))
+        if (await records.AnyAsync(record => record.CodeKey == codeKey && record.Id != input.Id && !record.IsDeleted, cancellationToken))
         {
             return new(DemoSaveField.Code, DuplicateMessage(code));
         }
@@ -183,7 +184,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         }
     }
 
-    /// <summary>按打开时的版本删除一条，版本过期时拒绝误删。</summary>
+    /// <summary>按打开时的版本删除一条进回收站（软删除），版本过期时拒绝误删。</summary>
     public async Task<string?> DeleteAsync(Guid id, int expectedVersion,
         CancellationToken cancellationToken = default)
         => await _operations.ExecuteConfirmedAsync("demo:delete", "Demo", "delete",
@@ -193,13 +194,54 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         CancellationToken cancellationToken)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        // 软删除:CodeKey 追加记录 Id 改写掉,回收站里的记录不占用编码,恢复时改回并检查冲突。
+        var suffix = "#" + id.ToString("N");
         var deleted = await db.Set<DemoRecord>()
-            .Where(record => record.Id == id && record.Version == expectedVersion)
-            .ExecuteDeleteAsync(cancellationToken);
+            .Where(record => record.Id == id && record.Version == expectedVersion && !record.IsDeleted)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(record => record.IsDeleted, true)
+                .SetProperty(record => record.DeletedAtUtc, DateTime.UtcNow)
+                .SetProperty(record => record.CodeKey, record => record.CodeKey + suffix)
+                .SetProperty(record => record.Version, record => record.Version + 1), cancellationToken);
         if (deleted == 1) return null;
         var exists = await db.Set<DemoRecord>().AsNoTracking()
             .AnyAsync(record => record.Id == id, cancellationToken);
         return exists ? Loc.Get("demo.err.conflict") : Loc.Get("demo.err.gone");
+    }
+
+    /// <summary>从回收站恢复一条记录:改回原编码键;编码已被其他记录占用时拒绝并提示。</summary>
+    public async Task<string?> RestoreAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _operations.ExecuteConfirmedAsync("demo:save", "Demo", "restore",
+            ct => RestoreCoreAsync(id, ct), cancellationToken, error => error is null);
+
+    private async Task<string?> RestoreCoreAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var record = await db.Set<DemoRecord>()
+            .FirstOrDefaultAsync(item => item.Id == id && item.IsDeleted, cancellationToken);
+        if (record is null) return Loc.Get("demo.err.gone");
+        var originalKey = CodeIdentity.Create(record.Code);
+        if (await db.Set<DemoRecord>().AsNoTracking()
+            .AnyAsync(item => item.CodeKey == originalKey && item.Id != id, cancellationToken))
+        {
+            return Loc.Get("demo.trash.conflict");
+        }
+        record.MarkRestored();
+        record.SetCodeKeyForRestore(originalKey);
+        record.Version += 1;
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Loc.Get("demo.err.conflict");
+        }
+        catch (DbUpdateException)
+        {
+            return Loc.Get("demo.trash.conflict");
+        }
     }
 
     /// <summary>
@@ -249,7 +291,7 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         await using var db = await dbFactory.CreateDbContextAsync(token);
         // One read transaction fixes the snapshot across all bounded pages.
         await using var snapshot = await db.Database.BeginTransactionAsync(token);
-        var query = db.Set<DemoRecord>().AsNoTracking();
+        var query = db.Set<DemoRecord>().AsNoTracking().Where(r => !r.IsDeleted);
         var keyword = search?.Trim() ?? "";
         if (keyword.Length > 0)
         {
@@ -393,7 +435,9 @@ public class DemoService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Demo
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var keys = parsed.Select(item => CodeIdentity.Create(item.Code)).ToList();
-        var existing = (await db.Set<DemoRecord>().Where(record => keys.Contains(record.CodeKey)).ToListAsync(cancellationToken))
+        // 回收站里的记录 CodeKey 已被改写,不会命中;导入不恢复回收站记录。
+        var existing = (await db.Set<DemoRecord>()
+            .Where(record => keys.Contains(record.CodeKey) && !record.IsDeleted).ToListAsync(cancellationToken))
             .ToDictionary(record => record.CodeKey, StringComparer.Ordinal);
 
         int added = 0, updated = 0;

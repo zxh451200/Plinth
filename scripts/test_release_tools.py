@@ -105,7 +105,7 @@ class ReleaseToolTests(unittest.TestCase):
                     "sha512": base64.b64encode(bytes(64)).decode()}}}))
             output = root / "out"
             with patch.object(third_party, "SPDX_CACHE", root / "spdx-cache"), \
-                    patch("urllib.request.urlopen", return_value=io.BytesIO(b"synthetic SPDX text fixture")):
+                    patch.object(third_party, "safe_urlopen", return_value=io.BytesIO(b"synthetic SPDX text fixture")):
                 third_party.generate([assets], output)
             notice = (output / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8-sig")
             self.assertIn("synthetic copyright fixture", notice)
@@ -117,7 +117,7 @@ class ReleaseToolTests(unittest.TestCase):
             # This synthetic metadata verifies policy behavior, not Npgsql package contents.
             nuspec.write_text(template.format("PostgreSQL"))
             with patch.object(third_party, "SPDX_CACHE", root / "spdx-cache"), \
-                    patch("urllib.request.urlopen", return_value=io.BytesIO(b"synthetic PostgreSQL license fixture")) as fetch:
+                    patch.object(third_party, "safe_urlopen", return_value=io.BytesIO(b"synthetic PostgreSQL license fixture")) as fetch:
                 third_party.generate([assets], output)
             fetch.assert_called_once_with(third_party.SPDX_SOURCE + "PostgreSQL.txt", timeout=30)
             sbom = json.loads((output / "sbom.cdx.json").read_text(encoding="utf-8-sig"))
@@ -151,8 +151,8 @@ class SpdxTextTests(unittest.TestCase):
         cache_patch = patch.object(third_party, "SPDX_CACHE", self.cache)
         cache_patch.start()
         self.addCleanup(cache_patch.stop)
-        network_patch = patch("third_party.urllib.request.urlopen",
-                              side_effect=urllib.error.URLError("offline"))
+        network_patch = patch.object(third_party, "safe_urlopen",
+                                     side_effect=urllib.error.URLError("offline"))
         self.network = network_patch.start()
         self.addCleanup(network_patch.stop)
         # These markers exercise tooling only; they are never compliance evidence.

@@ -131,7 +131,7 @@ public class LocalizationTests
             using (var shell = new Shell())
             {
                 shell.Layout();
-                Assert.Equal("Search pages (Ctrl+K)",
+                Assert.Equal("Search pages and content (Ctrl+K)",
                     shell.Window.FindControl<TextBox>("QuickOpenBox")!.PlaceholderText);
                 Assert.Equal("Environment: " + Loc.Get("shell.environment.development"),
                     shell.ViewModel.ShellStatus!.EnvironmentText);
@@ -144,7 +144,7 @@ public class LocalizationTests
             using (var shell = new Shell())
             {
                 shell.Layout();
-                Assert.Equal("搜索页面（Ctrl+K）",
+                Assert.Equal("搜索页面与内容（Ctrl+K）",
                     shell.Window.FindControl<TextBox>("QuickOpenBox")!.PlaceholderText);
                 Assert.Equal("环境：开发", shell.ViewModel.ShellStatus!.EnvironmentText);
                 using var logs = new LogViewModel(new FolderService(NullLogger<FolderService>.Instance));
@@ -170,7 +170,7 @@ public class LocalizationTests
             var quick = shell.Window.FindControl<TextBox>("QuickOpenBox")!;
             var overview = shell.ViewModel.PrimaryMenuItems.First(item => item.Id == ShellNavigation.OverviewId);
             var tab = shell.ViewModel.Tabs.First(item => item.Id == ShellNavigation.OverviewId);
-            Assert.Equal("搜索页面（Ctrl+K）", quick.PlaceholderText);
+            Assert.Equal("搜索页面与内容（Ctrl+K）", quick.PlaceholderText);
             Assert.Equal("环境：开发", shell.ViewModel.ShellStatus!.EnvironmentText);
             Assert.Equal("概览", overview.Title);
             Assert.Equal("概览", tab.Title);
@@ -178,7 +178,7 @@ public class LocalizationTests
             Loc.SetLanguage("en-US");
             shell.Layout();
 
-            Assert.Equal("Search pages (Ctrl+K)", quick.PlaceholderText);
+            Assert.Equal("Search pages and content (Ctrl+K)", quick.PlaceholderText);
             Assert.Equal("Environment: " + Loc.Get("shell.environment.development"),
                 shell.ViewModel.ShellStatus!.EnvironmentText);
             Assert.Equal("Overview", overview.Title);

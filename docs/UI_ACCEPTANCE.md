@@ -12,6 +12,8 @@ TRX 在 `artifacts/test-results/`。标签条键盘可达性通过：Avalonia 12
 
 2026-11-09 在当前 HEAD 以 Release 重新执行自动回归：`Plinth.App.Tests` 1205 项（1203 通过、2 项 `PLINTH_TEST_POSTGRES`／`PLINTH_TEST_MYSQL` 环境跳过）、`Plinth.Spreadsheet.Tests` 49 项（48 通过、1 项无 `PLINTH_XLSM_SAMPLE` 跳过）；TRX 归档在 `artifacts/test-results/`。上文 917/47/956 为 2026-11-04 历史数字。
 
+2026-11-10 定向复跑（Debug）：`FullyQualifiedName~Demo` 250 通过／2 环境跳过（含 `DemoRecord.ToString()` 读屏名称修复后的回归）；XLSX 启用变体 `-p:PlinthEnableXlsx=true` 下 `Plinth.Spreadsheet.Tests` 48 通过／1 环境跳过、`Plinth.App.Tests` `~Spreadsheet` 36/36 通过。默认构建输出无 `ClosedXML.dll`，启用变体输出含 `ClosedXML.dll` 家族，与发布门禁一致；XLSX 仍默认关闭，启用属发布决策（见 [LEGAL_REVIEW.md](release/LEGAL_REVIEW.md)）。
+
 折叠轨道与内缩圆角选中态已在 125% 实机截图复核（`nav-p3-selected-125.png`、`nav-p3-compact-125.png`），深色主题见 `nav-dark-125.png`；真实 UIAutomation 树已抓取（`uia-current-alt2.txt`、`uia-menu-quickopen.json`），窗口 DPI 为 120（125%），标签页名称修复为页面标题，装饰分组标题不进入 UIA 树，快速打开结果的读屏名称也已改为页面标题。真实 `Alt+2` 已把窗口切到“示例数据”；真实菜单“查看→快速打开”已展开并显示“快速打开页面／页面搜索结果”。`Ctrl+K`、`Alt+1..9`、`Alt+0` 另有自动回归覆盖。2026-11-04 起导航行、快速打开结果与设置页下拉的选中／悬停底色改为左右通栏，Fluent 原生下拉／菜单弹层的首尾 4px 留白也由资源归零，上文“内缩圆角选中态”截图作废；几何门禁见 `ShellTests.Navigation_selection_fills_the_sidebar_width`、`ShellTests.Quick_open_rows_fill_the_panel_width`、`PopupBleedTests` 与 `SearchSelectTests.Option_rows_span_the_full_popup_width`。
 
 渲染缩放 100/125/150/200% 由 `ScaleRenderingTests` 断言：截图像素尺寸与缩放同比例，侧栏与工作区不越界，日志／任务／设置页面级容器不横向溢出；截图见 `dpi-100.png`、`dpi-150.png`、`dpi-200.png`。这是 Avalonia 渲染缩放，不等同于修改 Windows 显示设置。
@@ -48,6 +50,33 @@ TRX 在 `artifacts/test-results/`。标签条键盘可达性通过：Avalonia 12
 ```
 
 主代理应保留原始构建与测试日志；如果编译失败，应先确认下述 API 风险，不能删除断言、跳过失败用例或替换成静态 XML 检查来获得通过。
+
+## 内联编辑与草稿规则：真实 Windows 输入实测（2026-11-10）
+
+环境：Windows 11 26200、.NET 10.0.403、Debug 构建、125% DPI（AppliedDPI=120）、物理 1920×1080、窗口 1500×900、简体中文、浅色。隔离数据目录 `artifacts/ui-acceptance-2026-11-09/data-inline`（`PLINTH_DATA_DIR` + `PLINTH_IncludeSampleModules=true`）。输入为真实鼠标点击 / SendKeys / 剪贴板粘贴（搜狗拼音在进程内拦截 ASCII，故文本与数字走 Ctrl+V），核对以 UIA 树 + 窗口截图 + SQLite `demo_records` 落地值三方一致为准。脚本与证据均在 `artifacts/ui-acceptance-2026-11-09/`。
+
+| 项目 | 实测结果 | 证据 |
+| --- | --- | --- |
+| 数量越界 / 小数 | 2000000 被拒收回落、1.5 提交取整为 2，DB 一致 | `test-qty.ps1`、`test-decimal.ps1` |
+| 日期弹层定位 / 清除 | 弹层在单元格上方对齐、无横向偏移；清除生效 | `date-cell-ok.png`、`date-cell-popup*.png` |
+| 优先级键盘 | HOME+ENTER 选「低」，DB Priority=Low | `test-cells.ps1` |
+| 布尔切换 | On→Off，DB Active=0、Version=2 | `test-bool.ps1` |
+| 脏草稿 + 切换行 | 弹「未保存的更改」守卫框（保存/丢弃/取消），草稿保留 | `draft-dialog.png`、`tree-dialog.txt` |
+| 守卫选「取消」 | 留在原行、草稿备注原样保留 | `cancel-draft.ps1` 输出 |
+| 守卫选「丢弃」 | 切到目标行，DB 原行备注/Version 不变（草稿未写库） | `discard3.ps1`、DB 查询 |
+| 刷新 / 搜索后草稿 | 同一条 LoadAsync 路径：草稿保留且选择重新同步回编辑行 | `discard3.ps1`（refresh 段） |
+
+发现缺陷（未关闭，保留为未通过项）：
+
+1. 行 ListItem 的 UIA Name 为裸类名 `Plinth.App.Modules.Demo.Data.DemoRecord`，读屏会念类名而非记录标识（见 `tree-demo.txt`）。归入读屏实测整改。
+2. 900px 窗高 + 125% DPI 下表单「保存/取消」被裁到状态栏区域，物理点击落空，仅 Invoke/滚动可触发（`tree-form.txt` 保存按钮 y=932 与状态栏重叠）。
+3. 守卫框选「取消」后表格视觉选中停在被拒绝的目标行而表单仍编辑原行（选择/编辑失同步），再点该行无反应（`sel-state.ps1`：A002 isSelected=True、editing=A001）。
+
+密度档位真实交互（同日、同环境，真实 125% OS DPI）：在设置页用真实点击切换「界面密度」三档并立即回 Demo 测量，控件高度随档即时变化且与 `DensityService` 一致（新增按钮 紧凑 35px／标准 40px／舒适 50px = 28/32/40 DIP × 1.25；表格行高 44/50/70）。截图 `density-紧凑.png`、`density-舒适.png`、`density-标准.png`：紧凑档表单保存/取消/删除完整可见；舒适档工具栏换行、表单滚动可达，无重叠或裁切死区。结束已恢复「标准」。OS 级 100/150/200% 显示设置切换仍属下文待实测矩阵（需注销会话），本轮未执行，不以渲染缩放冒充。
+
+读屏名称与 Narrator 聚焦（同日）：修复行 ListItem 读屏名称泄漏——`DemoRecord.ToString()` 现返回「编码 名称」（如 `A001 测试记录一`），重建后真实 UIA 复核行 Name 已不再是裸类名（`verify-rowname.ps1`）。启动系统 Narrator 并以真实键盘/`SetFocus` 在表格行間导航，焦点处 UIA 名称为记录标识，Narrator 焦点矩形可见（`narrator-focus.png`）；测试结束已关闭 Narrator。限制：本机未安装 NVDA；WASAPI 环回录音互操作失败，朗读音频未转写，故「实听内容」仍留人工复核，本轮证据为 UIA 桥名称 + Narrator 聚焦行为，不宣称朗读内容逐字合格。
+
+桌面性能（同日，Release 默认 XLSX-off，125% DPI，隔离 `data-perf` 含 10,000 行；脚本 `perf.ps1`／`perf-release.ps1`／`firstframe.ps1`）：首帧（进程启动→导航树可见）Release 暖启动约 9.3–9.4s，且 2 行与 10,000 行几乎相同（9340 vs 9415ms），说明首帧为启动初始化（EF/Avalonia/DI）主导而非数据量主导，属待优化弱点；Release 首次冷启动约 16.9s（含首跑扫描），Debug 约 10.5s。内存：10k 行基线 WS≈191MB，加载后≈235MB；连续 60s 翻页趋势平稳（WS≈235MB／私有≈113MB，无持续增长），滚动/编辑增量仅数 MB，证明表格虚拟化生效。低配模拟：单核亲和下 12 次 PageDown 约 1.86s（≈155ms/页）仍可用；亲和仅模拟核数受限，不等同真实低配整机，长期趋势仅 60s 采样，更长时域留待补测。
 
 ## Windows 实测矩阵
 

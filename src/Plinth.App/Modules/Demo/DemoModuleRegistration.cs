@@ -19,6 +19,8 @@ public static class DemoModuleRegistration
     {
         services.AddTransient<DemoService>();
         services.AddTransient<DemoListViewModel>();
+        services.AddSingleton<DemoContentSearchProvider>();
+        services.AddSingleton<IContentSearchProvider>(provider => provider.GetRequiredService<DemoContentSearchProvider>());
         services.AddSingleton<HelpTopic>(_ => new("demo.editing", Loc.Get("help.demo.title"),
             Loc.Get("help.demo.body"), PageId)
         { TitleKey = "help.demo.title", BodyKey = "help.demo.body" });
@@ -39,6 +41,11 @@ public static class DemoModuleRegistration
             PageCommandAction.Cancel));
         services.AddSingleton(new CommandMenuContribution(PageId, "demo.export",
             page => page is DemoListViewModel { IsSaving: false } vm ? vm.ExportCommand : null));
+        // 撤销/重做:把已提交编辑的前/后值放回表单作草稿;Ctrl+Z/Y 保留给文本框原生撤销,不注册全局快捷键。
+        services.AddSingleton(new CommandMenuContribution(PageId, "demo.undo",
+            page => page is DemoListViewModel { IsSaving: false } vm && vm.CanUndo ? vm.UndoCommand : null));
+        services.AddSingleton(new CommandMenuContribution(PageId, "demo.redo",
+            page => page is DemoListViewModel { IsSaving: false } vm && vm.CanRedo ? vm.RedoCommand : null));
 
         // NavigationItem 放在最后一步注册
         services.AddSingleton<NavigationItem>(provider => new NavigationItem(

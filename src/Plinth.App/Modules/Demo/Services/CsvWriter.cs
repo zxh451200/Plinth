@@ -67,6 +67,8 @@ public static class CsvWriter
                 return Convert.ToHexString(hash.Hash!);
             }, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
+            // 永不覆盖已存在文件:错误报告/快照导出是安全契约(见 ConfirmationAuthorizationTests),
+            // 选了已存在的目标要让写入失败,而不是静默替换。
             File.Move(temp, path, overwrite: false);
             return sha256;
         }

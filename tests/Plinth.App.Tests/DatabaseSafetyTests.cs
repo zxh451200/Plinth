@@ -34,7 +34,7 @@ public sealed class DatabaseSafetyTests : IDisposable
     {
         using var db = Context(Path.Combine(_directory, "new.db"));
         DatabaseInitializer.Initialize(db);
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
         Assert.False(db.Database.HasPendingModelChanges());
         Assert.False(db.Database.GetPendingMigrations().Any());
         DatabaseInitializer.Initialize(db);
@@ -48,7 +48,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         File.WriteAllBytes(path, Array.Empty<byte>());
         using var db = Context(path);
         DatabaseInitializer.Initialize(db);
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
         Assert.True(new FileInfo(path).Length > 0);
         Assert.Empty(db.Set<DemoRecord>().ToList());
         db.Add(new DemoRecord { Code = "REBUILT", Name = "重建" });
@@ -105,7 +105,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         var path = LegacyDatabase("legacy.db", "KEEP");
         using var db = Context(path);
         DatabaseInitializer.Initialize(db);
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
         Assert.Equal("KEEP", db.Set<DemoRecord>().Single().Code);
         Assert.Single(Directory.GetFiles(_directory, "legacy.db.before-migrate-*"));
     }
@@ -131,7 +131,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         Assert.Null(record.DueDate);
         Assert.Equal(DemoPriority.Normal, record.Priority);
         Assert.True(record.Active);
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
         var safety = Assert.Single(Directory.GetFiles(_directory, "six.db.before-migrate-*"));
         using (var original = Context(safety))
         {
@@ -204,7 +204,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         using var db = Context(path);
         DatabaseInitializer.Initialize(db);
         Assert.Empty(db.Set<DemoRecord>().ToList());
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         Assert.Contains("COLLATE NOCASE", sql);
         db.Database.ExecuteSqlRaw(sql);
         DatabaseInitializer.Initialize(db);
-        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, db.Database.GetAppliedMigrations());
+        Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, db.Database.GetAppliedMigrations());
         Assert.Empty(db.Set<DemoRecord>().ToList());
     }
 
@@ -297,7 +297,7 @@ public sealed class DatabaseSafetyTests : IDisposable
         using (var restored = Context(target))
         {
             Assert.Equal("RESTORED", restored.Set<DemoRecord>().Single().Code);
-            Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId }, restored.Database.GetAppliedMigrations());
+            Assert.Equal(new[] { InitialSchema.MigrationId, NotesEntries.MigrationId, CodeIdentityKeys.MigrationId, DemoTypedColumns.MigrationId, DemoSoftDelete.MigrationId }, restored.Database.GetAppliedMigrations());
         }
         Assert.Contains("\"Width\": 910", File.ReadAllText(settings));
         Assert.DoesNotContain("secret", File.ReadAllText(settings));

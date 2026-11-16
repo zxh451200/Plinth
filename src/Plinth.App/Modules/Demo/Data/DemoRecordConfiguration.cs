@@ -22,6 +22,12 @@ public class DemoRecordConfiguration : IEntityTypeConfiguration<DemoRecord>
         builder.Property(record => record.Priority).HasConversion<string>().HasMaxLength(16);
         builder.Property(record => record.Version).IsConcurrencyToken();
 
+        // 软删除:唯一索引保留在 CodeKey 上,删除时由服务改写 CodeKey 追加记录 Id,
+        // 这样回收站里的记录不再占用编码,恢复时改回并检查冲突。
+        builder.Property(record => record.IsDeleted);
+        builder.Property(record => record.DeletedAtUtc);
+
         builder.HasIndex(record => record.CodeKey).IsUnique();
+        builder.HasIndex(record => record.IsDeleted);
     }
 }

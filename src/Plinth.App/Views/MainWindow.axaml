@@ -140,6 +140,14 @@
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
     </Style>
+    <!-- 内容命中两行显示:标题 + 摘要,读屏名称用标题。 -->
+    <Style Selector="ListBox#QuickOpenList ListBoxItem" x:DataType="nav:ContentSearchHit">
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+    </Style>
     <!-- 侧栏两态都用满宽:展开态内容左对齐(缩进由行内边距给),折叠成图标轨道时图标水平居中 -->
     <Style Selector="ListBox#NavigationList, ListBox#NavigationFooter">
       <Setter Property="Padding" Value="0" />
@@ -236,9 +244,11 @@
           Background="{DynamicResource PlinthPanelBrush}"
           BorderBrush="{DynamicResource PlinthBorderBrush}"
           BorderThickness="0,0,0,1">
+      <!-- 文件:文档生命周期(新建/保存)+页面到达入口(最近/收藏)+退出;关闭标签类归"窗口" -->
       <MenuItem Header="{loc:T menu.file}">
         <MenuItem Header="{loc:T menu.file.new}" Command="{Binding NewPageCommand}" InputGesture="{x:Static nav:AppShortcuts.New}" />
         <MenuItem Header="{loc:T menu.file.save}" Command="{Binding SavePageCommand}" InputGesture="{x:Static nav:AppShortcuts.Save}" />
+        <Separator />
         <MenuItem Classes="submenu" Header="{loc:T shell.navigation.recent}" ItemsSource="{Binding RecentPages}"
                   IsEnabled="{Binding HasRecentPages}">
           <MenuItem.ItemContainerTheme>
@@ -250,11 +260,19 @@
           </MenuItem.ItemContainerTheme>
         </MenuItem>
         <MenuItem Header="{loc:T shell.navigation.clearRecent}" Command="{Binding ClearRecentPagesCommand}" />
-        <MenuItem Header="{loc:T menu.file.closeTab}"
-                  Command="{Binding CloseTabCommand}"
-                  InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
-        <MenuItem Header="{loc:T menu.file.closeAll}"
-                  Command="{Binding CloseAllTabsCommand}" />
+        <MenuItem Header="{loc:T shell.navigation.toggleFavorite}" ToggleType="CheckBox"
+                  IsChecked="{Binding IsCurrentPageFavorite, Mode=OneWay}"
+                  Command="{Binding ToggleFavoriteCommand}" />
+        <MenuItem Classes="submenu" Header="{loc:T shell.navigation.favorites}" ItemsSource="{Binding FavoritePages}"
+                  IsEnabled="{Binding HasFavoritePages}">
+          <MenuItem.ItemContainerTheme>
+            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
+              <Setter Property="Header" Value="{Binding Title}" />
+              <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenTabCommand}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </ControlTheme>
+          </MenuItem.ItemContainerTheme>
+        </MenuItem>
         <Separator />
         <MenuItem Header="{loc:T menu.file.exit}" Command="{Binding ExitCommand}" />
       </MenuItem>
@@ -263,8 +281,10 @@
         <MenuItem Header="{loc:T menu.edit.delete}" Command="{Binding DeletePageCommand}" InputGesture="{x:Static nav:AppShortcuts.Delete}" />
         <MenuItem Header="{loc:T menu.edit.cancel}" Command="{Binding CancelPageCommand}" InputGesture="{x:Static nav:AppShortcuts.Cancel}" />
       </MenuItem>
+      <!-- 查看:视图层操作——快速打开/刷新,布局开关,面板入口 -->
       <MenuItem Header="{loc:T menu.view}">
         <MenuItem Header="{loc:T menu.view.quickOpen}" Command="{Binding OpenQuickOpenCommand}" />
+        <MenuItem Header="{loc:T menu.data.refresh}" Command="{Binding RefreshCommand}" InputGesture="{x:Static nav:AppShortcuts.Refresh}" />
         <Separator />
         <MenuItem Header="{loc:T shell.layout.reset}" Command="{Binding ResetLayoutCommand}" />
         <MenuItem Header="{Binding SidebarToggleText}" Command="{Binding ToggleSidebarCompactCommand}"
@@ -274,10 +294,11 @@
                   IsChecked="{Binding IsSidebarVisible, Mode=TwoWay}" />
         <MenuItem Header="{loc:T shell.sidePanel}" ToggleType="CheckBox"
                   IsChecked="{Binding IsSidePanelVisible, Mode=TwoWay}" />
+        <Separator />
         <MenuItem Header="{loc:T tasks.title}" Command="{Binding ShowTaskPanelCommand}" />
       </MenuItem>
-      <MenuItem Header="{loc:T menu.data}">
-        <MenuItem Header="{loc:T menu.data.refresh}" Command="{Binding RefreshCommand}" InputGesture="{x:Static nav:AppShortcuts.Refresh}" />
+      <!-- 数据:只放模块贡献的页面命令;没有命令时整菜单隐藏,不再出现空"数据" -->
+      <MenuItem Header="{loc:T menu.data}" IsVisible="{Binding HasModuleCommands}">
         <MenuItem Classes="submenu" Header="{loc:T menu.data.pageCommands}" ItemsSource="{Binding ModuleCommands}"
                   IsVisible="{Binding HasModuleCommands}">
           <MenuItem.ItemContainerTheme>
@@ -296,20 +317,13 @@
         <MenuItem Header="{loc:T menu.tools.openData}" Command="{Binding OpenDataFolderCommand}" />
         <MenuItem Header="{loc:T menu.tools.openLogs}" Command="{Binding OpenLogFolderCommand}" />
       </MenuItem>
+      <!-- 窗口:标签/窗口管理——与菜单名相符;收藏入口已并入"文件" -->
       <MenuItem Header="{loc:T menu.window}">
-        <MenuItem Header="{loc:T shell.navigation.toggleFavorite}" ToggleType="CheckBox"
-                  IsChecked="{Binding IsCurrentPageFavorite, Mode=OneWay}"
-                  Command="{Binding ToggleFavoriteCommand}" />
-        <MenuItem Classes="submenu" Header="{loc:T shell.navigation.favorites}" ItemsSource="{Binding FavoritePages}"
-                  IsEnabled="{Binding HasFavoritePages}">
-          <MenuItem.ItemContainerTheme>
-            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="nav:NavigationItem">
-              <Setter Property="Header" Value="{Binding Title}" />
-              <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenTabCommand}" />
-              <Setter Property="CommandParameter" Value="{Binding}" />
-            </ControlTheme>
-          </MenuItem.ItemContainerTheme>
-        </MenuItem>
+        <MenuItem Header="{loc:T menu.file.closeTab}"
+                  Command="{Binding CloseTabCommand}"
+                  InputGesture="{x:Static nav:AppShortcuts.CloseTab}" />
+        <MenuItem Header="{loc:T menu.file.closeAll}"
+                  Command="{Binding CloseAllTabsCommand}" />
       </MenuItem>
       <MenuItem Header="{loc:T menu.help}">
         <MenuItem Header="{loc:T help.title}" Command="{Binding ShowHelpCommand}" InputGesture="{x:Static nav:AppShortcuts.Help}" />
@@ -639,7 +653,8 @@
                ItemsSource="{Binding QuickOpenItems}"
                SelectedItem="{Binding QuickOpenSelection, Mode=TwoWay}"
                AutomationProperties.Name="{loc:T shell.quickOpen.results}">
-        <ListBox.ItemTemplate>
+        <!-- 页面命中与内容命中混排,模板按条目类型自动匹配 -->
+        <ListBox.DataTemplates>
           <DataTemplate x:DataType="nav:NavigationItem">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="{Binding Icon}"
@@ -652,7 +667,16 @@
               <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
             </StackPanel>
           </DataTemplate>
-        </ListBox.ItemTemplate>
+          <DataTemplate x:DataType="nav:ContentSearchHit">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Detail}" TextTrimming="CharacterEllipsis"
+                         FontSize="11"
+                         Foreground="{DynamicResource PlinthSubtleForegroundBrush}"
+                         AutomationProperties.AccessibilityView="Raw" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.DataTemplates>
       </ListBox>
     </DockPanel>
   </Border>

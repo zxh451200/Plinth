@@ -68,6 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<OverviewViewModel>();
         services.AddTransient<AboutViewModel>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<AutoBackupService>();
         services.AddTransient<BackupViewModel>();
         services.AddSingleton<SettingsService>();
         services.AddSingleton(provider => new LocalLoginService(
